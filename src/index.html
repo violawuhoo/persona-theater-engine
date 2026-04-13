@@ -8,6 +8,18 @@
 </head>
 <body>
  
+  <!-- Custom Modal — replaces browser alert() / confirm() -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-box">
+      <div id="modal-title"></div>
+      <div id="modal-message"></div>
+      <div id="modal-actions">
+        <button id="modal-cancel" class="modal-btn modal-btn--cancel hidden">取消</button>
+        <button id="modal-confirm" class="modal-btn modal-btn--confirm">确认</button>
+      </div>
+    </div>
+  </div>
+
   <div id="sync-overlay" class="hidden">
     <div class="scan-line"></div>
     <div class="sync-box">
