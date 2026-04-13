@@ -1,0 +1,39 @@
+# Replit artifacts — never commit these
+.replit
+.config/
+.local/
+.agents/
+replit.nix
+.upm/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Claude Code
+.claude/
+
+# Node (if you add a build step later)
+node_modules/
+npm-debug.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows (ThinkPad)
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Build output (if added later)
+dist/
+build/
