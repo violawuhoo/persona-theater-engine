@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Persona Draft</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+ 
+  <div id="sync-overlay" class="hidden">
+    <div class="scan-line"></div>
+    <div class="sync-box">
+      <div class="sync-title">PERSONA PROTOCOL SYNCING</div>
+      <div class="sync-persona-name" id="sync-persona-name">Load...</div>
+      <div class="sync-status">
+        <span class="status-label">BIOMETRIC:</span> <span class="status-value">STABLE</span><br>
+        <span class="status-label">EMOTION:</span> <span class="status-valueSuppress">SUPPRESSED</span><br>
+        <span class="status-label">LOGIC_CORE:</span> <span class="status-value">ONLINE</span>
+      </div>
+      <div class="sync-progress-bar">
+        <div class="sync-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="app">
+      <header>Persona Draft</header>
+
+      <div class="carousel" id="carousel">...</div>
+      <div class="dots" id="dots"></div>
+
+      <!-- 确保这个面板在最外层 -->
+    <div id="config-panel" class="hidden">
+      <div class="panel-header">配置实验：<span id="active-persona-display"></span></div>
+
+      <div class="input-group">
+        <label>环境场景</label>
+        <select id="scene-select">
+          <option value="商务谈判/签约">商务谈判/签约</option>
+          <option value="半正式晚宴/酒局">半正式晚宴/酒局</option>
+          <option value="部门会议/述职">部门会议/述职</option>
+          <option value="面试/潜在合伙人面谈">面试/潜在合伙人面谈</option>
+          <option value="私人社交/相亲">私人社交/相亲</option>
+          <option value="偶然遭遇战">偶然遭遇战</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>核心对手</label>
+        <select id="target-select">
+          <option value="甲方/决策者">甲方/决策者</option>
+          <option value="竞争对手/同行">竞争对手/同行</option>
+          <option value="下属/执行层">下属/执行层</option>
+          <option value="朋友/熟人">朋友/熟人</option>
+          <option value="陌生人/潜在资源">陌生人/潜在资源</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>场域规模</label>
+        <select id="scale-select">
+          <option value="1-3人 (深度对谈)">1-3人 (深度对谈)</option>
+          <option value="3-5人 (小组博弈)">3-5人 (小组博弈)</option>
+          <option value="5-8人 (多变量社交)">5-8人 (多变量社交)</option>
+          <option value=">8人 (群体观察)">>8人 (群体观察)</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>核心目的 (你的社交戏纲)</label>
+        <textarea id="intention-input" placeholder="例如：在不暴露底价的情况下，试探对方的合作诚意。"></textarea>
+      </div>
+
+      <button class="btn start-btn" onclick="startTheater()">启动剧场模式</button>
+    </div>
+
+    <!-- 在 <div id="app"> 内部，config-panel 之后添加 -->
+    <div id="theater-screen" class="hidden">
+      <div class="theater-header">剧场模式：运行中</div>
+
+      <!-- 核心轮轴区域 -->
+      <div class="wheel-container">
+        <div id="main-wheel" class="wheel">
+          <div class="sector" style="--i:0"><span>心法</span></div>
+          <div class="sector" style="--i:1"><span>姿态</span></div>
+          <div class="sector" style="--i:2"><span>语言</span></div>
+          <div class="sector" style="--i:3"><span>反应</span></div>
+        </div>
+        <div class="pointer"></div>
+      </div>
+
+      <!-- 内容展示区域 -->
+      <div class="guidance-box">
+        <h3 id="guidance-title">底层心法</h3>
+        <p id="guidance-content">正在加载同步人格参数...</p>
+      </div>
+
+      <button class="btn exit-btn" onclick="exitTheater()">卸载面具 (退出)</button>
+    </div>
+    
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
