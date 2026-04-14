@@ -1,69 +1,57 @@
 {
-"$schema": "http://json-schema.org/draft-07/schema#",
-"title": "Persona Schema",
-"type": "object",
-
-"required": [
-"id",
-"name",
-"core_directive",
-"root_logic_core",
-"cognitive_filtering_algorithm",
-"physical_execution_constraints",
-"dynamic_response_protocols"
-],
-
-"properties": {
-"id": {
-"type": "string",
-"pattern": "^ARCH[0-9]{2}$"
-},
-
-```
-"name": {
-  "type": "string"
-},
-
-"subtitle": {
-  "type": "string"
-},
-
-"archetype": {
-  "type": "string"
-},
-
-"core_directive": {
-  "type": "string"
-},
-
-"root_logic_core": {
-  "type": "object"
-},
-
-"cognitive_filtering_algorithm": {
-  "type": "object"
-},
-
-"physical_execution_constraints": {
-  "type": "object"
-},
-
-"dynamic_response_protocols": {
-  "type": "object"
-},
-
-"universal_forbidden_actions": {
-  "type": "array",
-  "items": { "type": "object" }
-},
-
-"reference_archetypes": {
-  "type": "array",
-  "items": { "type": "object" }
-}
-```
-
-},
-
-"additionalProperties": true
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Persona Schema",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "core_directive",
+    "root_logic_core",
+    "cognitive_filtering_algorithm",
+    "physical_execution_constraints",
+    "dynamic_response_protocols"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^ARCH[0-9]{2}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "archetype": {
+      "type": "string"
+    },
+    "core_directive": {
+      "type": "string"
+    },
+    "root_logic_core": {
+      "type": "object"
+    },
+    "cognitive_filtering_algorithm": {
+      "type": "object"
+    },
+    "physical_execution_constraints": {
+      "type": "object"
+    },
+    "dynamic_response_protocols": {
+      "type": "object"
+    },
+    "universal_forbidden_actions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "reference_archetypes": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
 }
