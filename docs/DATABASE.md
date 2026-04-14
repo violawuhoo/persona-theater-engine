@@ -1,36 +1,51 @@
 # DATABASE.md — Persona Theater Engine 数据库说明
 
-## 1. 数据库是什么
+## 1. 数据库定义
 
-本项目数据库为 **文件型数据库（file-based database）**，位于：
+本项目使用 **文件型数据库（file-based database）**。
 
-/database/personas/
+存在两层：
 
-每个 persona 由：
+### Source（唯一真实数据库）
 
-* `.md`（人类可读）
-* `.json`（程序可读）
+/database/
 
-构成。
+### Publish（网页读取副本）
+
+/docs/database/
 
 ---
 
-## 2. 职责划分
+## 2. 核心规则（非常重要）
+
+1. 所有数据修改只发生在：
+   → /database/
+
+2. /docs/database/：
+
+   * 禁止手动编辑
+   * 仅作为网页读取副本
+
+3. /docs/database/ 必须由 /database/ 同步生成
+
+---
+
+## 3. Claude 与 Codex 分工
 
 ### Claude（应用层）
 
 负责：
 
-* UI / 交互 / Theater mode
+* UI / Theater mode
+* 交互逻辑
 * API 调用
-* 运行时逻辑
 * 数据消费
 
 不得：
 
 * 修改数据库结构
 * 修改 schema
-* 批量改 persona 文件
+* 批量改 persona
 
 ---
 
@@ -39,47 +54,40 @@
 负责：
 
 * 创建 persona
-* 统一 JSON 结构
-* 数据清洗
+* JSON 结构统一
 * schema 对齐
-* 命名统一
-* 版本管理
-* manifest / validator
+* 数据清洗
+* manifest
+* migrations
 
-不得：
-
-* 修改 src/
-* 修改 UI / 交互逻辑
-* 修改 API 调用代码
+只能操作：
+/database/
 
 ---
 
-## 3. 数据结构原则
+## 4. persona 文件结构
 
 每个 persona：
 
-ARCH01.md
-ARCH01.json
+ARCH01.md   → 人类可读
+ARCH01.json → 程序读取
 
-规则：
+必须：
 
-* 文件名前缀必须一致
+* 同名前缀
 * 一一对应
-* JSON 为运行时唯一数据源
 
 ---
 
-## 4. Source of Truth
+## 5. Source of Truth
 
-* 内容语义：`.md`
-* 运行数据：`.json`
-* 结构规范：`schema`
-
-禁止在运行时代码中“猜测字段”。
+* 内容来源：.md
+* 运行数据：.json
+* 结构约束：schema
 
 ---
 
-## 5. 命名规则
+## 6. 命名规则
 
 统一：
 
@@ -90,50 +98,9 @@ ARCH01.json
 * ARCH01
 * ARCH-01
 
-只能选一种（推荐 ARCH01）。
-
 ---
 
-## 6. JSON 使用原则
-
-必须满足：
-
-* 结构稳定
-* 字段固定
-* 类型明确
-* 不依赖自然语言解析
-
----
-
-## 7. Claude 使用数据库方式
-
-Claude 必须：
-
-* 从 `/database/personas/` 读取 JSON
-* 不写死 persona 内容
-* 按字段渲染 UI
-
-如果字段不够：
-→ 提需求，不要改 schema
-
----
-
-## 8. Codex 工作方式
-
-Codex 只能操作：
-
-/database/
-
-包括：
-
-* personas
-* schemas
-* manifests
-* tools
-
----
-
-## 9. 推荐后续结构
+## 7. 数据库结构
 
 /database/
 ├── personas/
@@ -144,9 +111,40 @@ Codex 只能操作：
 
 ---
 
-## 10. 一句话原则
+## 8. 同步机制
 
-数据库是稳定层。
-Claude 使用它。
-Codex 管理它。
-两者通过 schema 对接。
+/database/ → /docs/database/
+
+这是一个单向同步：
+
+source → publish
+
+---
+
+## 9. Claude 使用规则
+
+Claude 必须：
+
+* 从 /docs/database/ 读取
+* 使用 JSON，不解析 md
+* 不写死 persona
+
+---
+
+## 10. Codex 使用规则
+
+Codex 必须：
+
+* 只改 /database/
+* 不触碰 src/
+* 不改 UI / API
+
+---
+
+## 11. 一句话原则
+
+database 是系统核心数据层
+Codex 管理它
+Claude 使用它
+docs/database 是它的镜像
+
