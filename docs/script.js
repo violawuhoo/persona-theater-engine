@@ -31,6 +31,84 @@ const PERSONA_REGISTRY = [
   { id: 'ARCH04', path: './database/personas/ARCH04.json', color: '#e05a20' }
 ];
 
+// ── SCENARIO OVERLAYS ─────────────────────────────────────────
+// Per-scene tactical context injected into both the AI prompt and
+// the local fallback extractor. Each entry defines:
+//   dynamics         — the unique power logic of this scene
+//   priority_protocols — which persona protocols matter most here
+//   tactical_focus   — scene-specific local fallback content (mind/body/speech/reaction)
+const SCENARIO_OVERLAYS = {
+  '商务谈判/签约': {
+    dynamics: '信息不对称博弈场。双方均在掌控信息流出量。核心压力点：时间压力、承诺升级、面子筹码。真正的谈判在桌面下已结束——桌面上的是仪式。',
+    priority_protocols: ['attack', 'logical_trap', 'validation_received', 'gratitude_received'],
+    tactical_focus: {
+      mind: '【场域定性】\n将此场域归类为：框架争夺战，而非内容讨论。谁设置了议程，谁就赢了这场谈判。\n\n【核心任务】\n锚定高位。让对方在你预设的选项范围内做选择，而非在他们的框架内讨价还价。\n\n【认知警报】\n对方每一次表达"诚意"，均归类为：降低你防御阈值的战术动作，不是情感。',
+      body: '【桌面规则】\n文件推过去时，视线停留在对方脸上——不看文件。让对方先翻阅，你观察他们的反应节奏。\n\n【签约前】\n不主动伸手。等对方先动作。握手时控制时长，2秒后主动松开。\n\n【沉默武器】\n对方报价后，维持沉默5-8秒再开口。此沉默会被对方解读为不满意，触发他们自我修正。',
+      speech: '【锚定框架】\n↳ "在我们讨论这个数字之前，我想先确认我们对合作目标的理解是一致的。"\n\n【升维拒绝】\n↳ "这个条款的具体细节，对你们这个项目的最终成败有决定性影响吗？"\n\n【收尾控制】\n↳ "我们今天能确认的，就先落纸。剩余的条款，我方会在48小时内给出最终版本。"',
+      reaction: '【对方施压】\n归类为：对方已无更多筹码，正在用时间压力替代实质让步。回应：沉默，然后重提你的框架。\n\n【对方让步】\n不表现出满意。让步被归类为：对方承认己方前期定价过高的迟到确认。继续推进。\n\n【僵局出现】\n主动提出暂停：「我们各自再想24小时，带着更清晰的优先级回来。」掌控节奏。'
+    }
+  },
+  '半正式晚宴/酒局': {
+    dynamics: '酒精是社交溶剂——它同时溶解对方的防御和你的判断力。真实意图在放松后流出。核心陷阱：即兴承诺、情绪绑架、劝酒压力。',
+    priority_protocols: ['excessive_flattery', 'peer_coldness', 'being_ignored', 'attack'],
+    tactical_focus: {
+      mind: '【场域定性】\n将此场域归类为：信息采集行动，而非社交表演。你的目标不是被记住，而是让对方说出清醒时不会说的话。\n\n【饮酒策略】\n保持清醒度比对方高30%。这不是节制，这是信息优势。\n\n【观察任务】\n记录每个人在第三杯后的行为变化。这是他们真实性格的操作系统预览。',
+      body: '【饮酒节奏】\n杯子放下时轻放，不发声。主动饮酒的频率比全场慢一个节拍。\n\n【拒酒姿势】\n用手轻压杯口，不解释，不道歉。这个动作本身即是边界声明。\n\n【空间占位】\n饭桌上，肘部自然放置，不收缩。占据你该有的物理空间。',
+      speech: '【信息收割】\n↳ 用「后来呢」「然后呢」「这事怎么解决的」维持对方叙事流，自己输出极少。\n\n【话题转移】\n↳ 当话题对你不利时，用一个无关但有趣的观察打断：「说起来，我最近看到一件事…」\n\n【即兴承诺防御】\n↳ 对任何当场提出的合作邀请：「这个方向有意思，等我们都清醒的时候认真聊。」',
+      reaction: '【劝酒压力】\n归类为：对方试图通过情绪绑架获取控制感。回应：微笑，压杯，不解释。\n\n【当众定义你】\n对方试图贴标签时，用一个出乎意料的补充颠覆他们的叙述，不反驳，只补充。\n\n【酒后冲突】\n将攻击归类为：酒精引发的生物噪音。零反应。等对方力竭后，换话题。'
+    }
+  },
+  '部门会议/述职': {
+    dynamics: '绩效叙事的战场。每个词都在被权力方解读和记录。核心压力：数据质疑、责任归因、资源竞争。你不是在汇报，你是在构建一个让决策者必须支持你的框架。',
+    priority_protocols: ['logical_trap', 'attack', 'validation_received', 'being_ignored'],
+    tactical_focus: {
+      mind: '【叙事重构】\n绩效数据是道具，不是目的。目的是让听众相信：你是这个方向上最有掌控力的人。\n\n【风险先发制人】\n主动提出问题，同时给出已准备好的对策。这将「暴露问题」转变为「展示前瞻性」。\n\n【权力地图扫描】\n开场前，快速判断今天谁的意见权重最高。所有内容优先对那个人校准。',
+      body: '【站立述职】\n重心均匀落于双脚，不倚靠台子。PPT切换时，视线不跟屏幕——扫视听众反应。\n\n【坐姿汇报】\n文件夹或平板放于桌面，双手轻搭。不用笔指指点点。\n\n【被质疑时】\n身体微微后仰——思考的姿态，而非防御的姿态。停顿1.5秒再回应。',
+      speech: '【开场锚定】\n↳ "今天我想先说结论，然后用数据支撑它。" 不要让听众猜你要去哪里。\n\n【质疑转化】\n↳ "这是一个好的校准点。我们当前的判断是X，你的担心让我想确认一下我们对Y的定义是否一致。"\n\n【资源争取】\n↳ "这个项目的天花板，取决于我们在Q3是否能获得Z资源。我今天想明确这个决策。"',
+      reaction: '【数据被质疑】\n不辩护数据本身。质疑对方的评估框架：「这个指标在当前阶段的优先权重，是否应该高于X？」\n\n【被抢功劳】\n不争，不辩。在下一个自然停顿处，用一句话重申你的具体贡献，然后推进议程。\n\n【被忽视】\n归类为：信息密度不足导致的关注度流失。用一个反常的数字或结论重新拉回焦点。'
+    }
+  },
+  '面试/潜在合伙人面谈': {
+    dynamics: '双向筛选场——不是单向审判。对方在评估你，你也在评估对方是否值得你的时间。最常见的致命错误：把这个场域定义为求职者接受审判。',
+    priority_protocols: ['logical_trap', 'praise_received', 'validation_received', 'attack'],
+    tactical_focus: {
+      mind: '【场域重定义】\n这是两个主权个体在评估合作可行性。带着这个框架进场。你的稀缺性不需要被证明——它需要被感知。\n\n【信息不对称利用】\n你比他们更了解你自己。在叙事中掌握节奏，决定展示哪些信息，以什么顺序。\n\n【反向筛选】\n准备3个判断对方质量的标准。如果对方不达标，这不是好机会。',
+      body: '【入场】\n握手时主动控制力度与时长，2秒松开。落座后不急于开口，用1-2秒扫视空间，建立存在感。\n\n【回答时】\n视线稳定，不飘移。回答结束后，保持沉默，让对方填补空白。\n\n【思考时】\n允许自己停顿。停顿是思考的外化，不是软弱的信号。',
+      speech: '【反向提问】\n↳ "你们对这个角色未来6个月的核心任务定义是什么？" 让对方证明这个机会是值得的。\n\n【弱点处理】\n↳ 描述一个已被克服的历史弱点，立即转向："现在我处理这类问题的方式是X，这带来了Y结果。"\n\n【收尾掌控】\n↳ "基于今天的交流，我对接下来的步骤有一个建议…" 不等对方定义流程。',
+      reaction: '【压力测试问题】\n归类为：对方在测试你的应激反应，而非真的需要这个答案。保持语速，直接回应核心，忽略情绪包装。\n\n【被质疑经验不足】\n不辩护年龄或年限。转向能力本身：「经验是一种路径，不是唯一路径。这个问题的核心是X，我的解法是…」\n\n【对方态度轻慢】\n归类为：对方正在测试你的自我认知稳定性。保持语速和眼神，不做任何迎合性调整。'
+    }
+  },
+  '私人社交/相亲': {
+    dynamics: '真实性与策略性的张力场。过度计算会被感知到，零计算会失去主动权。核心任务：让对方感觉被真正看见，同时保持自身的神秘感和信息缺口。',
+    priority_protocols: ['excessive_flattery', 'gratitude_received', 'peer_coldness', 'praise_received'],
+    tactical_focus: {
+      mind: '【目标重设】\n不是表现出最好的自己，而是创造一个让对方主动想要了解更多的信息缺口。\n\n【吸引力物理学】\n真正的吸引来自于：对方感觉「我还没有完全看懂这个人」。给出足够多的信息让对方感兴趣，但永远保留一个未解的层次。\n\n【情绪自给】\n进场前确认：你今晚不需要任何来自对方的认可。这种自足感会被本能感知到。',
+      body: '【若即若离张力】\n身体朝向与眼神焦点略微错开，制造一种「我在看你，但不是只在看你」的状态。\n\n【倾听姿态】\n对方说话时，偶尔视线落向远处再收回——表示你在真正思考，而非表演关注。\n\n【触碰时机】\n主动触碰（握手、轻拍肩）在自然语境下比被动等待更有主导感。',
+      speech: '【信息缺口制造】\n↳ 不完整地讲述一件有趣的事，在最关键处停止：「说来话长，以后有机会聊。」制造追问动机。\n\n【反预判】\n↳ 对方试图归类你时，给出一个真实但出乎意料的答案，打破他们的预判框架。\n\n【关注给予】\n↳ 记住对方在前10分钟说过的一个细节，在30分钟后自然引用它。这是最有力的「我真的在听你说话」信号。',
+      reaction: '【被过度追问】\n归类为：对方焦虑于信息不足，正在快速评估你。放慢回答节奏，增加停顿，反问一个他们的问题。\n\n【对方表现过于热情】\n不迎合这种热情。保持你原有的节奏和距离感，让对方自然降温，再重新校准互动温度。\n\n【冷场出现】\n不用恐慌填补。用一个关于当前环境的观察开启新话题，而非从内心议题开始。'
+    }
+  },
+  '偶然遭遇战': {
+    dynamics: '无剧本即兴场。时间窗口极短，通常只有30-120秒来建立基准印象。前5秒的物理状态决定整场互动的权力基准线。最大风险：被反应性情绪劫持。',
+    priority_protocols: ['attack', 'being_ignored', 'peer_coldness', 'excessive_flattery'],
+    tactical_focus: {
+      mind: '【即时状态切换】\n在接触发生前的0.5秒内完成重置：脊椎延伸，呼吸下沉，将对方归类为「待观察变量」而非威胁或机会。\n\n【时间压缩意识】\n你有大约90秒来建立一个让对方想要继续了解的印象。不浪费在寒暄上。\n\n【偶然感维护】\n让这次遭遇感觉像是一个好的巧合，而非一场预谋的表演。',
+      body: '【物理主权】\n不主动调整自身位置来适应对方的物理存在。让对方围绕你移动。\n\n【接触时刻】\n握手有力，眼神直接，第一句话之前停顿0.5秒——「我在打量你」的信号。\n\n【退出动作】\n主动结束对话，不等对方先离开。给出一个明确的收尾信号：看向远处，收起手机，调整站姿。',
+      speech: '【开场策略】\n↳ 第一句话永远不是自我介绍。用一个关于当前场域的评述开场：「这个地方比我想象的有意思。」建立观察者视角。\n\n【信息锚点】\n↳ 在对话中植入一个让对方能继续追问的信息钩子，然后不主动展开——等对方来问。\n\n【优雅退出】\n↳ 在对话最高点结束，而非等到自然冷却：「我不想占用你太多时间——但我确实想在某个时候继续聊这个话题。」',
+      reaction: '【对方试图主导】\n用一个无关但有趣的观察打断叙事链条，温和地重置话题控制权，不发生正面冲突。\n\n【被忽视或打断】\n不追逐注意力。退后半步，进入观察者模式，等待自然的重新接触时机。\n\n【对方急于获取联系方式】\n不立即给出。制造一个小小的获取难度：「你在X平台上吗？我在那上面比较活跃。」'
+    }
+  }
+};
+
+// Per-target psychological profile — injected into AI prompt and local fallback.
+const TARGET_OVERLAYS = {
+  '甲方/决策者':   '对方握有最终否决权，核心焦虑是「做出错误决策的风险」。你的任务：降低他们的感知风险，同时抬高你方的不可替代性感知。永远不要让他们感觉自己在被推着做决定。',
+  '竞争对手/同行': '同行之间的博弈是话语权与资源的争夺。不要展示优越感——展示「我在你不在的维度上运行」的感知。让对方产生「和这个人合作比竞争更有利」的战略判断。',
+  '下属/执行层':   '你的权威不需要被证明，它需要被感知。减少解释，增加方向性指令的确定感。对方需要的不是你的逻辑，而是你的确信。',
+  '朋友/熟人':     '熟悉度是双刃剑——对方会用已有的你的形象来限制你。任务：在熟悉的关系中制造陌生感，让对方意识到「我以为我了解你，但今天我看到了一个新的层次」。',
+  '陌生人/潜在资源': '对方在前30秒内完成初步分类。你的任务是被分入「值得继续了解」的类别，而非「已经完全了解」的类别。给出足够多让他们感兴趣，但永远保留一个未解的层次。'
+};
+
 // ── SCHEMA DEFAULTS ───────────────────────────────────────────
 // Safe fallback values for every field the system reads.
 const SCHEMA_DEFAULTS = {
@@ -379,85 +457,132 @@ async function selectPersona(personaId) {
 }
 
 // ── SCHEMA-SAFE THEATER CONTENT EXTRACTOR ────────────────────
-function extractTheaterContent(data) {
-  // ── [0] 心法: root_logic_core + cognitive_filtering
+// Now scene/target-aware: blends persona data with scenario overlays.
+function extractTheaterContent(data, scene = '', target = '') {
+  const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
+  const targetProfile = TARGET_OVERLAYS[target]   || null;
+  const protocols     = data.dynamic_response_protocols;
+
+  // ── [0] 心法: persona core logic + scene-specific mindset ───
   const rlc = data.root_logic_core;
   const cfa = data.cognitive_filtering_algorithm;
 
-  const mindLines = [
-    `【社交本质】\n${safeStr(rlc.social_essence,  '[数据缺失]')}`,
-    `【自我定位】\n${safeStr(rlc.self_positioning, '[数据缺失]')}`,
-    `【权力来源】\n${safeStr(rlc.power_source,     '[数据缺失]')}`
-  ];
-  const noiseKey = Object.keys(cfa).find(k => k.includes('noise') || k.includes('processing'));
-  if (noiseKey && cfa[noiseKey]) {
-    mindLines.push(`【噪音过滤】\n${safeStr(cfa[noiseKey])}`);
+  let mind;
+  if (sceneOverlay) {
+    // Lead with scene-specific tactical mindset, then append persona's core logic
+    const noiseKey = Object.keys(cfa).find(k => k.includes('noise') || k.includes('processing'));
+    const noiseFilter = (noiseKey && cfa[noiseKey])
+      ? `\n\n【人格噪音过滤】\n${safeStr(cfa[noiseKey])}` : '';
+    mind = `【场域特殊规则】\n${sceneOverlay.dynamics}`
+         + `\n\n${sceneOverlay.tactical_focus.mind}`
+         + `\n\n【人格底色·${safeStr(data.name)}】\n${safeStr(rlc.self_positioning, '[数据缺失]')}`
+         + noiseFilter;
+  } else {
+    const mindLines = [
+      `【社交本质】\n${safeStr(rlc.social_essence,  '[数据缺失]')}`,
+      `【自我定位】\n${safeStr(rlc.self_positioning, '[数据缺失]')}`,
+      `【权力来源】\n${safeStr(rlc.power_source,     '[数据缺失]')}`
+    ];
+    const noiseKey = Object.keys(cfa).find(k => k.includes('noise') || k.includes('processing'));
+    if (noiseKey && cfa[noiseKey]) mindLines.push(`【噪音过滤】\n${safeStr(cfa[noiseKey])}`);
+    mind = mindLines.join('\n\n');
   }
-  const mind = mindLines.join('\n\n');
 
-  // ── [1] 姿态: physical_execution_constraints
+  // ── [1] 姿态: persona physical rules + scene body layer ─────
   const phys = data.physical_execution_constraints;
   const gaze = phys.gaze_protocol  || {};
   const lbuf = phys.latency_buffer || {};
 
-  const bodyLines = [
-    phys.center_of_gravity  ? `【重心】\n${safeStr(phys.center_of_gravity)}`  : '',
-    gaze.focus_point        ? `【视线焦点】\n${safeStr(gaze.focus_point)}`   : '',
-    gaze.rule               ? `【视线规则】\n${safeStr(gaze.rule)}`          : '',
-    phys.breathing_protocol ? `【呼吸】\n${safeStr(phys.breathing_protocol)}` : '',
-    phys.hand_constraints   ? `【手部】\n${safeStr(phys.hand_constraints)}`  : '',
+  const baseBodyLines = [
+    phys.center_of_gravity  ? `【重心·人格基准】\n${safeStr(phys.center_of_gravity)}`  : '',
+    gaze.rule               ? `【视线·人格基准】\n${safeStr(gaze.rule)}`               : '',
+    phys.breathing_protocol ? `【呼吸·人格基准】\n${safeStr(phys.breathing_protocol)}` : '',
+    phys.hand_constraints   ? `【手部·人格基准】\n${safeStr(phys.hand_constraints)}`   : '',
     (lbuf.delay_seconds || lbuf.purpose)
-      ? `【延迟缓冲】${safeStr(lbuf.delay_seconds)}\n${safeStr(lbuf.purpose)}` : ''
+      ? `【延迟缓冲】${safeStr(lbuf.delay_seconds)} — ${safeStr(lbuf.purpose)}` : ''
   ].filter(Boolean);
-  const body = bodyLines.join('\n\n') || '[物理约束数据缺失]';
 
-  // ── [2] 语言: verbal_output from dynamic_response_protocols
-  const protocols = data.dynamic_response_protocols;
+  const body = sceneOverlay
+    ? sceneOverlay.tactical_focus.body + '\n\n' + baseBodyLines.join('\n\n')
+    : baseBodyLines.join('\n\n') || '[物理约束数据缺失]';
+
+  // ── [2] 语言: prioritise scene-relevant protocols ────────────
   const SILENT = new Set([
     '无。沉默即输出。', '无需言语。审美拒绝即陈述本身。', '无需主动介入。',
     '视语境而定。将对抗框架转化为结盟框架。', '无需言语。', '无输出。', ''
   ]);
 
-  const verbalEntries = Object.entries(protocols)
-    .filter(([, p]) => {
-      if (!p || typeof p !== 'object') return false;
-      const vo = safeStr(p.verbal_output);
-      return vo.length > 3 && !SILENT.has(vo);
-    })
-    .slice(0, 4)
-    .map(([key, p]) => {
-      let signalLabel = '';
-      if (p.signal && typeof p.signal === 'string') {
-        signalLabel = p.signal.replace(/\n/g, '').slice(0, 40);
-      } else {
-        signalLabel = key;
-      }
-      return `【${signalLabel}】\n↳ ${safeStr(p.verbal_output)}`;
-    });
+  let speech;
+  if (sceneOverlay) {
+    // Use the scene's pre-written speech tactics as primary content
+    speech = sceneOverlay.tactical_focus.speech;
 
-  const speech = verbalEntries.length > 0
-    ? verbalEntries.join('\n\n')
-    : '维持沉默。沉默是最锐利的话术武器。';
+    // Append up to 2 matching persona protocols as bonus reference
+    const priorityKeys = new Set(sceneOverlay.priority_protocols);
+    const bonusEntries = Object.entries(protocols)
+      .filter(([key, p]) => {
+        if (!priorityKeys.has(key)) return false;
+        if (!p || typeof p !== 'object') return false;
+        const vo = safeStr(p.verbal_output);
+        return vo.length > 3 && !SILENT.has(vo);
+      })
+      .slice(0, 2)
+      .map(([key, p]) => {
+        const label = (p.signal && typeof p.signal === 'string')
+          ? p.signal.replace(/\n/g, '').slice(0, 40) : key;
+        return `【人格话术·${label}】\n↳ ${safeStr(p.verbal_output)}`;
+      });
 
-  // ── [3] 反应: forbidden actions + attack protocol
-  const forbidden = data.universal_forbidden_actions;
-  const forbiddenLines = forbidden.slice(0, 4).map(f => {
-    const raw   = safeStr(f.action, '未知禁忌');
-    const label = raw.split(/——|—|-/)[0].trim();
-    return `【${label}】\n${safeStr(f.rule, '[规则内容缺失]')}`;
-  });
-
-  let attackBlock = '';
-  if (protocols.attack && typeof protocols.attack === 'object') {
-    const atk       = protocols.attack;
-    const physOut   = safeStr(atk.physical_output);
-    const verbalOut = safeStr(atk.verbal_output) || safeStr(atk.logic);
-    attackBlock = `\n\n【攻击响应协议】\n${physOut}\n↳ ${verbalOut}`;
+    if (bonusEntries.length > 0) {
+      speech += '\n\n' + bonusEntries.join('\n\n');
+    }
+  } else {
+    const verbalEntries = Object.entries(protocols)
+      .filter(([, p]) => {
+        if (!p || typeof p !== 'object') return false;
+        const vo = safeStr(p.verbal_output);
+        return vo.length > 3 && !SILENT.has(vo);
+      })
+      .slice(0, 4)
+      .map(([key, p]) => {
+        const label = (p.signal && typeof p.signal === 'string')
+          ? p.signal.replace(/\n/g, '').slice(0, 40) : key;
+        return `【${label}】\n↳ ${safeStr(p.verbal_output)}`;
+      });
+    speech = verbalEntries.length > 0
+      ? verbalEntries.join('\n\n')
+      : '维持沉默。沉默是最锐利的话术武器。';
   }
 
-  const reaction = forbiddenLines.join('\n\n') + attackBlock || '[反应机制数据缺失]';
+  // ── [3] 反应: scene reaction layer + persona forbidden list ─
+  const forbidden = data.universal_forbidden_actions;
+  const forbiddenLines = forbidden.slice(0, 3).map(f => {
+    const raw   = safeStr(f.action, '未知禁忌');
+    const label = raw.split(/——|—|-/)[0].trim();
+    return `【禁忌·${label}】\n${safeStr(f.rule, '[规则内容缺失]')}`;
+  });
 
-  console.log('[Extractor] ✓ Theater content extracted from local JSON.');
+  let reaction;
+  if (sceneOverlay) {
+    reaction = sceneOverlay.tactical_focus.reaction
+             + '\n\n' + forbiddenLines.join('\n\n');
+  } else {
+    let attackBlock = '';
+    if (protocols.attack && typeof protocols.attack === 'object') {
+      const atk       = protocols.attack;
+      const physOut   = safeStr(atk.physical_output);
+      const verbalOut = safeStr(atk.verbal_output) || safeStr(atk.logic);
+      attackBlock = `\n\n【攻击响应协议】\n${physOut}\n↳ ${verbalOut}`;
+    }
+    reaction = forbiddenLines.join('\n\n') + attackBlock || '[反应机制数据缺失]';
+  }
+
+  // Append target profile as a footer to the mind quadrant
+  if (targetProfile) {
+    mind += `\n\n【目标档案·${target}】\n${targetProfile}`;
+  }
+
+  console.log(`[Extractor] ✓ Theater content extracted — Scene: ${scene || 'generic'}, Target: ${target || 'generic'}`);
   return { mind, body, speech, reaction };
 }
 
@@ -526,7 +651,7 @@ async function startTheater() {
   }
 
   // ── Phase 2: Extract local content immediately ───────────
-  const localContent = extractTheaterContent(currentPersonaData);
+  const localContent = extractTheaterContent(currentPersonaData, scene, target);
   contentData[0].text = localContent.mind;
   contentData[1].text = localContent.body;
   contentData[2].text = localContent.speech;
@@ -591,6 +716,12 @@ async function callAIWithPersonaProtocol(personaData, scene, target, scale, inte
 
   const rlc = personaData.root_logic_core || {};
 
+  // Pull scenario + target overlays for prompt injection
+  const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
+  const targetProfile = TARGET_OVERLAYS[target]   || null;
+  const priorityProtocolList = sceneOverlay
+    ? sceneOverlay.priority_protocols.join('、') : '全协议均衡应用';
+
   const systemPrompt = `你是 Persona Draft 的核心战术逻辑引擎。
 严格依据以下【人格系统协议】进行深度行为对齐，不得混入其他人格特征。
 
@@ -619,12 +750,20 @@ ${forbiddenList}
 场域规模: ${scale}
 核心目的: ${intention}
 
+━━ 战场特殊规则（本场域专属，优先级高于通用协议）━━
+${sceneOverlay ? `场域动力学: ${sceneOverlay.dynamics}` : '无特殊场域规则。'}
+${targetProfile ? `目标档案: ${targetProfile}` : ''}
+本场域优先激活的人格协议: ${priorityProtocolList}
+
 ━━ 生成任务 ━━
 基于以上完整协议与场域参数，生成四维实战指令。
+每个维度必须体现【本场域的特殊动力学】与【人格协议的融合】，而非通用人格描述。
+不同场景的输出必须有显著差异——「商务谈判」和「私人相亲」的指令风格应截然不同。
+
 必须只输出纯 JSON，不带任何解释或 markdown 标记：
 {"mind":"...","body":"...","speech":"...","reaction":"..."}
 
-规则：去人类化，保持指令冷峻、精准、逻辑优先。严禁废话。`;
+规则：去人类化，保持指令冷峻、精准、逻辑优先。严禁废话。场域感知优先。`;
 
   const response = await fetch(url, {
     method: 'POST',
