@@ -148,3 +148,5 @@ Codex 管理它
 Claude 使用它
 docs/database 是它的镜像
 
+db: add database documentation
+
