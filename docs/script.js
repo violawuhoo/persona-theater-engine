@@ -20,16 +20,104 @@ let selectedPersona     = null;
 let currentPersonaData  = null;
 let currentRotation     = 0;
 
-// ── PERSONA REGISTRY ─────────────────────────────────────────
-// Central index of available persona JSON files.
-// To add a persona: append one entry here and drop the JSON in
-// database/personas/ — no other changes required.
-const PERSONA_REGISTRY = [
-  { id: 'ARCH01', path: './database/personas/ARCH01.json', color: '#7ca4d8' },
-  { id: 'ARCH02', path: './database/personas/ARCH02.json', color: '#90b8b8' },
-  { id: 'ARCH03', path: './database/personas/ARCH03.json', color: '#6a6a6a' },
-  { id: 'ARCH04', path: './database/personas/ARCH04.json', color: '#e05a20' }
-];
+// ── PERSONA REGISTRY (MANIFEST-DRIVEN) ───────────────────────
+const PERSONA_MANIFEST_PATH = './database/manifests/personas.manifest.json';
+const LEGACY_PERSONA_COLORS = {
+  ARCH01: '#7ca4d8',
+  ARCH02: '#90b8b8',
+  ARCH03: '#6a6a6a',
+  ARCH04: '#e05a20'
+};
+let runtimePersonaRegistry = [];
+let runtimeManifestMeta    = null;
+
+function normalizeManifestPath(pathValue) {
+  const raw = safeStr(pathValue).trim();
+  if (!raw) return '';
+  if (raw.startsWith('./')) return raw;
+  if (raw.startsWith('/')) return `.${raw}`;
+  return `./${raw}`;
+}
+
+function deterministicColorFromId(id) {
+  const seed = safeStr(id, 'UNKNOWN');
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 72% 55%)`;
+}
+
+function getColorForPersonaId(id) {
+  const cleanId = safeStr(id).trim().toUpperCase();
+  return LEGACY_PERSONA_COLORS[cleanId] || deterministicColorFromId(cleanId);
+}
+
+async function loadPersonaManifest() {
+  console.log(`[Manifest] → Fetching: ${PERSONA_MANIFEST_PATH}`);
+  const response = await fetch(PERSONA_MANIFEST_PATH, { cache: 'no-store' });
+  console.log(`[Manifest] HTTP ${response.status} ${response.statusText} ← ${PERSONA_MANIFEST_PATH}`);
+
+  if (!response.ok) {
+    throw new Error(`Manifest HTTP ${response.status}`);
+  }
+
+  const manifest = await response.json();
+  if (!manifest || typeof manifest !== 'object' || !Array.isArray(manifest.personas)) {
+    throw new Error('Manifest malformed: missing personas[]');
+  }
+
+  runtimeManifestMeta = {
+    schema_version: safeStr(manifest.schema_version, 'unknown'),
+    total_personas: Number(manifest.total_personas) || manifest.personas.length
+  };
+  console.log(`[Manifest] ✓ Loaded ${manifest.personas.length} entries (schema ${runtimeManifestMeta.schema_version}).`);
+  return manifest;
+}
+
+function buildRuntimePersonaRegistry(manifest) {
+  const seenIds = new Set();
+  const list = (manifest.personas || []).map(entry => {
+    const id = safeStr(entry.id).trim().toUpperCase();
+    const path = normalizeManifestPath(entry.json_path);
+    const status = safeStr(entry.status, 'active').toLowerCase();
+    return {
+      id,
+      path,
+      status,
+      color: getColorForPersonaId(id),
+      name: safeStr(entry.name, id),
+      subtitle: safeStr(entry.subtitle, 'Protocol Ready'),
+      archetype: safeStr(entry.archetype, '未分类原型')
+    };
+  }).filter(entry => {
+    if (!entry.id || !entry.path) {
+      console.warn('[Manifest] ⚠ Skipping invalid entry:', entry);
+      return false;
+    }
+    if (entry.status !== 'active') {
+      console.log(`[Manifest] ↷ Skipping non-active persona: ${entry.id} (${entry.status})`);
+      return false;
+    }
+    if (seenIds.has(entry.id)) {
+      console.warn(`[Manifest] ⚠ Duplicate persona id in manifest: ${entry.id} — keeping first entry only.`);
+      return false;
+    }
+    seenIds.add(entry.id);
+    return true;
+  });
+
+  runtimePersonaRegistry = list;
+  console.log(`[Manifest] ✓ Runtime registry built: ${runtimePersonaRegistry.length} personas.`);
+  return runtimePersonaRegistry;
+}
+
+async function ensureRuntimeRegistry() {
+  if (runtimePersonaRegistry.length > 0) return runtimePersonaRegistry;
+  const manifest = await loadPersonaManifest();
+  return buildRuntimePersonaRegistry(manifest);
+}
 
 // ── SCENARIO OVERLAYS ─────────────────────────────────────────
 // Per-scene tactical context injected into both the AI prompt and
@@ -165,7 +253,7 @@ function safeGet(obj, path, fallback = '') {
 // Returns the colour for the currently selected persona.
 function getPersonaColor() {
   if (!selectedPersona) return '#00f2ff';
-  const entry = PERSONA_REGISTRY.find(p => p.id === selectedPersona);
+  const entry = runtimePersonaRegistry.find(p => p.id === selectedPersona);
   return entry ? entry.color : '#00f2ff';
 }
 
@@ -275,12 +363,18 @@ function normalizePersonaSchema(raw) {
 
 // ── DYNAMIC LOADER ────────────────────────────────────────────
 async function loadPersona(personaId) {
+  try {
+    await ensureRuntimeRegistry();
+  } catch (e) {
+    console.error('[DataManager] ✗ Registry initialization failed:', e.message);
+    throw new Error(`Manifest registry init failed: ${e.message}`);
+  }
   const cleanId = safeStr(personaId).trim().toUpperCase();
-  const entry   = PERSONA_REGISTRY.find(p => p.id.toUpperCase() === cleanId);
+  const entry   = runtimePersonaRegistry.find(p => p.id.toUpperCase() === cleanId);
 
   if (!entry) {
-    console.error(`[DataManager] ✗ Persona "${cleanId}" not found in registry.`);
-    console.log('[DataManager] Available IDs:', PERSONA_REGISTRY.map(p => p.id).join(', '));
+    console.error(`[DataManager] ✗ Persona "${cleanId}" not found in runtime registry.`);
+    console.log('[DataManager] Available IDs:', runtimePersonaRegistry.map(p => p.id).join(', '));
     throw new Error(`Persona "${cleanId}" not in registry.`);
   }
 
@@ -321,6 +415,9 @@ async function loadPersona(personaId) {
   }
 
   currentPersonaData = normalizePersonaSchema(raw);
+  if (safeStr(currentPersonaData.id).toUpperCase() !== cleanId) {
+    console.warn(`[DataManager] ⚠ ID mismatch: selected ${cleanId}, loaded ${currentPersonaData.id}`);
+  }
   console.log(`[DataManager] ✓ Persona ready: ${currentPersonaData.name} (${cleanId})`);
   return currentPersonaData;
 }
@@ -328,9 +425,17 @@ async function loadPersona(personaId) {
 // ── INDEX INITIALIZATION ──────────────────────────────────────
 // Fetches all registered JSONs to extract card metadata.
 async function loadPersonaIndex() {
+  let registry;
+  try {
+    registry = await ensureRuntimeRegistry();
+  } catch (e) {
+    console.error('[Index] ✗ Manifest load failed:', e.message);
+    return [];
+  }
+
   const index   = [];
   const results = await Promise.allSettled(
-    PERSONA_REGISTRY.map(entry => fetch(entry.path, { cache: 'no-store' })
+    registry.map(entry => fetch(entry.path, { cache: 'no-store' })
       .then(r => {
         console.log(`[Index] HTTP ${r.status} ← ${entry.path}`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -341,7 +446,7 @@ async function loadPersonaIndex() {
   );
 
   results.forEach((result, i) => {
-    const entry = PERSONA_REGISTRY[i];
+    const entry = registry[i];
     if (result.status === 'fulfilled') {
       const norm = normalizePersonaSchema(result.value.data);
       index.push({
@@ -428,8 +533,15 @@ async function initCarousel() {
 
 // ── PERSONA SELECTION ─────────────────────────────────────────
 async function selectPersona(personaId) {
+  try {
+    await ensureRuntimeRegistry();
+  } catch (e) {
+    console.error('[Select] ✗ Registry initialization failed:', e.message);
+    showError(`人格索引加载失败\n\n原因：${e.message}\n\n请检查 manifest 或刷新重试。`);
+    return;
+  }
   const cleanId      = safeStr(personaId).trim().toUpperCase();
-  const entry        = PERSONA_REGISTRY.find(p => p.id.toUpperCase() === cleanId);
+  const entry        = runtimePersonaRegistry.find(p => p.id.toUpperCase() === cleanId);
   const loadingColor = entry ? entry.color : '#00f2ff';
 
   const btn = document.querySelector(`[onclick="selectPersona('${personaId}')"]`);
@@ -613,8 +725,7 @@ async function startTheater() {
   const syncPersonaName = document.getElementById('sync-persona-name');
   syncPersonaName.innerText = currentPersonaData.name;
 
-  const entry        = PERSONA_REGISTRY.find(p => p.id === selectedPersona);
-  const personaColor = entry ? entry.color : '#00f2ff';
+  const personaColor = getPersonaColor();
 
   const syncBox = syncOverlay.querySelector('.sync-box');
   if (syncBox) {
