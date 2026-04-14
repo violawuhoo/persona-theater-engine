@@ -7,7 +7,7 @@
 // For production use, proxy requests through a backend server
 // or inject this value via a build-time environment variable.
 const CONFIG = {
-  KIMI_API_KEY:     'sk-Y4KxeIZ2zA7n4BMW8SMnSyfRdUPZ3l0aHyxwyMkH1yfVtS2S', // ⚠️ rotate this key — it was previously exposed in git history
+  KIMI_API_KEY:     'sk-wNKkSpE2pWwN47rzi3OKKLAELVhhWesFFJ06P1nl3rzUrHaB',
   AI_TIMEOUT_MS:    2000,
   SYNC_DURATION_MS: 2500,
   GACHA_INTERVAL_MS: 10000
