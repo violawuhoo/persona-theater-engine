@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-04-14T07:32:54Z",
+  "total_personas": 4,
+  "personas": [
+    {
+      "id": "ARCH01",
+      "file_base": "ARCH01",
+      "json_path": "database/personas/ARCH01.json",
+      "md_path": "database/personas/ARCH01.md",
+      "name": "断头王后",
+      "status": "active",
+      "subtitle": "The Beheaded Queen",
+      "archetype": "秩序垄断者 / 仪式主权者"
+    },
+    {
+      "id": "ARCH02",
+      "file_base": "ARCH02",
+      "json_path": "database/personas/ARCH02.json",
+      "md_path": "database/personas/ARCH02.md",
+      "name": "水银先知",
+      "status": "active",
+      "subtitle": "The Mercury Prophet",
+      "archetype": "流态模糊者 / 概率操控者"
+    },
+    {
+      "id": "ARCH03",
+      "file_base": "ARCH03",
+      "json_path": "database/personas/ARCH03.json",
+      "md_path": "database/personas/ARCH03.md",
+      "name": "食腐鸦",
+      "status": "active",
+      "subtitle": "The Carrion Crow",
+      "archetype": "阴影拾荒者 / 负空间操控者"
+    },
+    {
+      "id": "ARCH04",
+      "file_base": "ARCH04",
+      "json_path": "database/personas/ARCH04.json",
+      "md_path": "database/personas/ARCH04.md",
+      "name": "熔岩朋克",
+      "status": "active",
+      "subtitle": "The Molten Punk",
+      "archetype": "熵增制造者 / 激进破坏者"
+    }
+  ]
+}
