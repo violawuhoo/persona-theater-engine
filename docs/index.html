@@ -9,9 +9,14 @@
     /* ── DETAIL PANEL ─────────────────────────────────────────── */
     #detail-panel {
       padding: 20px;
+      padding-bottom: 40px;
       max-width: 480px;
       margin: 0 auto;
       box-sizing: border-box;
+      /* Bug 1 fix: allow vertical scroll on mobile so bottom buttons are reachable */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: 100vh;
     }
     .detail-field {
       margin: 14px 0;

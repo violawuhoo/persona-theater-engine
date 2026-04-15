@@ -617,6 +617,14 @@ async function openPersonaDetail(personaId) {
   }
 }
 
+// Bug 2 fix: reset every carousel CTA that may have been left in a loading/disabled state.
+function resetCarouselButtons() {
+  document.querySelectorAll('[onclick^="openPersonaDetail("]').forEach(btn => {
+    btn.textContent = '了解更多';
+    btn.disabled    = false;
+  });
+}
+
 // Returns to Browse, restoring the exact carousel position.
 function closePersonaDetail() {
   document.getElementById('detail-panel').classList.add('hidden');
@@ -629,6 +637,9 @@ function closePersonaDetail() {
 
   // Clear transient persona load — not activated, no state should linger
   currentPersonaData = null;
+
+  // Ensure all card buttons are usable again (Bug 2)
+  resetCarouselButtons();
 
   window.scrollTo(0, 0);
   console.log(`[Detail] ← Returned to Browse at carousel index ${currentCarouselIndex}`);
@@ -1134,6 +1145,9 @@ async function exitTheater() {
   selectedPersona     = null;
   currentRotation     = 0;
   document.getElementById('main-wheel').style.transform = 'rotate(0deg)';
+
+  // Bug 2 fix: restore all carousel CTAs so the user can re-enter Detail
+  resetCarouselButtons();
 
   console.log('[Theater] 面具已卸载，全局状态已清空。');
 }
