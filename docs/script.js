@@ -499,15 +499,11 @@ async function initCarousel() {
     const btnDisable  = p.failed ? 'disabled'  : '';
     const onclickAttr = p.failed ? ''           : `onclick="openPersonaDetail('${p.id}')"`;
 
+    // Browse card: name + core_directive only — secondary info lives in Detail
     wrapper.innerHTML = `
       <div class="card ${p.failed ? 'card--failed' : ''}">
-        <div class="icon-box" style="background:${p.color}18; border:2px solid ${p.color};">
-          <div class="persona-id-tag" style="color:${p.color}">${p.id}</div>
-        </div>
         <div class="title">${p.name}</div>
-        <div class="card-subtitle">${p.subtitle}</div>
-        <div class="card-archetype">${p.archetype}</div>
-        <div class="desc">"${p.core_directive}"</div>
+        <div class="desc">${p.failed ? '该人格协议加载失败' : `"${p.core_directive}"`}</div>
         <button class="btn" style="background:${p.color};box-shadow:0 0 18px ${p.color}44;"
                 ${onclickAttr} ${btnDisable}>${btnLabel}</button>
       </div>
@@ -571,30 +567,46 @@ async function openPersonaDetail(personaId) {
     const data = currentPersonaData;
 
     // ── Populate fields (all from runtime data, no hardcoding) ─
+
+    // Header: name only, tinted with persona colour
     const nameEl = document.getElementById('detail-persona-name');
     nameEl.innerText   = data.name;
     nameEl.style.color = color;
 
+    // Core directive
     document.getElementById('detail-core-directive').innerText =
       safeStr(data.core_directive, '[核心指令缺失]');
 
+    // 社交本质
     document.getElementById('detail-social-essence').innerText =
       safeStr(safeGet(data, 'root_logic_core.social_essence'), '[社交本质缺失]');
 
-    // Physical signature: prefer center_of_gravity, fall back to breathing_protocol
-    const phys = data.physical_execution_constraints || {};
-    const signature = safeStr(phys.center_of_gravity, '')
-      || safeStr(phys.breathing_protocol, '')
-      || '[物理约束数据缺失]';
-    document.getElementById('detail-signature').innerText = signature;
+    // 典型表达: 2–3 non-silent verbal outputs from dynamic_response_protocols (first line each)
+    const EXPR_SILENT = new Set([
+      '无。沉默即输出。', '无需言语。审美拒绝即陈述本身。', '无需主动介入。',
+      '视语境而定。将对抗框架转化为结盟框架。', '无需言语。', '无输出。', ''
+    ]);
+    const protocols   = data.dynamic_response_protocols || {};
+    const expressions = Object.values(protocols)
+      .filter(p => p && typeof p.verbal_output === 'string'
+                     && p.verbal_output.length > 5
+                     && !EXPR_SILENT.has(p.verbal_output.trim()))
+      .slice(0, 3)
+      .map(p => safeStr(p.verbal_output).split('\n')[0].replace(/^↳\s*/, '').trim());
+    const exprEl = document.getElementById('detail-expressions');
+    exprEl.innerHTML = expressions.length > 0
+      ? expressions.map(e => `<div class="detail-expr-line">↳ ${e}</div>`).join('')
+      : '<div class="detail-expr-line">暂无典型表达数据</div>';
 
-    // First forbidden action
+    // 禁忌: 1–2 forbidden actions, short label + rule
     const forbidden = data.universal_forbidden_actions || [];
     document.getElementById('detail-forbidden').innerText = forbidden.length > 0
-      ? `${safeStr(forbidden[0].action)}：${safeStr(forbidden[0].rule)}`
+      ? forbidden.slice(0, 2)
+          .map(f => `${safeStr(f.action).split(/——|—|-/)[0].trim()}：${safeStr(f.rule)}`)
+          .join('\n\n')
       : '[禁忌数据缺失]';
 
-    // Style the activate button with persona colour
+    // Style activate button with persona colour
     const activateBtn = document.getElementById('detail-activate-btn');
     if (activateBtn) {
       activateBtn.style.background = color;
@@ -602,10 +614,14 @@ async function openPersonaDetail(personaId) {
       activateBtn.style.color      = ['#00f2ff','#2ecc71','#90b8b8'].includes(color) ? '#000' : '#fff';
     }
 
-    // ── Navigate: hide Browse, show Detail ─────────────────────
+    // ── Navigate: hide Browse, show Detail with fade-in+slide-up ─
     document.getElementById('carousel').classList.add('hidden');
     document.getElementById('dots').classList.add('hidden');
-    document.getElementById('detail-panel').classList.remove('hidden');
+    const panel = document.getElementById('detail-panel');
+    panel.classList.remove('hidden', 'detail-leaving');
+    void panel.offsetWidth;                          // force reflow to restart animation
+    panel.classList.add('detail-entering');
+    setTimeout(() => panel.classList.remove('detail-entering'), 260);
     window.scrollTo(0, 0);
 
     console.log(`[Detail] ✓ Showing detail for: ${data.name} (index ${currentCarouselIndex})`);
@@ -627,22 +643,26 @@ function resetCarouselButtons() {
 
 // Returns to Browse, restoring the exact carousel position.
 function closePersonaDetail() {
-  document.getElementById('detail-panel').classList.add('hidden');
-  document.getElementById('carousel').classList.remove('hidden');
-  document.getElementById('dots').classList.remove('hidden');
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('detail-leaving');
+  setTimeout(() => {
+    panel.classList.add('hidden');
+    panel.classList.remove('detail-leaving');
 
-  // Restore scroll position synchronously (no animation so it feels instant)
-  const carousel = document.getElementById('carousel');
-  carousel.scrollLeft = currentCarouselIndex * window.innerWidth;
+    document.getElementById('carousel').classList.remove('hidden');
+    document.getElementById('dots').classList.remove('hidden');
 
-  // Clear transient persona load — not activated, no state should linger
-  currentPersonaData = null;
+    // Restore carousel scroll position
+    const carousel = document.getElementById('carousel');
+    carousel.scrollLeft = currentCarouselIndex * window.innerWidth;
 
-  // Ensure all card buttons are usable again (Bug 2)
-  resetCarouselButtons();
+    // Clear transient persona load — not activated
+    currentPersonaData = null;
+    resetCarouselButtons();
 
-  window.scrollTo(0, 0);
-  console.log(`[Detail] ← Returned to Browse at carousel index ${currentCarouselIndex}`);
+    window.scrollTo(0, 0);
+    console.log(`[Detail] ← Returned to Browse at carousel index ${currentCarouselIndex}`);
+  }, 150);
 }
 
 // Called ONLY from Detail's 激活面具 button.
@@ -657,18 +677,26 @@ function activateFromDetail() {
   const entry   = runtimePersonaRegistry.find(p => p.id === cleanId);
   const color   = entry ? entry.color : '#00f2ff';
 
-  // ── Activate: set global selection + navigate to Config ─────
-  selectedPersona = cleanId;
+  // Fix 2: disable button immediately to block double-tap during 150ms transition
+  const activateBtn = document.getElementById('detail-activate-btn');
+  if (activateBtn) activateBtn.disabled = true;
 
+  // Set activation state before transition so Config is ready
+  selectedPersona = cleanId;
   const display = document.getElementById('active-persona-display');
   display.innerText   = currentPersonaData.name;
   display.style.color = color;
 
-  document.getElementById('detail-panel').classList.add('hidden');
-  document.getElementById('config-panel').classList.remove('hidden');
-  window.scrollTo(0, 0);
-
-  console.log(`[Detail] ✓ Activated: ${currentPersonaData.name} → Config`);
+  // Fade out Detail, then show Config
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('detail-leaving');
+  setTimeout(() => {
+    panel.classList.add('hidden');
+    panel.classList.remove('detail-leaving');
+    document.getElementById('config-panel').classList.remove('hidden');
+    window.scrollTo(0, 0);
+    console.log(`[Detail] ✓ Activated: ${currentPersonaData.name} → Config`);
+  }, 150);
 }
 
 // ── SCHEMA-SAFE THEATER CONTENT EXTRACTOR ────────────────────

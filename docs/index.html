@@ -7,51 +7,63 @@
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
     /* ── DETAIL PANEL ─────────────────────────────────────────── */
+    /* position:fixed escapes body/html overflow:hidden + #app height:100vh clipping */
     #detail-panel {
-      padding: 20px;
-      padding-bottom: 40px;
-      max-width: 480px;
-      margin: 0 auto;
-      box-sizing: border-box;
-      /* Bug 1 fix: allow vertical scroll on mobile so bottom buttons are reachable */
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      max-height: 100vh;
+      background: #000;
+      z-index: 500;
+      padding: 28px 22px 72px;
+      box-sizing: border-box;
+      max-width: 480px;
+      margin: 0 auto;
     }
-    .detail-field {
+    /* ── Transitions ── */
+    @keyframes detail-in  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes detail-out { from { opacity:1 } to { opacity:0 } }
+    #detail-panel.detail-entering { animation: detail-in  0.22s ease-out forwards; }
+    #detail-panel.detail-leaving  { animation: detail-out 0.14s ease-in  forwards; }
+    /* ── Header ── */
+    .detail-header { padding: 12px 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 22px; }
+    .detail-name   { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+    /* ── Sections ── */
+    .detail-section {
       margin: 14px 0;
-      padding: 14px 16px;
-      border: 1px solid rgba(0, 242, 255, 0.18);
-      border-radius: 8px;
-      background: rgba(0, 242, 255, 0.03);
+      padding: 13px 15px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    .detail-field-label {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #00f2ff;
-      opacity: 0.65;
-      margin-bottom: 8px;
+    .detail-section--core     { background: rgba(0,242,255,0.04); border-color: rgba(0,242,255,0.2); }
+    .detail-section--forbidden{ background: rgba(224,90,32,0.04); border-color: rgba(224,90,32,0.2); }
+    .detail-section-label {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      opacity: 0.5; margin-bottom: 8px;
     }
-    .detail-field-value {
-      font-size: 13.5px;
-      line-height: 1.65;
-      color: #d8e8f0;
-      white-space: pre-wrap;
+    .detail-section--core      .detail-section-label { color: #00f2ff; opacity: 0.7; }
+    .detail-section--forbidden .detail-section-label { color: #e05a20; opacity: 0.7; }
+    .detail-core-text    { font-size: 14px; line-height: 1.7; color: #e8f4f8; }
+    .detail-section-value{ font-size: 13.5px; line-height: 1.65; color: #c0d4de; white-space: pre-wrap; }
+    /* ── Typical expressions ── */
+    .detail-expressions { display: flex; flex-direction: column; gap: 7px; }
+    .detail-expr-line {
+      padding: 7px 10px;
+      border-left: 2px solid rgba(255,255,255,0.15);
+      font-size: 13px; color: #b0c8d8; line-height: 1.5;
+      /* Fix 1: truncate long verbal_output lines to one visible line */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .detail-field--forbidden .detail-field-label { color: #e05a20; }
-    .detail-field--forbidden { border-color: rgba(224, 90, 32, 0.22); background: rgba(224, 90, 32, 0.03); }
-    .detail-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
+    /* ── Actions ── */
+    .detail-actions { display: flex; gap: 12px; margin-top: 28px; }
     .detail-actions .btn { flex: 1; }
     .detail-btn-back {
       background: transparent !important;
       border: 1px solid rgba(255,255,255,0.18) !important;
-      color: #888 !important;
-      box-shadow: none !important;
+      color: #888 !important; box-shadow: none !important;
     }
   </style>
 </head>
@@ -93,26 +105,28 @@
 
     <!-- ── DETAIL VIEW (Browse → Detail → Config) ─────────────── -->
     <div id="detail-panel" class="hidden">
-      <div class="panel-header">人格档案：<span id="detail-persona-name"></span></div>
-
-      <div class="detail-field">
-        <div class="detail-field-label">核心指令</div>
-        <div id="detail-core-directive" class="detail-field-value"></div>
+      <div class="detail-header">
+        <div id="detail-persona-name" class="detail-name"></div>
       </div>
 
-      <div class="detail-field">
-        <div class="detail-field-label">社交本质</div>
-        <div id="detail-social-essence" class="detail-field-value"></div>
+      <div class="detail-section detail-section--core">
+        <div class="detail-section-label">核心指令</div>
+        <div id="detail-core-directive" class="detail-core-text"></div>
       </div>
 
-      <div class="detail-field">
-        <div class="detail-field-label">标志性行为</div>
-        <div id="detail-signature" class="detail-field-value"></div>
+      <div class="detail-section">
+        <div class="detail-section-label">社交本质</div>
+        <div id="detail-social-essence" class="detail-section-value"></div>
       </div>
 
-      <div class="detail-field detail-field--forbidden">
-        <div class="detail-field-label">绝对禁忌</div>
-        <div id="detail-forbidden" class="detail-field-value"></div>
+      <div class="detail-section">
+        <div class="detail-section-label">典型表达</div>
+        <div id="detail-expressions" class="detail-expressions"></div>
+      </div>
+
+      <div class="detail-section detail-section--forbidden">
+        <div class="detail-section-label">禁忌</div>
+        <div id="detail-forbidden" class="detail-section-value"></div>
       </div>
 
       <div class="detail-actions">
