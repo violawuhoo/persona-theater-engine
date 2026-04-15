@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-04-14T07:32:54Z",
-  "total_personas": 4,
+  "generated_at": "2026-04-15T06:00:21Z",
+  "total_personas": 6,
   "personas": [
     {
       "id": "ARCH01",
@@ -42,6 +42,26 @@
       "status": "active",
       "subtitle": "The Molten Punk",
       "archetype": "熵增制造者 / 激进破坏者"
+    },
+    {
+      "id": "ARCH05",
+      "file_base": "ARCH05",
+      "json_path": "database/personas/ARCH05.json",
+      "md_path": "database/personas/ARCH05.md",
+      "name": "逆流孤儿",
+      "status": "active",
+      "subtitle": "The Retrograde Orphan",
+      "archetype": "认知协议全维度手册"
+    },
+    {
+      "id": "ARCH06",
+      "file_base": "ARCH06",
+      "json_path": "database/personas/ARCH06.json",
+      "md_path": "database/personas/ARCH06.md",
+      "name": "守门人",
+      "status": "active",
+      "subtitle": "The Sentinel",
+      "archetype": "认知协议详情"
     }
   ]
 }
