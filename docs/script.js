@@ -19,6 +19,7 @@ let isTheaterModeActive = false;
 let selectedPersona     = null;
 let currentPersonaData  = null;
 let currentRotation     = 0;
+let currentCarouselIndex = 0;   // preserved across Browse ↔ Detail transitions
 
 // ── PERSONA REGISTRY (MANIFEST-DRIVEN) ───────────────────────
 const PERSONA_MANIFEST_PATH = './database/manifests/personas.manifest.json';
@@ -494,9 +495,9 @@ async function initCarousel() {
     const wrapper = document.createElement('div');
     wrapper.className = 'card-wrapper';
 
-    const btnLabel    = p.failed ? '加载失败' : '激活面具';
+    const btnLabel    = p.failed ? '加载失败' : '了解更多';
     const btnDisable  = p.failed ? 'disabled'  : '';
-    const onclickAttr = p.failed ? ''           : `onclick="selectPersona('${p.id}')"`;
+    const onclickAttr = p.failed ? ''           : `onclick="openPersonaDetail('${p.id}')"`;
 
     wrapper.innerHTML = `
       <div class="card ${p.failed ? 'card--failed' : ''}">
@@ -521,6 +522,7 @@ async function initCarousel() {
 
   carousel.addEventListener('scroll', () => {
     const idx = Math.round(carousel.scrollLeft / window.innerWidth);
+    currentCarouselIndex = idx;   // keep in sync so Detail can restore position
     document.querySelectorAll('.dot').forEach((d, i) => {
       const color = personaIndex[i] ? personaIndex[i].color : '#fff';
       d.classList.toggle('active', i === idx);
@@ -532,40 +534,130 @@ async function initCarousel() {
 }
 
 // ── PERSONA SELECTION ─────────────────────────────────────────
-async function selectPersona(personaId) {
+// Activation bypass removed. All callers must go through Detail.
+function selectPersona(personaId) {
+  console.warn('[Select] selectPersona() is a bypass-safe stub — routing to Detail instead.');
+  openPersonaDetail(personaId);
+}
+
+// ── PERSONA DETAIL VIEW ───────────────────────────────────────
+// Opens Detail for a persona WITHOUT activating it or entering Config.
+async function openPersonaDetail(personaId) {
+  const cleanId = safeStr(personaId).trim().toUpperCase();
+
+  // Snapshot carousel position before leaving Browse
+  const carousel = document.getElementById('carousel');
+  currentCarouselIndex = Math.round(carousel.scrollLeft / window.innerWidth);
+
   try {
     await ensureRuntimeRegistry();
   } catch (e) {
-    console.error('[Select] ✗ Registry initialization failed:', e.message);
-    showError(`人格索引加载失败\n\n原因：${e.message}\n\n请检查 manifest 或刷新重试。`);
+    showError(`人格索引加载失败\n\n原因：${e.message}`);
     return;
   }
-  const cleanId      = safeStr(personaId).trim().toUpperCase();
-  const entry        = runtimePersonaRegistry.find(p => p.id.toUpperCase() === cleanId);
-  const loadingColor = entry ? entry.color : '#00f2ff';
 
-  const btn = document.querySelector(`[onclick="selectPersona('${personaId}')"]`);
+  const entry = runtimePersonaRegistry.find(p => p.id === cleanId);
+  const color = entry ? entry.color : '#00f2ff';
+
+  // Show transient loading state on the card button
+  const btn = document.querySelector(`[onclick="openPersonaDetail('${personaId}')"]`);
   if (btn) { btn.textContent = '加载中...'; btn.disabled = true; }
 
   try {
+    // loadPersona fetches + normalises full data → stores in currentPersonaData
+    // selectedPersona is NOT set here; that only happens in activateFromDetail()
     await loadPersona(cleanId);
-    selectedPersona = cleanId;
 
-    const display = document.getElementById('active-persona-display');
-    display.innerText   = currentPersonaData.name;
-    display.style.color = loadingColor;
+    const data = currentPersonaData;
 
+    // ── Populate fields (all from runtime data, no hardcoding) ─
+    const nameEl = document.getElementById('detail-persona-name');
+    nameEl.innerText   = data.name;
+    nameEl.style.color = color;
+
+    document.getElementById('detail-core-directive').innerText =
+      safeStr(data.core_directive, '[核心指令缺失]');
+
+    document.getElementById('detail-social-essence').innerText =
+      safeStr(safeGet(data, 'root_logic_core.social_essence'), '[社交本质缺失]');
+
+    // Physical signature: prefer center_of_gravity, fall back to breathing_protocol
+    const phys = data.physical_execution_constraints || {};
+    const signature = safeStr(phys.center_of_gravity, '')
+      || safeStr(phys.breathing_protocol, '')
+      || '[物理约束数据缺失]';
+    document.getElementById('detail-signature').innerText = signature;
+
+    // First forbidden action
+    const forbidden = data.universal_forbidden_actions || [];
+    document.getElementById('detail-forbidden').innerText = forbidden.length > 0
+      ? `${safeStr(forbidden[0].action)}：${safeStr(forbidden[0].rule)}`
+      : '[禁忌数据缺失]';
+
+    // Style the activate button with persona colour
+    const activateBtn = document.getElementById('detail-activate-btn');
+    if (activateBtn) {
+      activateBtn.style.background = color;
+      activateBtn.style.boxShadow  = `0 0 18px ${color}44`;
+      activateBtn.style.color      = ['#00f2ff','#2ecc71','#90b8b8'].includes(color) ? '#000' : '#fff';
+    }
+
+    // ── Navigate: hide Browse, show Detail ─────────────────────
     document.getElementById('carousel').classList.add('hidden');
     document.getElementById('dots').classList.add('hidden');
-    document.getElementById('config-panel').classList.remove('hidden');
+    document.getElementById('detail-panel').classList.remove('hidden');
     window.scrollTo(0, 0);
 
-    console.log(`[Select] ✓ Proceeding to config: ${currentPersonaData.name}`);
+    console.log(`[Detail] ✓ Showing detail for: ${data.name} (index ${currentCarouselIndex})`);
   } catch (e) {
-    console.error('[Select] ✗ Load failed:', e.message);
+    console.error('[Detail] ✗ Load failed:', e.message);
     showError(`人格协议加载失败\n\n原因：${e.message}\n\n请检查网络或刷新重试。`);
-    if (btn) { btn.textContent = '激活面具'; btn.disabled = false; }
+    if (btn) { btn.textContent = '了解更多'; btn.disabled = false; }
+    currentPersonaData = null;
   }
+}
+
+// Returns to Browse, restoring the exact carousel position.
+function closePersonaDetail() {
+  document.getElementById('detail-panel').classList.add('hidden');
+  document.getElementById('carousel').classList.remove('hidden');
+  document.getElementById('dots').classList.remove('hidden');
+
+  // Restore scroll position synchronously (no animation so it feels instant)
+  const carousel = document.getElementById('carousel');
+  carousel.scrollLeft = currentCarouselIndex * window.innerWidth;
+
+  // Clear transient persona load — not activated, no state should linger
+  currentPersonaData = null;
+
+  window.scrollTo(0, 0);
+  console.log(`[Detail] ← Returned to Browse at carousel index ${currentCarouselIndex}`);
+}
+
+// Called ONLY from Detail's 激活面具 button.
+// This is the single authorised activation point.
+function activateFromDetail() {
+  if (!currentPersonaData) {
+    showError('人格数据未加载，请重新选择。');
+    return;
+  }
+
+  const cleanId = safeStr(currentPersonaData.id).toUpperCase();
+  const entry   = runtimePersonaRegistry.find(p => p.id === cleanId);
+  const color   = entry ? entry.color : '#00f2ff';
+
+  // ── Activate: set global selection + navigate to Config ─────
+  selectedPersona = cleanId;
+
+  const display = document.getElementById('active-persona-display');
+  display.innerText   = currentPersonaData.name;
+  display.style.color = color;
+
+  document.getElementById('detail-panel').classList.add('hidden');
+  document.getElementById('config-panel').classList.remove('hidden');
+  window.scrollTo(0, 0);
+
+  console.log(`[Detail] ✓ Activated: ${currentPersonaData.name} → Config`);
 }
 
 // ── SCHEMA-SAFE THEATER CONTENT EXTRACTOR ────────────────────
