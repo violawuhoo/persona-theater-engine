@@ -1,25 +1,36 @@
 # Database Architecture
 
-The database layer now separates seed documents, structured archetypes, persona instances, manifests, and schemas.
+The database layer is organized around a single-input persona workflow.
 
 ## Layout
 
-- `/database/docs/archetypes/` stores human-authored seed markdown. These files are authoritative inputs, not runtime payloads.
-- `/database/archetypes/` stores structured archetype JSON generated from seed files.
-- `/database/personas/` stores persona markdown sources and persona instance JSON.
-- `/database/manifests/` stores disk-derived registries for archetypes and personas.
-- `/database/schema/` stores JSON schemas for archetypes, personas, and generation contracts.
-- `/database/scripts/ingest_persona.py` is the only ingestion CLI and owns parsing, linking, validation, and manifest rebuilds.
+- `/database/personas/ARCHXX.md`
+  The only required authored input.
+- `/database/docs/archetypes/ARCHETYPE_XX_seed.md`
+  Generated semantic seed and the source of truth for the archetype.
+- `/database/archetypes/ARCHETYPE_XX.json`
+  Structured machine archetype generated from the seed.
+- `/database/personas/ARCHXX.json`
+  Structured machine persona generated from the persona markdown.
+- `/database/manifests/`
+  Rebuilt registries for actual archetype/persona files on disk.
+- `/database/schema/`
+  JSON schemas for archetypes, personas, and generation contracts.
+- `/database/scripts/ingest_persona.py`
+  The only ingestion CLI.
 
-## Core Model
+## Core model
 
-- Archetype: the seed-level model. It defines parameter ranges, invariant logic, generation boundaries, and drift constraints.
-- Persona: a realized instance of an archetype. It references `archetype_id`, stores concrete parameter values, and splits stable identity logic from softer expressive material.
-- Generation contract: the shared freedom model. It defines `locked_fields`, `soft_fields`, `expansion_zones`, and `forbidden_drift`.
+- Persona markdown is the authored source.
+- Seed markdown is the generalized archetype source.
+- Archetype JSON stores mother-model structure and parameter ranges.
+- Persona JSON stores instance realization and concrete parameter values.
+- Generation contracts define `locked_fields`, `soft_fields`, `expansion_zones`, and `forbidden_drift`.
 
-## Integrity Rules
+## Integrity rules
 
-- Every persona must reference an existing `archetype_id`.
-- Archetype ranges and persona realized values are stored separately.
-- Manifests are rebuilt from actual JSON files so stale registry entries cannot survive ingestion.
-- Schema validation runs after writes, preventing silent data loss or incompatible payload drift.
+- No persona can exist without a valid `archetype_id`.
+- Parameter ranges live only in archetypes.
+- Realized values live only in personas.
+- Manifests are rebuilt from disk to avoid stale or duplicate entries.
+- Validation runs after generation so missing fields and incompatible shapes are surfaced immediately.

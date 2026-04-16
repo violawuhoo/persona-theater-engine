@@ -2,53 +2,37 @@
 
 `ingest_persona.py` is the single database ingestion CLI for the archetype/persona system.
 
-## What it does
-
-- Parses authoritative archetype seed markdown when `--archetype-seed` is supplied.
-- Parses persona markdown into an archetype-linked persona instance.
-- Applies alias mapping for legacy section labels in persona markdown.
-- Preserves long-form text in structured fields instead of flattening into short strings.
-- Validates generated JSON against the database schemas in `/database/schema/`.
-- Rebuilds archetype and persona manifests from actual JSON files.
-- Prints diagnostics for missing fields, inferred fields, and mapping confidence.
-
-## Usage
-
-Generate the seed archetype and the `ARCH01` persona instance:
+## Standard usage
 
 ```bash
-python3 database/scripts/ingest_persona.py \
-  database/personas/ARCH01.md \
-  --archetype-seed database/docs/archetypes/ARCHETYPE_01_seed.md
+python3 database/scripts/ingest_persona.py database/personas/ARCHXX.md
 ```
 
-Persona-only ingest when the archetype already exists:
+That single command will:
 
-```bash
-python3 database/scripts/ingest_persona.py \
-  database/personas/ARCH01.md \
-  --archetype-id ARCHETYPE_01
-```
-
-Dry-run:
-
-```bash
-python3 database/scripts/ingest_persona.py \
-  database/personas/ARCH01.md \
-  --archetype-seed database/docs/archetypes/ARCHETYPE_01_seed.md \
-  --dry-run
-```
+1. parse `ARCHXX.md`
+2. generate `/database/docs/archetypes/ARCHETYPE_XX_seed.md`
+3. generate `/database/archetypes/ARCHETYPE_XX.json`
+4. generate `/database/personas/ARCHXX.json`
+5. rebuild manifests
+6. validate the database and print diagnostics
 
 ## Diagnostics
 
 The CLI reports:
 
-- `missing_fields`: schema-relevant fields still empty after parsing
-- `inferred_fields`: values derived from context rather than direct section matches
-- `mapping_confidence`: a 0-1 confidence score based on direct mappings vs inference/missing data
+- `missing_fields`
+- `inferred_fields`
+- `mapping_confidence`
+
+## Optional flags
+
+- `--dry-run` parses and validates without writing files
+- `--sync-git` performs best-effort `git pull --ff-only` before ingestion
+- `--archetype-seed` overrides the output path for the generated seed file
+- `--archetype-id` overrides the archetype id if needed
 
 ## Notes
 
-- The active structured database now lives in `/database/archetypes`, `/database/personas`, `/database/manifests`, and `/database/schema`.
-- Archetype seeds stay in `/database/docs/archetypes`.
-- Manifest contents are rebuilt from disk, so duplicate ids and stale entries are eliminated during ingestion.
+- The canonical seed structure is defined in `/database/docs/archetypes/archetype_seed_template.md`.
+- The standard input is the tagged persona protocol markdown used in the current database.

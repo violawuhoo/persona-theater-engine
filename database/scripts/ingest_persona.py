@@ -55,6 +55,7 @@ class RepoPaths:
     personas_dir: Path
     manifests_dir: Path
     schema_dir: Path
+    docs_archetypes_dir: Path
 
     @property
     def archetype_manifest(self) -> Path:
@@ -63,6 +64,10 @@ class RepoPaths:
     @property
     def persona_manifest(self) -> Path:
         return self.manifests_dir / "personas.manifest.json"
+
+    @property
+    def seed_template(self) -> Path:
+        return self.docs_archetypes_dir / "archetype_seed_template.md"
 
 
 @dataclass
@@ -130,6 +135,7 @@ def build_paths(root: Path) -> RepoPaths:
         personas_dir=root / "database" / "personas",
         manifests_dir=root / "database" / "manifests",
         schema_dir=root / "database" / "schema",
+        docs_archetypes_dir=root / "database" / "docs" / "archetypes",
     )
 
 
@@ -175,6 +181,158 @@ def markdown_to_text(path: Path) -> str:
     return raw
 
 
+def extract_first_tag(markdown: str, tags: List[str]) -> str:
+    for tag in tags:
+        value = extract_tag(markdown, tag)
+        if value:
+            return value
+    return ""
+
+
+def strip_known_prefix(value: str, prefixes: List[str]) -> str:
+    cleaned = sanitize_extracted_text(value)
+    for prefix in prefixes:
+        normalized_prefix = sanitize_extracted_text(prefix)
+        if cleaned.startswith(normalized_prefix):
+            return sanitize_extracted_text(cleaned[len(normalized_prefix):])
+    return cleaned
+
+
+def kebab_case(value: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
+    return normalized or "archetype"
+
+
+def persona_id_to_archetype_id(persona_id: str) -> str:
+    return persona_id.replace("ARCH", "ARCHETYPE_")
+
+
+def derive_seed_path(paths: RepoPaths, persona_id: str) -> Path:
+    return paths.docs_archetypes_dir / f"{persona_id_to_archetype_id(persona_id)}_seed.md"
+
+
+def build_parameter_range(value: float) -> Tuple[float, float]:
+    delta = 0.2 if abs(value) < 0.9 else 0.15
+    lower = max(-1.0, round(value - delta, 1))
+    upper = min(1.0, round(value + delta, 1))
+    return lower, upper
+
+
+def parameter_temperature_descriptors(values: Dict[str, float]) -> List[str]:
+    descriptors: List[str] = []
+    if values.get("E", 0.0) >= 0.6:
+        descriptors.append("高热外放")
+    elif values.get("E", 0.0) <= -0.6:
+        descriptors.append("低噪冷感")
+    if values.get("O", 0.0) >= 0.6:
+        descriptors.append("秩序驱动")
+    elif values.get("O", 0.0) <= -0.6:
+        descriptors.append("即兴驱动")
+    if values.get("R", 0.0) >= 0.6:
+        descriptors.append("高仪式感")
+    elif values.get("R", 0.0) <= -0.6:
+        descriptors.append("反结构活性")
+    if values.get("B", 0.0) >= 0.6:
+        descriptors.append("高边界")
+    elif values.get("B", 0.0) <= -0.6:
+        descriptors.append("低边界渗透")
+    return descriptors or ["中性温度"]
+
+
+def pattern_from_dialogue(dialogue: str) -> str:
+    match = re.match(r"^【(.+?)】[:：]\s*(.+)$", dialogue)
+    if not match:
+        return "以稳定母体语气表达，不依赖固定句子。"
+    label = match.group(1)
+    if "初次见面" in label:
+        return "初次见面时先主动定义气氛和关系位置，抢先建立场域主导。"
+    if "拒绝" in label:
+        return "拒绝时不做冗长解释，而是用风格化否决重新掌握选择权。"
+    if "对抗" in label or "遭遇" in label:
+        return "面对对抗时优先命名对方状态或重构冲突节奏，而不是被动接招。"
+    if "好感" in label:
+        return "接收好感时顺势承认吸引力，但保留解释权和定义权。"
+    if "结束" in label or "任务" in label:
+        return "结束互动时由自己宣布退场，并留下可延续的气场余韵。"
+    return f"{label}场景下保持统一表达姿态，由自己定义互动节奏。"
+
+
+def infer_symbolic_objects(sensory_profile: str) -> str:
+    for pattern in [r"随身携带(.+?)(?:。|；|$)", r"随身带着(.+?)(?:。|；|$)"]:
+        match = re.search(pattern, sensory_profile)
+        if match:
+            return sanitize_extracted_text(match.group(1))
+    return "由感官标签延伸出的象征性物件"
+
+
+def parse_tagged_forbid_example(value: str) -> List[Dict[str, str]]:
+    cleaned = sanitize_extracted_text(value)
+    entries: List[Dict[str, str]] = []
+    first = re.match(r"(禁止[^：:]+)[:：](.+)", cleaned)
+    if first:
+        entries.append({"action": sanitize_extracted_text(first.group(1)), "rule": sanitize_extracted_text(first.group(2))})
+    tail = re.split(r"[。；]", cleaned, maxsplit=1)[-1] if re.search(r"[。；]", cleaned) else cleaned
+    for extra in re.findall(r"(禁止[^、，。；:：]+)", tail):
+        if entries and sanitize_extracted_text(extra) == entries[0]["action"]:
+            continue
+        entries.append({"action": sanitize_extracted_text(extra), "rule": "绝不进入与母体定位相反的退缩或解释状态。"})
+    return entries
+
+
+def extract_tagged_source(markdown: str, source_path: Path) -> Dict[str, Any]:
+    title = parse_tagged_title(markdown)
+    persona_id = title.get("id") or derive_persona_id(source_path, markdown)
+    dialogues = []
+    for idx in range(1, 6):
+        dialogues.append(extract_first_tag(markdown, [f"dialogue_{idx:02d}", f"line_{idx:02d}"]))
+    dialogues = [line for line in dialogues if line]
+    taboos = parse_tagged_taboos(markdown)
+    if not taboos:
+        taboos = parse_tagged_forbid_example(extract_first_tag(markdown, ["forbid_example", "forbid_rules"]))
+
+    return {
+        "persona_id": persona_id,
+        "name_cn": title.get("name") or persona_id,
+        "name_en": title.get("subtitle") or PERSONA_TITLE_ALIASES.get(persona_id, persona_id),
+        "core_slogan": strip_known_prefix(extract_first_tag(markdown, ["slogan", "core_slogan"]), ["核心 Slogan:", "核心 Slogan：", "Slogan:", "Slogan："]),
+        "psych_suggest": strip_known_prefix(extract_first_tag(markdown, ["hint_psych", "psych_suggest"]), ["心理暗示:", "心理暗示："]),
+        "module_title": extract_first_tag(markdown, ["module_01_title", "module_title"]),
+        "parameters": parse_tagged_params(markdown),
+        "references": parse_tagged_references(markdown),
+        "logic": {
+            "core_motivation": strip_known_prefix(extract_first_tag(markdown, ["item_motive", "logic_motive"]), ["核心动机:", "核心动机："]),
+            "power_logic": strip_known_prefix(extract_first_tag(markdown, ["item_power", "logic_power"]), ["权力观:", "权力观："]),
+            "social_logic": strip_known_prefix(extract_first_tag(markdown, ["item_social_view", "logic_social"]), ["社交观:", "社交观："]),
+            "emotion_logic": strip_known_prefix(extract_first_tag(markdown, ["item_emotion_view", "logic_emotion"]), ["情感观:", "情感观："]),
+            "security_anchor": strip_known_prefix(extract_first_tag(markdown, ["item_safety", "logic_safe"]), ["安全感:", "安全感："]),
+            "blind_spot": strip_known_prefix(extract_first_tag(markdown, ["item_cognitive_blind", "logic_blind"]), ["认知盲区:", "认知盲区："]),
+            "conflict_logic": strip_known_prefix(extract_first_tag(markdown, ["item_conflict_response", "logic_conflict"]), ["冲突响应:", "冲突响应："]),
+            "repair_logic": strip_known_prefix(extract_first_tag(markdown, ["item_mental_repair", "logic_repair"]), ["心灵修复:", "心灵修复："]),
+        },
+        "behavioral_model": {
+            "visual_style": strip_known_prefix(extract_first_tag(markdown, ["action_vision", "sop_vision"]), ["视觉指令:", "视觉指令："]),
+            "physical_style": strip_known_prefix(extract_first_tag(markdown, ["action_physical", "sop_physical"]), ["物理指令:", "物理指令："]),
+            "verbal_style": strip_known_prefix(extract_first_tag(markdown, ["action_language", "sop_language"]), ["语言指令:", "语言指令："]),
+        },
+        "expression_rules": {
+            "dialogues": dialogues,
+            "taboos": taboos,
+        },
+        "spatial_algorithms": {
+            "crowded": strip_known_prefix(extract_first_tag(markdown, ["space_crowded"]), ["人多场合 (Crowded):", "人多场合 (Crowded)："]),
+            "one_on_one": strip_known_prefix(extract_first_tag(markdown, ["space_one2one", "space_alone"]), ["人少场合 (One-on-One):", "人少场合 (One-on-One)："]),
+        },
+        "social_layers": {
+            "outer_layer": strip_known_prefix(extract_first_tag(markdown, ["social_outer"]), ["外层逻辑 (Strangers):", "外层逻辑 (Strangers)："]),
+            "inner_layer": strip_known_prefix(extract_first_tag(markdown, ["social_inner"]), ["内里逻辑 (Intimates):", "内里逻辑 (Intimates)："]),
+        },
+        "details": {
+            "sensory_profile": strip_known_prefix(extract_first_tag(markdown, ["sense_label", "sense_tag"]), ["感官标签:", "感官标签："]),
+            "breakdown_repair": strip_known_prefix(extract_first_tag(markdown, ["error_repair", "roll_repair"]), ["翻车补救:", "翻车补救："]),
+        },
+    }
+
+
 def is_tagged_persona(markdown: str) -> bool:
     return "<root>" in markdown and "<module_" in markdown
 
@@ -187,7 +345,7 @@ def extract_tag(markdown: str, tag: str) -> str:
 
 
 def parse_tagged_title(markdown: str) -> Dict[str, str]:
-    title = extract_tag(markdown, "title")
+    title = extract_first_tag(markdown, ["title", "arch_code"])
     if not title:
         return {}
     match = re.match(r"ARCH\s*[-_ ]?\s*(\d{1,2})\s*[:：]\s*(.*?)\s*\|\s*(.+)$", title, flags=re.I)
@@ -202,7 +360,7 @@ def parse_tagged_title(markdown: str) -> Dict[str, str]:
 
 
 def parse_tagged_params(markdown: str) -> Dict[str, Dict[str, Any]]:
-    raw = extract_tag(markdown, "param_array")
+    raw = extract_first_tag(markdown, ["param_array", "dyn_param"])
     body_match = re.search(r"\{(.*?)\}", raw)
     if not body_match:
         return {}
@@ -226,9 +384,9 @@ def parse_tagged_params(markdown: str) -> Dict[str, Dict[str, Any]]:
 
 
 def parse_tagged_references(markdown: str) -> List[Dict[str, str]]:
-    raw = extract_tag(markdown, "reference_char")
-    if ":" in raw:
-        _, raw = raw.split(":", 1)
+    raw = extract_first_tag(markdown, ["reference_char", "ref_character"])
+    if re.search(r"[:：]", raw):
+        raw = re.split(r"[:：]", raw, maxsplit=1)[1]
     refs = []
     for part in re.split(r"[、,，]", raw):
         name = sanitize_extracted_text(part)
@@ -240,7 +398,7 @@ def parse_tagged_references(markdown: str) -> List[Dict[str, str]]:
 def parse_tagged_dialogues(markdown: str) -> List[str]:
     lines = []
     for index in range(1, 6):
-        value = extract_tag(markdown, f"dialogue_{index:02d}")
+        value = extract_first_tag(markdown, [f"dialogue_{index:02d}", f"line_{index:02d}"])
         if value:
             lines.append(value)
     return lines
@@ -249,7 +407,7 @@ def parse_tagged_dialogues(markdown: str) -> List[str]:
 def parse_tagged_taboos(markdown: str) -> List[Dict[str, str]]:
     taboos = []
     for index in range(1, 6):
-        value = extract_tag(markdown, f"forbid_{index:02d}")
+        value = extract_first_tag(markdown, [f"forbid_{index:02d}"])
         if not value:
             continue
         if "：" in value:
@@ -263,43 +421,43 @@ def parse_tagged_taboos(markdown: str) -> List[Dict[str, str]]:
 
 
 def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, report: DiagnosticReport) -> Dict[str, Any]:
-    title_meta = parse_tagged_title(markdown)
-    persona_id = title_meta.get("id") or derive_persona_id(source_path, markdown)
-    primary = title_meta.get("name") or persona_id
-    subtitle = title_meta.get("subtitle") or PERSONA_TITLE_ALIASES.get(persona_id, primary)
-    slogan = extract_tag(markdown, "slogan")
-    hint_psych = extract_tag(markdown, "hint_psych")
-    source_classification = extract_tag(markdown, "module_title") or "canonical_tagged_markdown"
+    source = extract_tagged_source(markdown, source_path)
+    persona_id = source["persona_id"]
+    primary = source["name_cn"]
+    subtitle = source["name_en"]
+    slogan = source["core_slogan"]
+    hint_psych = source["psych_suggest"]
+    source_classification = source["module_title"] or "canonical_tagged_markdown"
 
     scene_behavior = {
         "small_scale": {
             "label": "人少场合 (One-on-One)",
-            "strategy": extract_tag(markdown, "space_one2one"),
-            "actions": extract_tag(markdown, "action_vision"),
-            "logic": extract_tag(markdown, "item_social_view"),
+            "strategy": source["spatial_algorithms"]["one_on_one"],
+            "actions": source["behavioral_model"]["visual_style"],
+            "logic": source["logic"]["social_logic"],
         },
         "large_scale": {
             "label": "人多场合 (Crowded)",
-            "strategy": extract_tag(markdown, "space_crowded"),
-            "actions": extract_tag(markdown, "action_physical"),
-            "logic": extract_tag(markdown, "item_conflict_response"),
+            "strategy": source["spatial_algorithms"]["crowded"],
+            "actions": source["behavioral_model"]["physical_style"],
+            "logic": source["logic"]["conflict_logic"],
         },
     }
 
     interaction_matrix = [
         {
             "input_signal": "遭遇攻击",
-            "interpretation": extract_tag(markdown, "item_cognitive_blind"),
-            "response_adjustment": extract_tag(markdown, "dialogue_03"),
+            "interpretation": source["logic"]["blind_spot"],
+            "response_adjustment": source["expression_rules"]["dialogues"][2] if len(source["expression_rules"]["dialogues"]) > 2 else "",
         },
         {
             "input_signal": "接收好感",
-            "interpretation": extract_tag(markdown, "item_conflict_response"),
-            "response_adjustment": extract_tag(markdown, "dialogue_04"),
+            "interpretation": source["logic"]["conflict_logic"],
+            "response_adjustment": source["expression_rules"]["dialogues"][3] if len(source["expression_rules"]["dialogues"]) > 3 else "",
         },
         {
             "input_signal": "对方不回应",
-            "interpretation": extract_tag(markdown, "forbid_02"),
+            "interpretation": source["expression_rules"]["taboos"][1]["rule"] if len(source["expression_rules"]["taboos"]) > 1 else "",
             "response_adjustment": "保持静默直到对方重新进入你的秩序。",
         },
     ]
@@ -307,31 +465,31 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
     negative_feedback = {
         "conflict_response": {
             "label": "冲突响应",
-            "cognitive_filter": extract_tag(markdown, "item_cognitive_blind"),
-            "response_actions": extract_tag(markdown, "item_conflict_response"),
-            "breaker_line": extract_tag(markdown, "dialogue_03"),
-            "logic": extract_tag(markdown, "item_power"),
+            "cognitive_filter": source["logic"]["blind_spot"],
+            "response_actions": source["logic"]["conflict_logic"],
+            "breaker_line": source["expression_rules"]["dialogues"][2] if len(source["expression_rules"]["dialogues"]) > 2 else "",
+            "logic": source["logic"]["power_logic"],
         }
     }
     positive_feedback = {
         "affection_acceptance": {
             "label": "接收好感",
             "cognitive_filter": "对赞赏先做客观性评估，再决定是否接受。",
-            "response_actions": extract_tag(markdown, "item_conflict_response"),
-            "breaker_line": extract_tag(markdown, "dialogue_04"),
-            "logic": extract_tag(markdown, "item_emotion_view"),
+            "response_actions": source["logic"]["conflict_logic"],
+            "breaker_line": source["expression_rules"]["dialogues"][3] if len(source["expression_rules"]["dialogues"]) > 3 else "",
+            "logic": source["logic"]["emotion_logic"],
         }
     }
     extreme_pressure = {
         "label": "系统维护",
-        "cognitive_filter": extract_tag(markdown, "error_repair"),
-        "response_actions": extract_tag(markdown, "item_mental_repair"),
-        "breaker_line": extract_tag(markdown, "dialogue_05"),
+        "cognitive_filter": source["details"]["breakdown_repair"],
+        "response_actions": source["logic"]["repair_logic"],
+        "breaker_line": source["expression_rules"]["dialogues"][4] if len(source["expression_rules"]["dialogues"]) > 4 else "",
         "logic": "当系统偏离低熵状态时，立即切断交互并执行维护。",
     }
 
-    signature_lines = parse_tagged_dialogues(markdown)
-    realized_parameters = parse_tagged_params(markdown)
+    signature_lines = source["expression_rules"]["dialogues"]
+    realized_parameters = source["parameters"]
 
     persona = {
         "id": persona_id,
@@ -351,32 +509,32 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
             },
             "core_directive": slogan,
             "core_logic": {
-                "social_essence": extract_tag(markdown, "item_social_view"),
+                "social_essence": source["logic"]["social_logic"],
                 "self_positioning": hint_psych,
-                "power_source": extract_tag(markdown, "item_power"),
+                "power_source": source["logic"]["power_logic"],
             },
             "cognitive_filters": {
-                "noise_filtering": extract_tag(markdown, "item_cognitive_blind"),
-                "downward_compatibility": extract_tag(markdown, "item_conflict_response"),
-                "information_granularity": extract_tag(markdown, "item_motive"),
+                "noise_filtering": source["logic"]["blind_spot"],
+                "downward_compatibility": source["logic"]["conflict_logic"],
+                "information_granularity": source["logic"]["core_motivation"],
             },
             "embodiment": {
-                "center_of_gravity": extract_tag(markdown, "action_physical"),
+                "center_of_gravity": source["behavioral_model"]["physical_style"],
                 "gaze_protocol": {
-                    "focus_rule": extract_tag(markdown, "action_vision"),
-                    "movement_rule": extract_tag(markdown, "action_physical"),
+                    "focus_rule": source["behavioral_model"]["visual_style"],
+                    "movement_rule": source["behavioral_model"]["physical_style"],
                 },
                 "breathing_protocol": "保持算法式平稳，不因社交波动而改变节律。",
-                "hand_constraints": extract_tag(markdown, "action_physical"),
+                "hand_constraints": source["behavioral_model"]["physical_style"],
                 "latency_buffer": {
                     "delay_seconds": "算法式稳定延迟",
-                    "rule": extract_tag(markdown, "action_language"),
+                    "rule": source["behavioral_model"]["verbal_style"],
                 },
-                "spatial_sovereignty": extract_tag(markdown, "space_crowded"),
-                "negative_buffer": extract_tag(markdown, "error_repair"),
+                "spatial_sovereignty": source["spatial_algorithms"]["crowded"],
+                "negative_buffer": source["details"]["breakdown_repair"],
             },
-            "taboos": parse_tagged_taboos(markdown),
-            "reference_models": parse_tagged_references(markdown),
+            "taboos": source["expression_rules"]["taboos"],
+            "reference_models": source["references"],
         },
         "soft_fields": {
             "scene_behavior": scene_behavior,
@@ -409,6 +567,207 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
             report.missing_fields.append(required_path)
     report.mapping_confidence = max(0.0, 1 - (0.06 * len(report.missing_fields)) - (0.02 * len(report.inferred_fields)))
     return deep_clean_strings(persona)
+
+
+def synthesize_seed_markdown(markdown: str, source_path: Path, template_text: str, report: DiagnosticReport) -> Tuple[str, str]:
+    if not is_tagged_persona(markdown):
+        raise ValueError("Single-input seed generation currently requires canonical tagged persona markdown.")
+
+    source = extract_tagged_source(markdown, source_path)
+    persona_id = source["persona_id"]
+    archetype_id = persona_id_to_archetype_id(persona_id)
+    param_values = {key: payload["value"] for key, payload in source["parameters"].items()}
+    if not param_values:
+        report.inferred_fields.extend(["seed.parameters.E", "seed.parameters.O", "seed.parameters.R", "seed.parameters.B"])
+        param_values = {"E": 0.0, "O": 0.0, "R": 0.0, "B": 0.0}
+
+    descriptors = parameter_temperature_descriptors(param_values)
+    thesis = f"一种以{'、'.join(descriptors[:3])}为核心的人格母体。"
+    positioning = (
+        f"其以{source['logic']['power_logic'] or '独特的权力逻辑'}为支配方式，"
+        f"并以{source['logic']['social_logic'] or '清晰的社交算法'}塑造场域影响，而不是依赖单次实例表现。"
+    )
+    core_temperature = " / ".join(descriptors)
+
+    core_traits = descriptors[:]
+    if source["logic"]["conflict_logic"]:
+        core_traits.append("强反应场域控制")
+    if source["behavioral_model"]["verbal_style"]:
+        core_traits.append("稳定表达风格")
+    core_traits = core_traits[:5]
+
+    parameter_space_lines = []
+    for key in ["E", "O", "R", "B"]:
+        lower, upper = build_parameter_range(param_values.get(key, 0.0))
+        parameter_space_lines.append(f"{key}: [{lower:.1f}, {upper:.1f}]")
+
+    canonical_expression_mode = (
+        f"以{source['behavioral_model']['verbal_style'] or '稳定语气'}为基础，"
+        "通过固定的人设张力和命名权来统一表达，而不是依赖逐句复用。"
+    )
+    signature_patterns = source["expression_rules"]["dialogues"] or [
+        "初次见面时先建立气氛主导。",
+        "拒绝时不进入解释模式。",
+        "对抗时先重构对方状态。",
+        "接收好感时保留定义权。",
+        "结束互动时由自己宣布退场。",
+    ]
+    signature_patterns = [pattern_from_dialogue(line) for line in signature_patterns[:5]]
+
+    taboo_actions = [item["action"] for item in source["expression_rules"]["taboos"]]
+    must_have = core_traits[:3] + [
+        "稳定的母体逻辑",
+        "清晰的空间策略",
+    ]
+    must_not_have = taboo_actions[:3] if taboo_actions else ["失去母体边界", "失去表达风格", "失去结构稳定性"]
+    forbidden_drift = [f"不能漂移成{action.replace('禁止', '')}型人格" for action in taboo_actions[:3]]
+    if not forbidden_drift:
+        forbidden_drift = [
+            "不能漂移成与当前母体温度相反的人格",
+            "不能漂移成失去场域算法的人格",
+            "不能漂移成低辨识度的中性壳层",
+        ]
+
+    details = source["details"]
+    summary = (
+        f"该 archetype 允许在台词、感官细节和场景发挥上变化，"
+        f"但本质上始终保持{'、'.join(descriptors[:3])}的母体结构。"
+    )
+
+    template_marker = "# ARCHETYPE_XX"
+    if template_marker not in template_text:
+        report.inferred_fields.append("seed.template_structure")
+
+    seed_markdown = "\n".join(
+        [
+            f"# {archetype_id} - {source['name_cn']} ({source['name_en']})",
+            "",
+            "## [IDENTITY]",
+            f"id: {archetype_id}",
+            f"slug: {kebab_case(source['name_en'])}",
+            f"name_cn: {source['name_cn']}",
+            f"name_en: {source['name_en']}",
+            "",
+            "## [SOURCE]",
+            f"derived_from: {persona_id}",
+            "source_template: ARCH persona.md",
+            "",
+            "## [POSITIONING]",
+            thesis,
+            positioning,
+            "",
+            "## [CORE_TEMPERATURE]",
+            core_temperature,
+            "",
+            "## [CORE_TRAITS]",
+            *[f"- {item}" for item in core_traits],
+            "",
+            "## [PARAMETERS]",
+            *parameter_space_lines,
+            "",
+            "## [CORE_LOGIC]",
+            "",
+            "### core_motivation",
+            source["logic"]["core_motivation"],
+            "",
+            "### power_logic",
+            source["logic"]["power_logic"],
+            "",
+            "### social_logic",
+            source["logic"]["social_logic"],
+            "",
+            "### emotion_logic",
+            source["logic"]["emotion_logic"],
+            "",
+            "### security_anchor",
+            source["logic"]["security_anchor"],
+            "",
+            "### blind_spot",
+            source["logic"]["blind_spot"],
+            "",
+            "### conflict_logic",
+            source["logic"]["conflict_logic"],
+            "",
+            "### repair_logic",
+            source["logic"]["repair_logic"],
+            "",
+            "## [BEHAVIORAL_MODEL]",
+            "",
+            "### visual_style",
+            source["behavioral_model"]["visual_style"],
+            "",
+            "### physical_style",
+            source["behavioral_model"]["physical_style"],
+            "",
+            "### verbal_style",
+            source["behavioral_model"]["verbal_style"],
+            "",
+            "## [EXPRESSION_RULES]",
+            "",
+            "### canonical_expression_mode",
+            canonical_expression_mode,
+            "",
+            "### signature_line_patterns",
+            *[f"- {item}" for item in signature_patterns],
+            "",
+            "## [MUST_HAVE]",
+            *[f"- {item}" for item in must_have],
+            "",
+            "## [MUST_NOT_HAVE]",
+            *[f"- {item}" for item in must_not_have],
+            "",
+            "## [FORBIDDEN_DRIFT]",
+            *[f"- {item}" for item in forbidden_drift],
+            "",
+            "## [SPATIAL_ALGORITHMS]",
+            "",
+            "### crowded",
+            source["spatial_algorithms"]["crowded"],
+            "",
+            "### one_on_one",
+            source["spatial_algorithms"]["one_on_one"],
+            "",
+            "## [SOCIAL_LAYERS]",
+            "",
+            "### outer_layer",
+            source["social_layers"]["outer_layer"],
+            "",
+            "### inner_layer",
+            source["social_layers"]["inner_layer"],
+            "",
+            "## [DETAILS]",
+            "",
+            "### sensory_profile",
+            details["sensory_profile"],
+            "",
+            "### symbolic_objects",
+            infer_symbolic_objects(details["sensory_profile"]),
+            "",
+            "### breakdown_repair",
+            details["breakdown_repair"],
+            "",
+            "## [GENERATION_FREEDOM]",
+            "",
+            "### allowed_to_vary",
+            "- 台词具体措辞",
+            "- 感官与道具细节",
+            "- 场景化发挥方式",
+            "- 互动节奏的具体编排",
+            "",
+            "### must_remain_stable",
+            *[f"- {item}" for item in core_traits[:4]],
+            "- 核心权力逻辑",
+            "- 核心社交算法",
+            "",
+            "### forbidden_drift",
+            *[f"- {item}" for item in forbidden_drift],
+            "",
+            "## [ARCHETYPE_SUMMARY]",
+            summary,
+            "",
+        ]
+    )
+    return seed_markdown, archetype_id
 
 
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
@@ -529,6 +888,7 @@ def make_generation_contract_for_archetype(seed: Dict[str, Any]) -> Dict[str, An
     return {
         "locked_fields": [
             {"field": "positioning", "reason": "The archetype thesis defines the operating worldview."},
+            {"field": "core_temperature", "reason": "Core temperature anchors the mother-model's affective register."},
             {"field": "core_traits", "reason": "Core traits anchor recognizability across variants."},
             {"field": "parameter_space", "reason": "Parameter ranges define the valid variation envelope."},
             {"field": "core_logic", "reason": "Motivation, power logic, and social logic cannot drift."},
@@ -536,26 +896,31 @@ def make_generation_contract_for_archetype(seed: Dict[str, Any]) -> Dict[str, An
             {"field": "constraints.must_not_have", "reason": "Must-not-have conditions protect against inversion."},
         ],
         "soft_fields": [
-            {"field": "expression_style", "reason": "Style can be re-expressed while preserving the archetype logic."},
-            {"field": "field_effect", "reason": "Field effects may emerge through different scenes and wording."},
-            {"field": "inner_outer_model", "reason": "Outer and inner presentation can be elaborated without changing the core."},
+            {"field": "behavioral_model", "reason": "Behavioral style can be re-expressed while preserving the archetype logic."},
+            {"field": "expression_rules", "reason": "Line patterns can vary without changing the mother-model."},
+            {"field": "details", "reason": "Sensory and symbolic details may elaborate the same archetype differently."},
+            {"field": "social_layers", "reason": "Outer and inner presentation can be elaborated without changing the core."},
         ],
         "expansion_zones": [
             {"zone": item, "guidance": "Allowed variation defined by the authoritative seed."}
             for item in seed["generation_freedom"]["allowed_to_vary"]
         ],
-        "forbidden_drift": list(seed["constraints"]["forbidden_drift"]),
+        "forbidden_drift": list(seed["generation_freedom"].get("forbidden_drift") or seed["constraints"]["forbidden_drift"]),
     }
 
 
 def build_archetype(seed_text: str, seed_path: Path, report: DiagnosticReport) -> Dict[str, Any]:
     sections = parse_seed_sections(seed_text)
     identity = parse_seed_key_values(sections.get("IDENTITY", ""))
+    source_profile = parse_seed_key_values(sections.get("SOURCE", ""))
     positioning = extract_positioning(sections.get("POSITIONING", ""))
+    behavioral_model = parse_seed_subsections(sections.get("BEHAVIORAL_MODEL", ""))
+    expression_rules = parse_seed_subsection_lists(sections.get("EXPRESSION_RULES", ""))
+    spatial_algorithms = parse_seed_subsections(sections.get("SPATIAL_ALGORITHMS", ""))
+    social_layers = parse_seed_subsections(sections.get("SOCIAL_LAYERS", ""))
+    details = parse_seed_subsections(sections.get("DETAILS", ""))
     core_logic = parse_seed_subsections(sections.get("CORE_LOGIC", ""))
     generation_freedom = parse_seed_subsection_lists(sections.get("GENERATION_FREEDOM", ""))
-    expression_style = parse_seed_subsection_lists(sections.get("EXPRESSION_STYLE", ""))
-    inner_outer = parse_seed_subsections(sections.get("INNER_OUTER_MODEL", ""))
 
     archetype = {
         "id": identity.get("id", ""),
@@ -568,7 +933,12 @@ def build_archetype(seed_text: str, seed_path: Path, report: DiagnosticReport) -
             "markdown_path": str(seed_path.relative_to(seed_path.parents[3])),
             "authority": "authoritative seed definition",
         },
+        "source_profile": {
+            "derived_from": source_profile.get("derived_from", ""),
+            "source_template": source_profile.get("source_template", ""),
+        },
         "positioning": positioning,
+        "core_temperature": sanitize_extracted_text(sections.get("CORE_TEMPERATURE", "")),
         "core_traits": parse_seed_list(sections.get("CORE_TRAITS", "")),
         "parameter_space": parse_parameter_space(sections.get("PARAMETERS", "")),
         "core_logic": {
@@ -577,33 +947,53 @@ def build_archetype(seed_text: str, seed_path: Path, report: DiagnosticReport) -
             "social_logic": core_logic.get("social_logic", ""),
             "emotion_logic": core_logic.get("emotion_logic", ""),
             "security_anchor": core_logic.get("security_anchor", ""),
-            "relationship_model": core_logic.get("relationship_model", ""),
+            "blind_spot": core_logic.get("blind_spot", ""),
+            "conflict_logic": core_logic.get("conflict_logic", ""),
+            "repair_logic": core_logic.get("repair_logic", ""),
+        },
+        "behavioral_model": {
+            "visual_style": behavioral_model.get("visual_style", ""),
+            "physical_style": behavioral_model.get("physical_style", ""),
+            "verbal_style": behavioral_model.get("verbal_style", ""),
+        },
+        "expression_rules": {
+            "canonical_expression_mode": sanitize_extracted_text(
+                sections.get("EXPRESSION_RULES", "").split("### signature_line_patterns")[0].split("### canonical_expression_mode")[-1]
+            ),
+            "signature_line_patterns": expression_rules.get("signature_line_patterns", []),
         },
         "constraints": {
             "must_have": parse_seed_list(sections.get("MUST_HAVE", "")),
             "must_not_have": parse_seed_list(sections.get("MUST_NOT_HAVE", "")),
             "forbidden_drift": parse_seed_list(sections.get("FORBIDDEN_DRIFT", "")),
         },
+        "spatial_algorithms": {
+            "crowded": spatial_algorithms.get("crowded", ""),
+            "one_on_one": spatial_algorithms.get("one_on_one", ""),
+        },
+        "social_layers": {
+            "outer_layer": social_layers.get("outer_layer", ""),
+            "inner_layer": social_layers.get("inner_layer", ""),
+        },
+        "details": {
+            "sensory_profile": details.get("sensory_profile", ""),
+            "symbolic_objects": details.get("symbolic_objects", ""),
+            "breakdown_repair": details.get("breakdown_repair", ""),
+        },
         "generation_freedom": {
             "allowed_to_vary": generation_freedom.get("allowed_to_vary", []),
             "must_remain_stable": generation_freedom.get("must_remain_stable", []),
+            "forbidden_drift": generation_freedom.get("forbidden_drift", []),
         },
-        "expression_style": {
-            "verbal": expression_style.get("verbal", []),
-            "physical": expression_style.get("physical", []),
-        },
-        "field_effect": parse_seed_list(sections.get("FIELD_EFFECT", "")),
-        "inner_outer_model": {
-            "outer_layer": inner_outer.get("outer_layer", ""),
-            "inner_layer": inner_outer.get("inner_layer", ""),
-        },
-        "summary": coalesce_text(sections.get("SUMMARY", "").replace("\n", " ")),
+        "summary": coalesce_text(
+            (sections.get("ARCHETYPE_SUMMARY", "") or sections.get("SUMMARY", "")).replace("\n", " ")
+        ),
     }
     archetype["generation_contract"] = make_generation_contract_for_archetype(archetype)
 
     report.missing_fields.extend(
         key
-        for key in ["id", "slug", "name.cn", "name.en", "positioning.thesis", "summary"]
+        for key in ["id", "slug", "name.cn", "name.en", "positioning.thesis", "core_temperature", "summary"]
         if not _dig(archetype, key)
     )
     report.mapping_confidence = max(0.0, 1 - (0.08 * len(report.missing_fields)))
@@ -615,15 +1005,20 @@ def build_archetype(seed_text: str, seed_path: Path, report: DiagnosticReport) -
             "slug",
             "name",
             "seed_source",
+            "source_profile",
             "positioning",
+            "core_temperature",
             "core_traits",
             "parameter_space",
             "core_logic",
+            "behavioral_model",
+            "expression_rules",
             "constraints",
+            "spatial_algorithms",
+            "social_layers",
+            "details",
+            "generation_freedom",
             "generation_contract",
-            "expression_style",
-            "field_effect",
-            "inner_outer_model",
             "summary",
         ]
     }
@@ -1282,18 +1677,26 @@ def ingest(
     archetype_seed: Optional[Path] = None,
     archetype_id: Optional[str] = None,
 ) -> Tuple[str, Optional[str]]:
-    archetype_payload: Optional[Dict[str, Any]] = None
-    archetype_report = DiagnosticReport()
-    if archetype_seed:
-        seed_text = markdown_to_text(archetype_seed)
-        archetype_payload = build_archetype(seed_text, archetype_seed, archetype_report)
-        if not dry_run:
-            write_json(paths.archetypes_dir / f"{archetype_payload['id']}.json", archetype_payload)
-        print_report("archetype", archetype_report)
-
     markdown = markdown_to_text(source_md)
+    persona_id = derive_persona_id(source_md, markdown)
+    seed_output_path = archetype_seed.resolve() if archetype_seed else derive_seed_path(paths, persona_id)
+    template_text = markdown_to_text(paths.seed_template)
+
+    seed_report = DiagnosticReport()
+    generated_seed_markdown, generated_archetype_id = synthesize_seed_markdown(markdown, source_md, template_text, seed_report)
+    if not dry_run:
+        paths.docs_archetypes_dir.mkdir(parents=True, exist_ok=True)
+        seed_output_path.write_text(generated_seed_markdown, encoding="utf-8")
+    print_report("seed", seed_report)
+
+    archetype_report = DiagnosticReport()
+    archetype_payload = build_archetype(generated_seed_markdown, seed_output_path, archetype_report)
+    if not dry_run:
+        write_json(paths.archetypes_dir / f"{archetype_payload['id']}.json", archetype_payload)
+    print_report("archetype", archetype_report)
+
     title_meta = parse_title_metadata(markdown)
-    resolved_archetype_id = resolve_archetype_id(archetype_id, archetype_payload, title_meta, paths)
+    resolved_archetype_id = archetype_id or generated_archetype_id or resolve_archetype_id(None, archetype_payload, title_meta, paths)
     if not resolved_archetype_id:
         raise ValueError("Unable to resolve archetype_id for persona ingestion.")
 
@@ -1310,13 +1713,13 @@ def ingest(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Ingest persona markdown into the archetype/persona database model.")
+    parser = argparse.ArgumentParser(description="Ingest persona markdown into the single-input archetype/persona database model.")
     parser.add_argument("source", type=Path, help="Persona markdown source path")
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--sync-git", action="store_true", help="Best-effort pull --ff-only when tracking origin")
     parser.add_argument("--dry-run", action="store_true", help="Parse and validate without writing files")
-    parser.add_argument("--archetype-seed", type=Path, help="Optional archetype seed markdown to ingest first")
-    parser.add_argument("--archetype-id", type=str, help="Explicit archetype id when no seed file is supplied")
+    parser.add_argument("--archetype-seed", type=Path, help="Optional override path for the generated archetype seed markdown")
+    parser.add_argument("--archetype-id", type=str, help="Optional explicit archetype id override")
     args = parser.parse_args()
 
     paths = build_paths(args.repo_root.resolve())

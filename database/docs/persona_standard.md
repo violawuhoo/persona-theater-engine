@@ -1,6 +1,6 @@
 # Persona Standard
 
-A persona is a concrete instance of an archetype.
+A persona is the concrete realized instance generated from `/database/personas/ARCHXX.md`.
 
 ## Required structure
 
@@ -13,15 +13,26 @@ A persona is a concrete instance of an archetype.
 - `realized_parameters`
 - `generation_contract`
 
+## Role in the workflow
+
+- The persona markdown is the only required authored input.
+- The persona JSON is generated from that markdown after the archetype seed and archetype JSON are generated.
+- Every persona must reference a valid `archetype_id`.
+
 ## Stable vs soft fields
 
-- `stable_fields` stores identity, premise, core logic, cognitive filters, embodiment rules, taboos, and reference models.
-- `soft_fields` stores scene behavior, response protocols, interaction matrices, and signature-line material.
-- `realized_parameters` stores concrete values that sit inside the parent archetype parameter ranges.
+- `stable_fields` stores identity, core directive, stable logic, embodiment rules, taboos, and reference models.
+- `soft_fields` stores scene behavior, interaction mappings, response protocols, and signature lines.
+- `realized_parameters` stores concrete values. The matching ranges live in the archetype.
 
-## Persona constraints
+## Authoring expectation
 
-- A persona cannot exist without a valid archetype reference.
-- Stable fields should remain instance-defining and hard to drift.
-- Soft fields can expand in wording, detail, and staging as long as the generation contract is honored.
-- Persona-specific taboos should align with, not contradict, the parent archetype forbidden drift.
+The persona markdown should contain enough information for the CLI to recover:
+
+- identity and slogan
+- parameter values
+- stable worldview
+- behavioral style
+- scene strategies
+- taboos
+- repair / recovery logic

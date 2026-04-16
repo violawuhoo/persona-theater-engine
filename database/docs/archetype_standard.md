@@ -1,35 +1,50 @@
 # Archetype Standard
 
-An archetype is the authoritative seed-driven model for a persona family.
+An archetype is the generalized mother-model extracted from a persona source and stored in two forms:
 
-## Required structure
+- semantic seed markdown at `/database/docs/archetypes/ARCHETYPE_XX_seed.md`
+- structured JSON at `/database/archetypes/ARCHETYPE_XX.json`
 
-- `id`, `slug`, and bilingual `name`
-- `seed_source` with the markdown path and authority marker
-- `positioning`
-- `core_traits`
-- `parameter_space`
-- `core_logic`
-- `constraints`
-- `generation_contract`
-- `expression_style`
-- `field_effect`
-- `inner_outer_model`
-- `summary`
+## Canonical seed format
 
-## Seed to JSON transformation
+All generated seeds follow `/database/docs/archetypes/archetype_seed_template.md`.
 
-- `[IDENTITY]` maps to `id`, `slug`, and `name`
-- `[POSITIONING]` maps to `positioning.thesis` and `positioning.mechanism`
-- `[CORE_TRAITS]` maps to `core_traits`
-- `[PARAMETERS]` maps to `parameter_space` as numeric `min`/`max` ranges
-- `[CORE_LOGIC]` maps to a structured `core_logic` object
-- `[MUST_HAVE]`, `[MUST_NOT_HAVE]`, and `[FORBIDDEN_DRIFT]` map into `constraints`
-- `[GENERATION_FREEDOM]` contributes to `generation_contract.expansion_zones` and stable-field rules
-- `[EXPRESSION_STYLE]`, `[FIELD_EFFECT]`, and `[INNER_OUTER_MODEL]` remain structured long-text fields
+The canonical seed sections are:
 
-## Authoring guidance
+- `[IDENTITY]`
+- `[SOURCE]`
+- `[POSITIONING]`
+- `[CORE_TEMPERATURE]`
+- `[CORE_TRAITS]`
+- `[PARAMETERS]`
+- `[CORE_LOGIC]`
+- `[BEHAVIORAL_MODEL]`
+- `[EXPRESSION_RULES]`
+- `[MUST_HAVE]`
+- `[MUST_NOT_HAVE]`
+- `[FORBIDDEN_DRIFT]`
+- `[SPATIAL_ALGORITHMS]`
+- `[SOCIAL_LAYERS]`
+- `[DETAILS]`
+- `[GENERATION_FREEDOM]`
+- `[ARCHETYPE_SUMMARY]`
 
-- Preserve semantic meaning rather than mirroring phrasing mechanically.
-- Keep long-form content intact; do not truncate for schema convenience.
-- Add new seed sections only when they describe stable archetype-level behavior rather than one persona instance.
+## Seed generation rules
+
+- The seed is derived from `ARCHXX.md`; it is not authored separately in the normal workflow.
+- The seed should generalize instance content into a reusable mother-model.
+- Dialogues and taboos should be abstracted into stable expression rules and drift boundaries, not copied as a flat instance dump.
+- Parameter ranges belong to the archetype even when the persona source provides concrete values.
+
+## Archetype JSON
+
+The machine archetype preserves:
+
+- source linkage
+- mother-model temperature and traits
+- parameter ranges
+- stable logic
+- behavioral and expression rules
+- spatial / social layers
+- details
+- generation freedom and generation contract

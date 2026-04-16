@@ -8,15 +8,20 @@
     "slug",
     "name",
     "seed_source",
+    "source_profile",
     "positioning",
+    "core_temperature",
     "core_traits",
     "parameter_space",
     "core_logic",
+    "behavioral_model",
+    "expression_rules",
     "constraints",
+    "spatial_algorithms",
+    "social_layers",
+    "details",
+    "generation_freedom",
     "generation_contract",
-    "expression_style",
-    "field_effect",
-    "inner_outer_model",
     "summary"
   ],
   "properties": {
@@ -59,6 +64,22 @@
       },
       "additionalProperties": false
     },
+    "source_profile": {
+      "type": "object",
+      "required": [
+        "derived_from",
+        "source_template"
+      ],
+      "properties": {
+        "derived_from": {
+          "type": "string"
+        },
+        "source_template": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "positioning": {
       "type": "object",
       "required": [
@@ -74,6 +95,9 @@
         }
       },
       "additionalProperties": false
+    },
+    "core_temperature": {
+      "type": "string"
     },
     "core_traits": {
       "type": "array",
@@ -109,7 +133,9 @@
         "social_logic",
         "emotion_logic",
         "security_anchor",
-        "relationship_model"
+        "blind_spot",
+        "conflict_logic",
+        "repair_logic"
       ],
       "properties": {
         "core_motivation": {
@@ -127,8 +153,53 @@
         "security_anchor": {
           "type": "string"
         },
-        "relationship_model": {
+        "blind_spot": {
           "type": "string"
+        },
+        "conflict_logic": {
+          "type": "string"
+        },
+        "repair_logic": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "behavioral_model": {
+      "type": "object",
+      "required": [
+        "visual_style",
+        "physical_style",
+        "verbal_style"
+      ],
+      "properties": {
+        "visual_style": {
+          "type": "string"
+        },
+        "physical_style": {
+          "type": "string"
+        },
+        "verbal_style": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "expression_rules": {
+      "type": "object",
+      "required": [
+        "canonical_expression_mode",
+        "signature_line_patterns"
+      ],
+      "properties": {
+        "canonical_expression_mode": {
+          "type": "string"
+        },
+        "signature_line_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false
@@ -162,38 +233,23 @@
       },
       "additionalProperties": false
     },
-    "generation_contract": {
-      "$ref": "generation_contract.schema.json"
-    },
-    "expression_style": {
+    "spatial_algorithms": {
       "type": "object",
       "required": [
-        "verbal",
-        "physical"
+        "crowded",
+        "one_on_one"
       ],
       "properties": {
-        "verbal": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "crowded": {
+          "type": "string"
         },
-        "physical": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "one_on_one": {
+          "type": "string"
         }
       },
       "additionalProperties": false
     },
-    "field_effect": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "inner_outer_model": {
+    "social_layers": {
       "type": "object",
       "required": [
         "outer_layer",
@@ -208,6 +264,58 @@
         }
       },
       "additionalProperties": false
+    },
+    "details": {
+      "type": "object",
+      "required": [
+        "sensory_profile",
+        "symbolic_objects",
+        "breakdown_repair"
+      ],
+      "properties": {
+        "sensory_profile": {
+          "type": "string"
+        },
+        "symbolic_objects": {
+          "type": "string"
+        },
+        "breakdown_repair": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "generation_freedom": {
+      "type": "object",
+      "required": [
+        "allowed_to_vary",
+        "must_remain_stable",
+        "forbidden_drift"
+      ],
+      "properties": {
+        "allowed_to_vary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "must_remain_stable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden_drift": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "generation_contract": {
+      "$ref": "generation_contract.schema.json"
     },
     "summary": {
       "type": "string"
