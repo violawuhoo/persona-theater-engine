@@ -175,6 +175,242 @@ def markdown_to_text(path: Path) -> str:
     return raw
 
 
+def is_tagged_persona(markdown: str) -> bool:
+    return "<root>" in markdown and "<module_" in markdown
+
+
+def extract_tag(markdown: str, tag: str) -> str:
+    match = re.search(rf"<{tag}\b[^>]*>\s*(.*?)\s*</{tag}>", markdown, flags=re.S)
+    if not match:
+        return ""
+    return sanitize_extracted_text(match.group(1))
+
+
+def parse_tagged_title(markdown: str) -> Dict[str, str]:
+    title = extract_tag(markdown, "title")
+    if not title:
+        return {}
+    match = re.match(r"ARCH\s*[-_ ]?\s*(\d{1,2})\s*[:：]\s*(.*?)\s*\|\s*(.+)$", title, flags=re.I)
+    if not match:
+        return {}
+    return {
+        "id": f"ARCH{int(match.group(1)):02d}",
+        "name": sanitize_extracted_text(match.group(2)),
+        "subtitle": sanitize_extracted_text(match.group(3)),
+        "classification": "",
+    }
+
+
+def parse_tagged_params(markdown: str) -> Dict[str, Dict[str, Any]]:
+    raw = extract_tag(markdown, "param_array")
+    body_match = re.search(r"\{(.*?)\}", raw)
+    if not body_match:
+        return {}
+    values: Dict[str, Dict[str, Any]] = {}
+    for part in body_match.group(1).split(","):
+        if ":" not in part:
+            continue
+        key, value = part.split(":", 1)
+        key = sanitize_extracted_text(key)
+        numeric = value.strip().replace("+", "")
+        try:
+            parsed_value = float(numeric)
+        except ValueError:
+            continue
+        values[key] = {
+            "value": parsed_value,
+            "confidence": 0.98,
+            "evidence": f"Explicit value declared in canonical markdown param_array for {key}.",
+        }
+    return values
+
+
+def parse_tagged_references(markdown: str) -> List[Dict[str, str]]:
+    raw = extract_tag(markdown, "reference_char")
+    if ":" in raw:
+        _, raw = raw.split(":", 1)
+    refs = []
+    for part in re.split(r"[、,，]", raw):
+        name = sanitize_extracted_text(part)
+        if name:
+            refs.append({"name": name, "principle": "Canonical reference character named in persona source."})
+    return refs
+
+
+def parse_tagged_dialogues(markdown: str) -> List[str]:
+    lines = []
+    for index in range(1, 6):
+        value = extract_tag(markdown, f"dialogue_{index:02d}")
+        if value:
+            lines.append(value)
+    return lines
+
+
+def parse_tagged_taboos(markdown: str) -> List[Dict[str, str]]:
+    taboos = []
+    for index in range(1, 6):
+        value = extract_tag(markdown, f"forbid_{index:02d}")
+        if not value:
+            continue
+        if "：" in value:
+            action, rule = value.split("：", 1)
+        elif ":" in value:
+            action, rule = value.split(":", 1)
+        else:
+            action, rule = value, value
+        taboos.append({"action": sanitize_extracted_text(action), "rule": sanitize_extracted_text(rule)})
+    return taboos
+
+
+def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, report: DiagnosticReport) -> Dict[str, Any]:
+    title_meta = parse_tagged_title(markdown)
+    persona_id = title_meta.get("id") or derive_persona_id(source_path, markdown)
+    primary = title_meta.get("name") or persona_id
+    subtitle = title_meta.get("subtitle") or PERSONA_TITLE_ALIASES.get(persona_id, primary)
+    slogan = extract_tag(markdown, "slogan")
+    hint_psych = extract_tag(markdown, "hint_psych")
+    source_classification = extract_tag(markdown, "module_title") or "canonical_tagged_markdown"
+
+    scene_behavior = {
+        "small_scale": {
+            "label": "人少场合 (One-on-One)",
+            "strategy": extract_tag(markdown, "space_one2one"),
+            "actions": extract_tag(markdown, "action_vision"),
+            "logic": extract_tag(markdown, "item_social_view"),
+        },
+        "large_scale": {
+            "label": "人多场合 (Crowded)",
+            "strategy": extract_tag(markdown, "space_crowded"),
+            "actions": extract_tag(markdown, "action_physical"),
+            "logic": extract_tag(markdown, "item_conflict_response"),
+        },
+    }
+
+    interaction_matrix = [
+        {
+            "input_signal": "遭遇攻击",
+            "interpretation": extract_tag(markdown, "item_cognitive_blind"),
+            "response_adjustment": extract_tag(markdown, "dialogue_03"),
+        },
+        {
+            "input_signal": "接收好感",
+            "interpretation": extract_tag(markdown, "item_conflict_response"),
+            "response_adjustment": extract_tag(markdown, "dialogue_04"),
+        },
+        {
+            "input_signal": "对方不回应",
+            "interpretation": extract_tag(markdown, "forbid_02"),
+            "response_adjustment": "保持静默直到对方重新进入你的秩序。",
+        },
+    ]
+
+    negative_feedback = {
+        "conflict_response": {
+            "label": "冲突响应",
+            "cognitive_filter": extract_tag(markdown, "item_cognitive_blind"),
+            "response_actions": extract_tag(markdown, "item_conflict_response"),
+            "breaker_line": extract_tag(markdown, "dialogue_03"),
+            "logic": extract_tag(markdown, "item_power"),
+        }
+    }
+    positive_feedback = {
+        "affection_acceptance": {
+            "label": "接收好感",
+            "cognitive_filter": "对赞赏先做客观性评估，再决定是否接受。",
+            "response_actions": extract_tag(markdown, "item_conflict_response"),
+            "breaker_line": extract_tag(markdown, "dialogue_04"),
+            "logic": extract_tag(markdown, "item_emotion_view"),
+        }
+    }
+    extreme_pressure = {
+        "label": "系统维护",
+        "cognitive_filter": extract_tag(markdown, "error_repair"),
+        "response_actions": extract_tag(markdown, "item_mental_repair"),
+        "breaker_line": extract_tag(markdown, "dialogue_05"),
+        "logic": "当系统偏离低熵状态时，立即切断交互并执行维护。",
+    }
+
+    signature_lines = parse_tagged_dialogues(markdown)
+    realized_parameters = parse_tagged_params(markdown)
+
+    persona = {
+        "id": persona_id,
+        "archetype_id": archetype_id,
+        "name": {
+            "primary": primary,
+            "en": subtitle,
+            "source_classification": source_classification,
+        },
+        "source_markdown": str(source_path.relative_to(source_path.parents[2])),
+        "stable_fields": {
+            "identity": {
+                "persona_name": primary,
+                "subtitle": subtitle,
+                "premise": slogan,
+                "source_classification": source_classification,
+            },
+            "core_directive": slogan,
+            "core_logic": {
+                "social_essence": extract_tag(markdown, "item_social_view"),
+                "self_positioning": hint_psych,
+                "power_source": extract_tag(markdown, "item_power"),
+            },
+            "cognitive_filters": {
+                "noise_filtering": extract_tag(markdown, "item_cognitive_blind"),
+                "downward_compatibility": extract_tag(markdown, "item_conflict_response"),
+                "information_granularity": extract_tag(markdown, "item_motive"),
+            },
+            "embodiment": {
+                "center_of_gravity": extract_tag(markdown, "action_physical"),
+                "gaze_protocol": {
+                    "focus_rule": extract_tag(markdown, "action_vision"),
+                    "movement_rule": extract_tag(markdown, "action_physical"),
+                },
+                "breathing_protocol": "保持算法式平稳，不因社交波动而改变节律。",
+                "hand_constraints": extract_tag(markdown, "action_physical"),
+                "latency_buffer": {
+                    "delay_seconds": "算法式稳定延迟",
+                    "rule": extract_tag(markdown, "action_language"),
+                },
+                "spatial_sovereignty": extract_tag(markdown, "space_crowded"),
+                "negative_buffer": extract_tag(markdown, "error_repair"),
+            },
+            "taboos": parse_tagged_taboos(markdown),
+            "reference_models": parse_tagged_references(markdown),
+        },
+        "soft_fields": {
+            "scene_behavior": scene_behavior,
+            "interaction_matrix": [row for row in interaction_matrix if row["interpretation"] or row["response_adjustment"]],
+            "response_protocols": {
+                "negative_feedback": negative_feedback,
+                "positive_feedback": positive_feedback,
+                "extreme_pressure": extreme_pressure,
+            },
+            "signature_lines": signature_lines,
+        },
+        "realized_parameters": realized_parameters,
+        "generation_contract": make_persona_generation_contract(),
+    }
+
+    if not realized_parameters:
+        report.inferred_fields.extend(["realized_parameters.E", "realized_parameters.O", "realized_parameters.R", "realized_parameters.B"])
+
+    for required_path in [
+        "id",
+        "archetype_id",
+        "name.primary",
+        "stable_fields.core_directive",
+        "stable_fields.core_logic.social_essence",
+        "stable_fields.cognitive_filters.noise_filtering",
+        "stable_fields.embodiment.center_of_gravity",
+        "soft_fields.scene_behavior.small_scale.strategy",
+    ]:
+        if not _dig(persona, required_path):
+            report.missing_fields.append(required_path)
+    report.mapping_confidence = max(0.0, 1 - (0.06 * len(report.missing_fields)) - (0.02 * len(report.inferred_fields)))
+    return deep_clean_strings(persona)
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
@@ -727,6 +963,19 @@ def build_persona(
     archetype: Optional[Dict[str, Any]],
     report: DiagnosticReport,
 ) -> Dict[str, Any]:
+    if is_tagged_persona(markdown):
+        persona = parse_tagged_persona(markdown, source_path, archetype_id, report)
+        return {
+            "id": persona["id"],
+            "archetype_id": persona["archetype_id"],
+            "name": persona["name"],
+            "source_markdown": persona["source_markdown"],
+            "stable_fields": persona["stable_fields"],
+            "soft_fields": persona["soft_fields"],
+            "realized_parameters": persona["realized_parameters"],
+            "generation_contract": persona["generation_contract"],
+        }
+
     title_meta = parse_title_metadata(markdown)
     sections = split_numbered_sections(markdown)
     core_logic = parse_label_value_section(sections.get("1", ""), ROOT_LOGIC_ALIASES)

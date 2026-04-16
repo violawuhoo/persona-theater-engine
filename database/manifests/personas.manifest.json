@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-04-16T14:02:37Z",
+  "generated_at": "2026-04-16T14:21:44Z",
   "total_personas": 1,
   "personas": [
     {
@@ -8,8 +8,8 @@
       "archetype_id": "ARCHETYPE_01",
       "json_path": "database/personas/ARCH01.json",
       "md_path": "database/personas/ARCH01.md",
-      "name": "断头王后",
-      "subtitle": "The Beheaded Queen",
+      "name": "高冷建模脸",
+      "subtitle": "The CGI Cold",
       "status": "active"
     }
   ]
