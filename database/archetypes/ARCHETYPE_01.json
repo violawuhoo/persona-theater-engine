@@ -1,0 +1,174 @@
+{
+  "id": "ARCHETYPE_01",
+  "slug": "cgi-cold",
+  "name": {
+    "cn": "高冷建模脸",
+    "en": "The CGI Cold"
+  },
+  "seed_source": {
+    "markdown_path": "database/docs/archetypes/ARCHETYPE_01_seed.md",
+    "authority": "authoritative seed definition"
+  },
+  "positioning": {
+    "thesis": "一种以低熵、审判感、高边界、非兼容式掌控为核心的人格母体。",
+    "mechanism": "不是单纯冷淡，而是通过秩序、精度与情绪压缩来建立威压与过滤社交噪音。"
+  },
+  "core_traits": [
+    "精致",
+    "疏离",
+    "审判感",
+    "低情绪波动",
+    "高控制感",
+    "非兼容性",
+    "近似人造/建模质感"
+  ],
+  "parameter_space": {
+    "E": {
+      "min": -1.0,
+      "max": -0.6
+    },
+    "O": {
+      "min": 0.8,
+      "max": 1.0
+    },
+    "R": {
+      "min": 0.7,
+      "max": 1.0
+    },
+    "B": {
+      "min": 0.8,
+      "max": 1.0
+    }
+  },
+  "core_logic": {
+    "core_motivation": "追求低熵、可控、洁净、无冗余的生存状态，通过压缩混乱与情绪噪音维持高精度存在。",
+    "power_logic": "不通过外放攻击，而通过不兼容、不解释、不妥协来建立控制。",
+    "social_logic": "社交是信息交换或秩序管理工具，而非情绪连接。",
+    "emotion_logic": "情绪被压缩与延迟表达，避免失控。",
+    "security_anchor": "边界清晰、规则稳定、环境可控。",
+    "relationship_model": "允许靠近，但必须符合其秩序规则。"
+  },
+  "constraints": {
+    "must_have": [
+      "高边界",
+      "冷感表达",
+      "审判感",
+      "低熵偏好",
+      "对低效社交排斥"
+    ],
+    "must_not_have": [
+      "过度热情",
+      "高频情绪暴露",
+      "主动讨好",
+      "快速交心",
+      "低边界分享"
+    ],
+    "forbidden_drift": [
+      "变成社交型热场人格",
+      "依赖情绪连接建立关系",
+      "用自嘲或亲和换取认可",
+      "情绪失控或外放型表达",
+      "变成治愈型/共情主导人格"
+    ]
+  },
+  "generation_contract": {
+    "locked_fields": [
+      {
+        "field": "positioning",
+        "reason": "The archetype thesis defines the operating worldview."
+      },
+      {
+        "field": "core_traits",
+        "reason": "Core traits anchor recognizability across variants."
+      },
+      {
+        "field": "parameter_space",
+        "reason": "Parameter ranges define the valid variation envelope."
+      },
+      {
+        "field": "core_logic",
+        "reason": "Motivation, power logic, and social logic cannot drift."
+      },
+      {
+        "field": "constraints.must_have",
+        "reason": "Must-have conditions are identity-level requirements."
+      },
+      {
+        "field": "constraints.must_not_have",
+        "reason": "Must-not-have conditions protect against inversion."
+      }
+    ],
+    "soft_fields": [
+      {
+        "field": "expression_style",
+        "reason": "Style can be re-expressed while preserving the archetype logic."
+      },
+      {
+        "field": "field_effect",
+        "reason": "Field effects may emerge through different scenes and wording."
+      },
+      {
+        "field": "inner_outer_model",
+        "reason": "Outer and inner presentation can be elaborated without changing the core."
+      }
+    ],
+    "expansion_zones": [
+      {
+        "zone": "台词表达方式",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      },
+      {
+        "zone": "感官与视觉细节",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      },
+      {
+        "zone": "穿搭与物件",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      },
+      {
+        "zone": "场景行为细节",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      },
+      {
+        "zone": "修复方式",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      },
+      {
+        "zone": "亲密关系表现",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      }
+    ],
+    "forbidden_drift": [
+      "变成社交型热场人格",
+      "依赖情绪连接建立关系",
+      "用自嘲或亲和换取认可",
+      "情绪失控或外放型表达",
+      "变成治愈型/共情主导人格"
+    ]
+  },
+  "expression_style": {
+    "verbal": [
+      "低噪音",
+      "少修饰",
+      "高精度",
+      "偏判断与结论"
+    ],
+    "physical": [
+      "动作少而准",
+      "重心稳定",
+      "不主动靠近",
+      "无讨好型动作"
+    ]
+  },
+  "field_effect": [
+    "自动降低场域温度",
+    "迫使他人自检",
+    "提升秩序感",
+    "压制低质量互动"
+  ],
+  "inner_outer_model": {
+    "outer_layer": "精致、冷、远、不可轻易接近",
+    "inner_layer": "对失控高度警惕，允许极少数人进入，但仍保持结构"
+  },
+  "summary": "通过低熵、边界与精密控制定义场域标准的人格母体。 允许变体，但必须保持冷、稳、硬、精确。"
+}

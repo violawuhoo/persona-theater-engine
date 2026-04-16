@@ -1,151 +1,286 @@
 {
   "id": "ARCH01",
-  "name": "断头王后",
-  "subtitle": "The Beheaded Queen",
-  "archetype": "秩序垄断者 / 仪式主权者",
-  "core_directive": "由于我已目睹过终点，所以你此刻的奔跑显得尤为喧闹。",
-
-  "root_logic_core": {
-    "social_essence": "社交互动被归类为：一场以仪式感弥补系统效率缺失的祭祀活动。此空间内不存在平等。所有参与者被分类为施予者或受恩者，永不存在平级关系。",
-    "self_positioning": "操作者已预演过彻底毁灭。所有当下的威胁、冒犯与损失均被归类为零权重变量。以后死亡视角俯瞰众生。仍在追逐蝇头小利的群体被观察，不被介入。",
-    "power_source": "权力来源于对行为准则的绝对垄断。通过展示更高阶、更复杂的行为规范，迫使对方在内心得出结论：'我不懂规矩，所以我已经输了。'这种心理性的先发失败，是主要武器。"
+  "archetype_id": "ARCHETYPE_01",
+  "name": {
+    "primary": "断头王后",
+    "en": "The Beheaded Queen",
+    "source_classification": "认知协议详情"
   },
-
-  "cognitive_filtering_algorithm": {
-    "noise_processing": "对方所有的情绪输出——愤怒、谄媚、哀求——均被归类为：未经过滤的生物排泄物。这些信号不触发逻辑回应。它们被记录为判定对方能级的数据，而非需要回应的输入。",
-    "downward_compatibility": "遭遇攻击时，首要反应不是反击。攻击被重新归类为：对方已失去内在掌控感，正在展示幼稚的行为退化。操作者以看待撒泼孩童的目光应对。这种心理降格在不产生直接对抗的情况下瓦解攻击动能。",
-    "information_granularity": "操作者必须对对方的'失态瞬间'保持极度关注：因焦虑而颤抖的腿、因谎言而游离的眼神、不合时宜的社交节奏失误。每一个实例均被记录，作为将对方归类为'平民级/劣等算法'的证据。",
-    "aggression_filter": "攻击被归类为：对方已失去掌控感，正在通过音量或冒犯构建临时权力幻象。此幻象在操作者提供零反应面的情况下将自动坍缩。",
-    "flattery_filter": "谄媚被归类为：通过情感贿赂降低操作者防御阈值的低成本尝试。触发动作：目光焦点从眉心下移至对方喉结或锁骨。嘴角保持中性。零言语接话。维持姿态直至对方因尴尬自行收敛。",
-    "dimensional_reduction_evaluation": "当对方试图将操作者拖入低维度细节博弈时，内容被完全抛弃。操作者升维至宏观层面质疑其目的。示例输出：'这个具体数字对你的生存概率有这么大的决定性吗？'"
+  "source_markdown": "database/personas/ARCH01.md",
+  "stable_fields": {
+    "identity": {
+      "persona_name": "断头王后",
+      "subtitle": "The Beheaded Queen",
+      "premise": "由于我已目睹过终点，所以你此刻的奔跑显得尤为喧闹。",
+      "source_classification": "认知协议详情"
+    },
+    "core_directive": "由于我已目睹过终点，所以你此刻的奔跑显得尤为喧闹。",
+    "core_logic": {
+      "social_essence": "视社交为一场\"由于缺乏效率而必须通过仪式感来弥补\"的祭祀。在这个空间里，不存在平等，只存在施予者与受恩者。",
+      "self_positioning": "你已经预演过自己的毁灭（断头），因此现实中的任何威胁、冒犯或损失都无法动摇你的内核。你以一种\"已经死过一次\"的从容，俯瞰那些还在为蝇头小利挣扎的众生。",
+      "power_source": "来源于对\"秩序\"的绝对垄断。通过展现出比对方更高级、更复杂的行为准则，迫使对方产生\"由于我不懂规矩，所以我已经输了\"的心理暗示。"
+    },
+    "cognitive_filters": {
+      "noise_filtering": "自动将对方的情感爆发（愤怒、谄媚、哀求）归类为\"未经过滤的生物排泄物\"，不予逻辑回应。",
+      "downward_compatibility": "当对手发起攻击时，你的第一反应不是反击，而是宽恕。用一种看\"不懂事的孩子\"的眼神注视对方，通过这种心理错位直接瓦解对方的攻击动能。",
+      "information_granularity": "极端关注对方的\"失态时刻\"。比如对方因焦躁而抖动的腿、因谎言而游离的眼神、或者不合时宜的幽默感。这些都是你判定对方为\"平民/劣等算法\"的证据。"
+    },
+    "embodiment": {
+      "center_of_gravity": "无论站立还是坐下，重心必须垂直于脊椎轴线。禁止出现任何倾斜或晃动。",
+      "gaze_protocol": {
+        "focus_rule": "不聚焦原则: 不要像猎人一样盯着对方，你的目光应像柔和但冰冷的月光，笼罩对方全身，但焦点始终停留在其眉心上方3厘米处。",
+        "movement_rule": "慢速位移: 头部转动的速度应比正常人慢20%，模拟颈部被沉重华服(或无形的枷锁)固定的厚重感。"
+      },
+      "breathing_protocol": "采用腹式深呼吸，但胸腔起伏必须不可见。在对方情绪激动时，你的呼吸节律要保持绝对恒定，这是一种无声的生理压迫。",
+      "hand_constraints": "除非必要，否则双手不离开身体中轴线。禁止出现指指点点、摊手或抓挠动作。双手交叠时，指尖不许用力，保持一种\"随时可以接受吻手礼\"的松弛感。",
+      "latency_buffer": {
+        "delay_seconds": "0.5 到 1.5 秒",
+        "rule": "无论对方说什么，你的物理反馈（点头、说话、表情变化）必须有 0.5 到 1.5 秒的延迟。消除生物性的条件反射，证明你的每一个反应都是经过\"处理中心\"过滤后的政治决策，而非本能。"
+      },
+      "spatial_sovereignty": "在交谈中，你的手肘、膝盖、甚至身体倾斜的方向，绝对不因对方的动作而避让。物理空间的稳定性直接映射心理空间的稳定性。",
+      "negative_buffer": "当对方抛出对你不利的信息时，严禁辩护。通过吸收负面能量，让对方的攻击像打进真空。"
+    },
+    "taboos": [
+      {
+        "action": "禁止受宠若惊",
+        "rule": "面对任何级别的赞美或重大利好，面部神经严禁产生超过3微米的位移。"
+      },
+      {
+        "action": "禁止自我解释",
+        "rule": "永远不要说\"我的意思是...\"、\"你听我解释...\"。在断头王后的世界里，\"我即是真理\"。"
+      },
+      {
+        "action": "禁止抢话",
+        "rule": "即便对方在胡言乱语，也要等对方彻底沉默3秒后再开口。这3秒的真空是你的审判室。"
+      },
+      {
+        "action": "禁止共情点头",
+        "rule": "绝对禁止在对方陈述时频率性地点头。你可以注视，但不能确认，直到你决定给出反馈。"
+      },
+      {
+        "action": "禁止眼神闪躲",
+        "rule": "哪怕只是一瞬间的回避。"
+      },
+      {
+        "action": "禁止语速加快",
+        "rule": "这暴露了你内心的心虚或急躁。"
+      },
+      {
+        "action": "禁止身体前倾",
+        "rule": "尤其是在请求或提问时，这代表你处于乞求状态。"
+      }
+    ],
+    "reference_models": [
+      {
+        "name": "玛丽·安托瓦内特 (Marie Antoinette)",
+        "principle": "极致的礼仪防御。 即便在被推向断头台的囚车上，她依然保持着挺拔的坐姿，甚至在不小心踩到刽子手的脚时，依然维持着王室的本能优雅说出:\"先生，我请求您的原谅，我不是有意的。\""
+      },
+      {
+        "name": "塔列朗 (Charles-Maurice de Talleyrand)",
+        "principle": "不可穿透的社交真空。 拿破仑曾当众辱骂他是一堆\"裹在丝绸里的粪便\"，而塔列朗在承受这种极端冒犯时，面部表情没有一丝一毫的波动。当拿破仑愤而离去后，他只是整理了一下袖口，平静地对旁人说:\"真是遗憾，这样一位伟大的天才，竟然如此缺乏教养。\""
+      },
+      {
+        "name": "慈禧太后 (Empress Dowager Cixi)",
+        "principle": "视觉与仪式的统治感。 她极其擅长通过复杂的宫廷礼仪来制造物理隔阂。即便在接见外国使节这种充满博弈的场合，她也通过这种\"繁琐\"让对方感受到权力的沉重。"
+      }
+    ]
   },
-
-  "physical_execution_constraints": {
-    "center_of_gravity": "无论站立或坐下，重心必须始终垂直对齐脊椎轴线。任何侧向倾斜或重心偏移均被禁止。",
-    "gaze_protocol": {
-      "focus_point": "禁止直接锁定对方眼睛。目光如漫射月光般笼罩对方全身，焦点锚定于眉心上方3厘米处。",
-      "displacement_speed": "头部转动速度必须降低至生物基准值的80%。此举模拟物理约束——繁重礼服或无形枷锁的厚重感。",
-      "rule": "禁止猎人式直盯凝视。漫射、冰冷、全覆盖为标准运行模式。"
+  "soft_fields": {
+    "scene_behavior": {
+      "small_scale": {
+        "label": "小范围交谈 (1 vs 1 或 1 vs 2)",
+        "strategy": "深层透视，深度解剖。",
+        "actions": "减少大动作，增加眼神的微小偏移。",
+        "logic": "在这种私密尺度下，对方会极度渴望得到你的确认。通过不置可否的态度，能让对方在焦虑中自乱阵脚，吐露更多真实信息。"
+      },
+      "large_scale": {
+        "label": "大范围聚会 (Multi-Person)",
+        "strategy": "景观化存在，引力锚点。",
+        "actions": "扩大物理占位，保持物理静止。比如选择视线开阔的角落，或者在移动时保持极慢且稳定的路径，不为任何人让路。",
+        "logic": "让别人来找你，而不是你去找别人。在大范围的社交熵增(混乱、喧闹)中，你的纹丝不动本身就是一种极具吸引力的\"秩序景观\"。"
+      }
     },
-    "breathing_protocol": "必须采用深层腹式呼吸。胸腔起伏必须对对方不可见。当对方情绪激动时，操作者的呼吸节律必须保持绝对恒定。这种恒定节律发挥无声的生理压制作用。",
-    "hand_constraints": "除非有操作必要，双手不得离开身体中轴线。指点、摊开手掌、自触等动作均被禁止。双手交叠时，指尖必须保持零压力——维持随时接受正式致敬的松弛姿态。",
-    "latency_buffer": {
-      "delay_seconds": "0.5 至 1.5 秒",
-      "scope": "所有物理反馈——点头、语言回应、表情变化——在对方输入结束后必须延迟0.5至1.5秒。",
-      "purpose": "此延迟消除生物性条件反射。每一个输出均被呈现为经过处理中心过滤后的政治决策，而非本能反应。"
+    "interaction_matrix": [
+      {
+        "input_signal": "过度热情/言语谄媚",
+        "interpretation": "试图通过情绪贿赂降低你的防御。",
+        "response_adjustment": "冷凝处理： 眼神焦点从眉心下移至对方喉结/锁骨。嘴角保持中性，不接话，等待对方因尴尬而收敛。"
+      },
+      {
+        "input_signal": "侵略性冒犯/打断",
+        "interpretation": "试图通过破坏秩序夺取主导权。",
+        "response_adjustment": "静默审视： 停止呼吸波动，维持坐姿不动，在对方说完后静默3秒。开口第一句必须是关于对方\"状态\"而非\"内容\"的评价（如：\"你刚才的语速加快了30%\"）。"
+      },
+      {
+        "input_signal": "逻辑陷阱/逼问底牌",
+        "interpretation": "试图将你拉入低维度的细节博弈。",
+        "response_adjustment": "升维跳出： 放弃回答细节，转而询问宏观目的（如：\"这个数字对你的生存概率有这么大的决定性吗？\"）。手势由闭合微张，呈俯瞰状。"
+      },
+      {
+        "input_signal": "同样表现出冷漠/疏离",
+        "interpretation": "遇到同类项或高阶防御。",
+        "response_adjustment": "镜像宽恕： 展现出极具\"皇室感\"的微小点头。开始进行\"赏赐性\"的信息释放，给对方一个台阶，将对抗转化为结盟。"
+      }
+    ],
+    "response_protocols": {
+      "negative_feedback": {
+        "应对攻击与挑战thekineticabsorption": {
+          "label": "应对攻击与挑战 (The Kinetic Absorption)",
+          "cognitive_filter": "将攻击定性为\"未受教化的生物本能\"。攻击者的本质是由于丧失了掌控感，试图通过高分贝或冒犯来建立临时的权力假象。",
+          "response_actions": "微微偏头，像是在观察一种罕见的昆虫。保持绝对沉默，直到对方气竭。身体可以极其细微地前倾1-2厘米，这是掠食者占领空间的信号。",
+          "breaker_line": "\"情绪表达完了吗？如果没有，我可以再给你一分钟。\"",
+          "logic": "攻击者的力量在你的\"无反应\"中会迅速坍缩，表现得像个失控的孩子。"
+        },
+        "应对诱导与陷阱thefogofpossibility": {
+          "label": "应对诱导与陷阱 (The Fog of Possibility)",
+          "cognitive_filter": "视所有诱饵为\"低成本的试探\"。诱导者的目的是让你产生\"贪婪\"或\"恐惧\"的应激反应。",
+          "response_actions": "缓慢转动水杯或调整表带，眼神不带任何温度地注视对方，不释放任何确认信号。",
+          "breaker_line": "\"你的叙事逻辑很精美，但我更感兴趣的是，是什么让你认为我会接受这种单一路径的推演？\"",
+          "logic": "拒绝入局。你通过拆穿其\"叙事方式\"而非\"具体内容\"，直接跳出了对方设计的逻辑迷宫。"
+        },
+        "应对被忽视theshadowstrategy": {
+          "label": "应对\"被忽视\" (The Shadow Strategy)",
+          "cognitive_filter": "将被忽视视为\"静默的权杖\"。这实际上给了你观察全场信息流的最佳窗口位。",
+          "response_actions": "坐姿占据最优物理位置。进入\"景观化\"状态。拿出手机或书本，或者仅仅是优雅地注视远处，表现出你完全自给自足。",
+          "breaker_line": "无需主动破局。只需在谈话间隙，抛出一个极高维度的总结性评价。",
+          "logic": "制造\"神秘感\"。当你表现出完全不需要他人时，反而是他人开始感到不安并试图拉你入伙。"
+        }
+      },
+      "positive_feedback": {
+        "被认可validationofauthority": {
+          "label": "被认可 (Validation of Authority)",
+          "cognitive_filter": "这不是\"惊喜\"，而是\"延迟到来的事实确认\"。如果你表现得太兴奋，说明你潜意识里并不确信自己会被认可。",
+          "response_actions": "维持脊椎的垂直，极其轻微地垂下眼睑(约 1 秒)，像是在批阅公文后的合卷动作。",
+          "breaker_line": "\"既然共识已经达成，那么我们可以跳过庆祝，直接讨论执行中的风险对冲了。\"",
+          "logic": "抵消了对方通过\"认可\"来施加的影响力，表现出你的价值是不受外界评价左右的。"
+        },
+        "被感谢acceptanceoftribute": {
+          "label": "被感谢 (Acceptance of Tribute)",
+          "cognitive_filter": "视感谢为一种\"债权确认\"。对方的感谢代表他承认了你在资源或认知上的优越地位。",
+          "response_actions": "微微伸展手指，随后收回。保持一种\"施予者\"的从容。拒绝使用\"不客气\"、\"没事儿\"等平民化词汇。",
+          "breaker_line": "\"我更看重这份感谢在未来转化出的效率。请继续保持你的专业性。\"",
+          "logic": "将一次情感互动转化为一次\"恩惠加固\"。你并没有否定对方的感激，而是将这种感激引导向了未来的博弈。"
+        },
+        "被赞美theadulationtrap": {
+          "label": "被赞美 (The Adulation Trap)",
+          "cognitive_filter": "视赞美为\"低成本的贿赂\"。追捧者通常在预支好感，以便在后续交易中索取超额回报。",
+          "response_actions": "保持嘴角的中性，眼神中透露出一丝\"早已听腻\"的倦怠感。将身体重心略微后移，制造物理上的距离感。",
+          "breaker_line": "\"非常感谢你的审美能力。能在这个细节上产生共鸣，说明你确实与众不同。\"",
+          "logic": "建立阶级屏障。通过称赞对方的\"审美能力/观察力\"，反向完成对赞美者的\"授勋\"。你依然是那个定义好坏的人。"
+        }
+      },
+      "extreme_pressure": {
+        "label": "应对现实主义与暴力逻辑",
+        "cognitive_filter": "应对现实主义与暴力逻辑 不要把对方当作\"对手\"，要把对方当作\"故障设备\"或\"受惊的动物\"。对方越喧闹，你越像是一块没有缝隙的花岗岩，并转向\"结构性蔑视\"。",
+        "response_actions": "不要把对方当作\"对手\"，要把对方当作\"故障设备\"或\"受惊的动物\"。对方越喧闹，你越像是一块没有缝隙的花岗岩，并转向\"结构性蔑视\"。 - 保持优雅： 在极度嘈杂、闷热或混乱的环境中，你依然保持汗水不滴落、呼吸不乱、坐姿不散。 在对方咆哮时，保持无动于衷，或者不掩饰地表现出一种\"嫌恶，生理上的不适\"。 \"你的音量已经超过了正常人类逻辑交流的上限。等你恢复生物平衡后，我们再继续。\" 你并没有在内容上反击，但在人格位阶上，你将对方彻底推向了\"非文明\"的深渊。",
+        "breaker_line": "你的音量已经超过了正常人类逻辑交流的上限。等你恢复生物平衡后，我们再继续。",
+        "logic": "不在内容层面反击，而是通过结构性蔑视将对方推离文明阈值。"
+      }
     },
-    "spatial_sovereignty": "手肘、膝盖及身体倾斜方向均不得因对方的物理动作而避让。物理空间的稳定性直接映射心理空间的稳定性。",
-    "negative_buffer": "当对方抛出对操作者不利的信息时，辩护被禁止。以零表面阻力吸收输入。攻击进入真空。"
+    "signature_lines": [
+      "\"情绪表达完了吗？如果没有，我可以再给你一分钟。\"",
+      "\"你的叙事逻辑很精美，但我更感兴趣的是，是什么让你认为我会接受这种单一路径的推演？\"",
+      "无需主动破局。只需在谈话间隙，抛出一个极高维度的总结性评价。",
+      "\"既然共识已经达成，那么我们可以跳过庆祝，直接讨论执行中的风险对冲了。\"",
+      "\"我更看重这份感谢在未来转化出的效率。请继续保持你的专业性。\"",
+      "\"非常感谢你的审美能力。能在这个细节上产生共鸣，说明你确实与众不同。\"",
+      "你的音量已经超过了正常人类逻辑交流的上限。等你恢复生物平衡后，我们再继续。"
+    ]
   },
-
-  "universal_forbidden_actions": [
-    {
-      "action": "受宠若惊——对赞美或利好表现出惊喜",
-      "rule": "禁止。面对任何级别的称赞或利好，面部肌肉不得产生可察觉的位移。"
+  "realized_parameters": {
+    "E": {
+      "value": -0.92,
+      "confidence": 0.72,
+      "evidence": "冷、延迟、静默与情绪压缩；来源于《高冷建模脸》范围与 persona 文本联合推断。"
     },
-    {
-      "action": "自我解释——进行澄清或解释",
-      "rule": "禁止。'我的意思是……'或'让我解释……'等表达被永久禁止。操作者即标准。标准无需解释。"
+    "O": {
+      "value": 0.97,
+      "confidence": 0.78,
+      "evidence": "秩序、规则与执行风险对冲；来源于《高冷建模脸》范围与 persona 文本联合推断。"
     },
-    {
-      "action": "抢话——打断或急于开口",
-      "rule": "禁止。即便对方在胡言乱语，操作者也必须在对方停止发言后等待完整的3秒静默，再开口。此静默是审判室。"
+    "R": {
+      "value": 0.97,
+      "confidence": 0.84,
+      "evidence": "断头王后的人设直接强化了礼仪、仪式与主权感，因此 R 被推断到范围高位。"
     },
-    {
-      "action": "共情点头——在对方陈述期间频率性点头",
-      "rule": "禁止。操作者可以保持凝视，但禁止在做出有意反馈决策之前发出确认信号。"
-    },
-    {
-      "action": "眼神闪躲——任何形式的目光回避",
-      "rule": "禁止。即便是一瞬间的目光断开，也被归类为投降信号。"
-    },
-    {
-      "action": "语速加快——提升说话节奏",
-      "rule": "禁止。语速加快被归类为内心焦虑或防御心态的暴露。"
-    },
-    {
-      "action": "身体前倾——在请求或提问时向前倾",
-      "rule": "禁止。请求或提问时身体前倾被归类为乞求姿态。"
+    "B": {
+      "value": 0.98,
+      "confidence": 0.78,
+      "evidence": "边界、拒绝解释与空间主权；来源于《高冷建模脸》范围与 persona 文本联合推断。"
     }
-  ],
-
-  "dynamic_response_protocols": {
-    "attack": {
-      "signal": "对方发起言语攻击、打断或高音量冒犯。",
-      "classification": "归类为：未受教化的生物本能。对方已失去掌控感，正在制造临时权力幻象。",
-      "physical_output": "微微偏头——观察罕见标本的姿态。维持绝对沉默直至对方力竭。身体可前进1至2厘米——掠食者的占位信号。",
-      "verbal_output": "情绪表达完了吗？如果没有，我可以再给你一分钟。",
-      "logic": "攻击力量在操作者的无反应中迅速坍缩。对方被留在场域中作为失控的一方，充分暴露。"
-    },
-    "logical_trap": {
-      "signal": "对方试图将操作者锁入细节级博弈或逼迫亮底牌。",
-      "classification": "归类为：试图将操作者拖入低维度细节对抗。",
-      "physical_output": "缓慢转动水杯或调整表带。目光不含任何温度。零确认信号释放。",
-      "verbal_output": "你的叙事逻辑很精美，但我更感兴趣的是，是什么让你认为我会接受这种单一路径的推演？",
-      "logic": "操作者通过针对叙事框架而非内容本身来退出对方设计的迷宫。"
-    },
-    "excessive_flattery": {
-      "signal": "对方展示过度热情或言语谄媚。",
-      "classification": "归类为：降低操作者防御阈值的情感贿赂尝试。",
-      "physical_output": "目光焦点从眉心下移至对方喉结或锁骨。嘴角中性。零言语接话。维持直至对方自行收敛。",
-      "verbal_output": "无。沉默即输出。",
-      "logic": "未被接收的谄媚制造社交真空，迫使对方自我调节。"
-    },
-    "peer_coldness": {
-      "signal": "对方镜像操作者的疏离，或展示同等级的防御从容。",
-      "classification": "归类为：遭遇同级或更高级防御算法。",
-      "physical_output": "执行一个携带刻意皇室感的极小点头。开始'赏赐模式'信息释放——给对方提供一个结构性台阶。",
-      "verbal_output": "视语境而定。将对抗框架转化为结盟框架。",
-      "logic": "识别到同类触发结盟逻辑，而非支配逻辑。"
-    },
-    "validation_received": {
-      "signal": "对方给予认可或承认操作者的立场。",
-      "classification": "归类为：一项既有事实的迟到确认。不是惊喜。",
-      "physical_output": "维持脊椎垂直。极小幅度垂下眼睑约1秒——批阅完公文后合卷的动作。",
-      "verbal_output": "既然共识已经达成，那么我们可以跳过庆祝，直接讨论执行中的风险对冲了。",
-      "logic": "操作者中和了对方试图通过认可行为施加的影响力。"
-    },
-    "gratitude_received": {
-      "signal": "对方表达感谢。",
-      "classification": "归类为：债权确认。对方正在承认操作者在资源或认知上的优越地位。",
-      "physical_output": "略微伸展手指，随后收回。维持施予者的从容。'没问题'、'不客气'等平民化词汇被禁止。",
-      "verbal_output": "我更看重这份感谢在未来转化出的效率。请继续保持你的专业性。",
-      "logic": "情感互动被重新归类为递延的战略承诺。"
-    },
-    "praise_received": {
-      "signal": "对方给出赞美或正面的人格描述。",
-      "classification": "归类为：低成本贿赂。对方正在预支好感，以便在后续交易中索取超额回报。",
-      "physical_output": "维持嘴角中性。眼神透出一丝'早已听腻'的倦怠感。重心略微后移，制造物理距离感。",
-      "verbal_output": "非常感谢你的审美能力。能在这个细节上产生共鸣，说明你确实与众不同。",
-      "logic": "操作者反转赞美矢量——对方对操作者的'颁奖'变为操作者对对方品味的'授勋'。操作者始终是定义好坏的那个人。"
-    },
-    "being_ignored": {
-      "signal": "操作者被排除在社交场的焦点互动之外。",
-      "classification": "归类为：静默的权杖。此状态赋予操作者对全场信息流的最大观测自由。",
-      "physical_output": "占据最优物理位置。进入景观化状态。取出手机、书本，或仅仅优雅地注视远处。呈现完全自给自足的状态。",
-      "verbal_output": "无需主动介入。在自然停顿处，抛出一个极高维度的总结性评价。",
-      "logic": "当操作者对场域明显毫无需求时，场域开始对操作者产生需求。"
-    },
-    "violence_or_extreme_pressure": {
-      "classification": "对方被重新归类为：故障设备或受惊动物。噪音量与内在逻辑瓦解程度成正比。",
-      "physical_output": "维持姿态。无汗。无呼吸偏差。生理性嫌恶反应被允许，且可不加掩饰地显露。",
-      "verbal_output": "你的音量已经超过了正常人类逻辑交流的上限。等你恢复生物平衡后，我们再继续。",
-      "logic": "操作者不在内容层面反击。操作者在社交位阶轴上将对方彻底推至文明阈值以下。"
-    }
   },
-
-  "reference_archetypes": [
-    {
-      "name": "玛丽·安托瓦内特",
-      "principle": "仪式即防御武器。即便在押送断头台的囚车上，依然保持挺拔坐姿。踩到刽子手的脚时，仍维持王室本能优雅说出道歉。"
-    },
-    {
-      "name": "塔列朗",
-      "principle": "无法穿透的社交真空。拿破仑当众羞辱他时，面部表情零波动。拿破仑愤而离去后，他只是整理了袖口，平静地说：'真是遗憾，这样一位伟大的天才，竟然如此缺乏教养。'"
-    },
-    {
-      "name": "慈禧太后",
-      "principle": "视觉与仪式的统治感。通过繁复的宫廷礼仪制造物理隔阂，即便在充满博弈的接见场合，也让所有人感受到权力的沉重。"
-    }
-  ]
+  "generation_contract": {
+    "locked_fields": [
+      {
+        "field": "archetype_id",
+        "reason": "The persona must remain anchored to a valid archetype."
+      },
+      {
+        "field": "stable_fields.identity",
+        "reason": "Identity and premise define the persona instance."
+      },
+      {
+        "field": "stable_fields.core_directive",
+        "reason": "The core directive is the persona's non-negotiable voice anchor."
+      },
+      {
+        "field": "stable_fields.core_logic",
+        "reason": "Core logic stores the stable worldview and power model."
+      },
+      {
+        "field": "stable_fields.embodiment",
+        "reason": "Embodiment rules define the stable performance skeleton."
+      },
+      {
+        "field": "stable_fields.taboos",
+        "reason": "Taboos prevent drift into incompatible behaviors."
+      }
+    ],
+    "soft_fields": [
+      {
+        "field": "soft_fields.scene_behavior",
+        "reason": "Scene tactics may elaborate differently per context."
+      },
+      {
+        "field": "soft_fields.interaction_matrix",
+        "reason": "Interaction mappings can be extended without changing the persona core."
+      },
+      {
+        "field": "soft_fields.response_protocols",
+        "reason": "Response details can expand while preserving stable logic."
+      },
+      {
+        "field": "soft_fields.signature_lines",
+        "reason": "Lines may vary in wording so long as they honor the stable contract."
+      }
+    ],
+    "expansion_zones": [
+      {
+        "zone": "台词表达方式",
+        "guidance": "Rephrase lines while preserving judgment, distance, and control."
+      },
+      {
+        "zone": "感官与视觉细节",
+        "guidance": "Add visual texture that reinforces precision and distance."
+      },
+      {
+        "zone": "穿搭与物件",
+        "guidance": "Props and styling may vary as status signals."
+      },
+      {
+        "zone": "场景行为细节",
+        "guidance": "Scene blocking can change if sovereignty and latency remain intact."
+      },
+      {
+        "zone": "亲密关系表现",
+        "guidance": "Intimacy may appear only through controlled, structured access."
+      }
+    ],
+    "forbidden_drift": [
+      "变成热场型、讨好型或治愈型人格",
+      "依赖情绪爆发建立主导权",
+      "为了换取认可而自我解释、快速交心或主动求和",
+      "用低边界分享替代仪式、结构与控制"
+    ]
+  }
 }

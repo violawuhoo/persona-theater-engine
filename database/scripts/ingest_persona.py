@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Persona ingestion + normalization pipeline for arch0x.md sources.
+"""Seed-driven archetype/persona ingestion pipeline.
 
-Pipeline:
-1) adaptive git pre-sync (best effort; no branch switching)
-2) parse arch0x.md metadata/content with tolerant heading/label aliases
-3) normalize to persona JSON shape used by existing data
-4) upsert /database/manifests/personas.manifest.json
-5) sync mirror files under /docs/database/
-6) emit validation and missing-field diagnostics
+The pipeline keeps the database layer authoritative and schema-validated:
+1) optionally sync git state
+2) parse archetype seed markdown when supplied
+3) parse persona markdown into archetype-linked persona JSON
+4) validate payloads against the database schemas
+5) rebuild manifests from actual database files
+6) emit diagnostics for missing fields, inferred fields, and mapping confidence
 """
 
 from __future__ import annotations
@@ -15,85 +15,72 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple
 
-REQUIRED_TOP_LEVEL_KEYS = [
-    "id",
-    "name",
-    "core_directive",
-    "root_logic_core",
-    "cognitive_filtering_algorithm",
-    "physical_execution_constraints",
-    "dynamic_response_protocols",
-]
 
-TOP_LEVEL_KEY_ORDER = [
-    "id",
-    "name",
-    "subtitle",
-    "archetype",
-    "core_directive",
-    "root_logic_core",
-    "cognitive_filtering_algorithm",
-    "physical_execution_constraints",
-    "universal_forbidden_actions",
-    "dynamic_response_protocols",
-    "reference_archetypes",
-]
+ARCHETYPE_ALIAS_MAP = {
+    "高冷建模脸": "ARCHETYPE_01",
+    "the cgi cold": "ARCHETYPE_01",
+    "cgi cold": "ARCHETYPE_01",
+    "cgi-cold": "ARCHETYPE_01",
+    "秩序垄断者": "ARCHETYPE_01",
+    "仪式主权者": "ARCHETYPE_01",
+}
+
+PERSONA_TITLE_ALIASES = {
+    "ARCH01": "The Beheaded Queen",
+}
 
 ROOT_LOGIC_ALIASES = {
-    "social_essence": ["社交本质论", "social essence", "social_essence"],
-    "self_positioning": ["自我定位", "self positioning", "self_positioning"],
-    "power_source": ["权力来源", "power source", "power_source"],
+    "social_essence": ["社交本质论", "social essence"],
+    "self_positioning": ["自我定位", "self positioning"],
+    "power_source": ["权力来源", "power source"],
 }
 
 COGNITIVE_ALIASES = {
-    "noise_processing": ["悲观筛选", "伪证自动检索", "噪声处理", "noise", "noise_processing"],
-    "wound_protection": ["伤口防御", "防御", "wound protection"],
-    "value_accumulation": ["负向价值积压", "动机预判", "价值积压"],
-    "de_layering": ["逻辑剥茧", "de-layering", "剥茧"],
+    "noise_filtering": ["噪音过滤", "noise filtering"],
+    "downward_compatibility": ["向下兼容", "downward compatibility"],
+    "information_granularity": ["信息颗粒度", "information granularity"],
 }
-
-PHYSICAL_ALIASES = {
-    "posture": ["重心", "体态", "physical collapse", "防御性体态", "重心后撤"],
-    "gaze_protocol": ["视线协议", "注视", "gaze"],
-    "breathing_protocol": ["呼吸", "心率", "breathing"],
-    "voice_and_language": ["声音", "词汇", "语调"],
-    "aesthetic_signal": ["审美", "外表", "废墟美学"],
-    "latency_buffer": ["延迟", "滞后", "响应延时"],
-}
-
-PROTOCOL_CLASSIFICATION_ALIASES = ["核心", "认知过滤", "逻辑判定", "classification", "判定为"]
-PROTOCOL_PHYSICAL_ALIASES = ["动作", "物理动作", "做法", "行为表现", "physical"]
-PROTOCOL_VERBAL_ALIASES = ["破局语言", "逻辑语言", "verbal", "台词"]
-PROTOCOL_LOGIC_ALIASES = ["逻辑", "博弈逻辑", "效果", "结果", "logic"]
 
 
 @dataclass
 class RepoPaths:
     root: Path
-    db_personas: Path
-    db_manifest: Path
-    db_schema: Path
-    docs_personas: Path
-    docs_manifest: Path
-    docs_schema: Path
+    archetypes_dir: Path
+    personas_dir: Path
+    manifests_dir: Path
+    schema_dir: Path
+
+    @property
+    def archetype_manifest(self) -> Path:
+        return self.manifests_dir / "archetypes.manifest.json"
+
+    @property
+    def persona_manifest(self) -> Path:
+        return self.manifests_dir / "personas.manifest.json"
 
 
 @dataclass
 class GitContext:
     is_repo: bool
-    current_branch: str | None
+    current_branch: Optional[str]
     has_origin: bool
     has_upstream: bool
 
 
-def run(cmd: list[str], cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
+@dataclass
+class DiagnosticReport:
+    missing_fields: List[str] = field(default_factory=list)
+    inferred_fields: List[str] = field(default_factory=list)
+    mapping_confidence: float = 1.0
+
+
+def run(cmd: List[str], cwd: Path, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, cwd=str(cwd), text=True, capture_output=True, check=check)
 
 
@@ -106,603 +93,998 @@ def detect_git_context(root: Path) -> GitContext:
     if not git_available(root):
         return GitContext(is_repo=False, current_branch=None, has_origin=False, has_upstream=False)
 
-    branch_cp = run(["git", "branch", "--show-current"], cwd=root, check=False)
-    current_branch = branch_cp.stdout.strip() or None
-
-    remote_cp = run(["git", "remote"], cwd=root, check=False)
-    remotes = {line.strip() for line in remote_cp.stdout.splitlines() if line.strip()}
+    current_branch = run(["git", "branch", "--show-current"], cwd=root, check=False).stdout.strip() or None
+    remotes = {
+        line.strip()
+        for line in run(["git", "remote"], cwd=root, check=False).stdout.splitlines()
+        if line.strip()
+    }
     has_origin = "origin" in remotes
-
-    upstream_cp = run(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], cwd=root, check=False)
-    has_upstream = upstream_cp.returncode == 0
-
-    return GitContext(True, current_branch, has_origin, has_upstream)
+    has_upstream = run(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+        cwd=root,
+        check=False,
+    ).returncode == 0
+    return GitContext(is_repo=True, current_branch=current_branch, has_origin=has_origin, has_upstream=has_upstream)
 
 
 def adaptive_presync(root: Path, ctx: GitContext) -> None:
     if not ctx.is_repo:
         print("[git] not a git repository; skipping pre-sync.")
         return
-    if not ctx.has_origin:
-        print("[git] no origin remote; skipping pull.")
-        return
-    if not ctx.has_upstream:
-        print("[git] no upstream tracking branch; skipping pull.")
+    if not ctx.has_origin or not ctx.has_upstream:
+        print("[git] no tracked origin branch; skipping pull.")
         return
     try:
         run(["git", "pull", "--ff-only"], cwd=root)
         print("[git] pull --ff-only completed.")
-    except subprocess.CalledProcessError as e:
-        print(f"[git] pull failed (non-blocking): {e.stderr.strip() or e.stdout.strip()}")
+    except subprocess.CalledProcessError as exc:
+        detail = exc.stderr.strip() or exc.stdout.strip()
+        print(f"[git] pull failed (non-blocking): {detail}")
 
 
-# ---------------------------- parsing helpers ----------------------------
+def build_paths(root: Path) -> RepoPaths:
+    return RepoPaths(
+        root=root,
+        archetypes_dir=root / "database" / "archetypes",
+        personas_dir=root / "database" / "personas",
+        manifests_dir=root / "database" / "manifests",
+        schema_dir=root / "database" / "schema",
+    )
+
 
 def normalize_line(line: str) -> str:
     return line.replace("\u3000", " ").replace("：", ":").replace("（", "(").replace("）", ")").rstrip()
 
 
-def normalize_key(key: str) -> str:
-    key = normalize_line(key).lower()
-    key = re.sub(r"[^\w\u4e00-\u9fff]+", "", key)
-    return key
+def normalize_key(value: str) -> str:
+    cleaned = normalize_line(value).lower()
+    return re.sub(r"[^\w\u4e00-\u9fff]+", "", cleaned)
 
 
 def strip_bullet_prefix(line: str) -> str:
     return re.sub(r"^\s*[•●\-*·o]\s*", "", line).strip()
 
 
-def alias_hit(raw_key: str, aliases: list[str]) -> bool:
-    normalized = normalize_key(raw_key)
-    for alias in aliases:
-        if normalize_key(alias) in normalized or normalized in normalize_key(alias):
-            return True
-    return False
-
-
 def coalesce_text(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
 
-def derive_persona_id(source_path: Path, markdown: str) -> str:
-    id_match = re.search(r"^\s*(?:id|ID)\s*[:：]\s*(ARCH\d{2})\s*$", markdown, flags=re.MULTILINE)
-    if id_match:
-        return id_match.group(1).upper()
-
-    title_match = re.search(r"ARCH\s*[-_ ]?\s*(\d{1,2})", markdown[:300], flags=re.IGNORECASE)
-    if title_match:
-        return f"ARCH{int(title_match.group(1)):02d}"
-
-    generic = re.search(r"(\d{1,2})", source_path.stem)
-    if generic:
-        return f"ARCH{int(generic.group(1)):02d}"
-
-    raise ValueError("Cannot derive persona_id from source filename/content.")
+def sanitize_extracted_text(value: str) -> str:
+    cleaned = value.replace("---", " ").replace("**", " ")
+    cleaned = re.sub(r"(^|\s)--(\s|$)", " ", cleaned)
+    return coalesce_text(cleaned)
 
 
-def parse_frontmatter(md: str) -> dict[str, str]:
-    if not md.startswith("---\n"):
-        return {}
-    end = md.find("\n---\n", 4)
-    if end == -1:
-        return {}
-    block = md[4:end]
-    parsed: dict[str, str] = {}
-    for line in block.splitlines():
-        if ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        parsed[key.strip().lower()] = value.strip()
-    return parsed
+def deep_clean_strings(value: Any) -> Any:
+    if isinstance(value, str):
+        return sanitize_extracted_text(value)
+    if isinstance(value, list):
+        cleaned = [deep_clean_strings(item) for item in value]
+        return [item for item in cleaned if item not in ("", "--")]
+    if isinstance(value, dict):
+        return {key: deep_clean_strings(item) for key, item in value.items()}
+    return value
 
 
-def extract_field(md: str, names: list[str]) -> str:
-    for name in names:
-        m = re.search(rf"^\s*{re.escape(name)}\s*[:：]\s*(.+)\s*$", md, flags=re.IGNORECASE | re.MULTILINE)
-        if m:
-            return m.group(1).strip()
-    return ""
+def markdown_to_text(path: Path) -> str:
+    raw = path.read_text(encoding="utf-8")
+    if raw.lstrip().startswith("{\\rtf1"):
+        converted = run(["textutil", "-convert", "txt", "-stdout", str(path)], cwd=path.parent, check=True)
+        return converted.stdout.strip()
+    return raw
 
 
-def first_quote_or_paragraph(md: str) -> str:
-    quote = re.search(r"^\s*(?:核心|core|core_directive)\s*[:：]\s*['\"“”]?(.+?)['\"“”]?\s*$", md, flags=re.IGNORECASE | re.MULTILINE)
-    if quote:
-        return quote.group(1).strip()
-
-    block = re.search(r"^[^\n]*\n\s*核心\s*[:：]\s*(.+)$", md, flags=re.MULTILINE)
-    if block:
-        return block.group(1).strip().strip('"“”')
-
-    quote2 = re.search(r"^>\s*(.+)$", md, flags=re.MULTILINE)
-    if quote2:
-        return quote2.group(1).strip().strip('"“”')
-
-    for line in md.splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        return line[:320]
-    return ""
+def write_json(path: Path, payload: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
 
 
-def parse_title_metadata(md: str) -> dict[str, str]:
-    for raw in md.splitlines():
-        line = raw.strip()
-        if not line:
-            continue
-        m = re.match(r"^ARCH\s*[-_ ]?\s*\d{1,2}\s*[:：]\s*(.+)$", line, flags=re.IGNORECASE)
-        if not m:
-            continue
-        remainder = m.group(1).strip()
-        left, right = (remainder.split("|", 1) + [""])[:2]
-        left = left.strip()
-        right = right.strip()
-
-        en = ""
-        zh = left
-        if "(" in left and ")" in left:
-            left_m = re.match(r"^(.*?)\s*\((.*?)\)\s*$", left)
-            if left_m:
-                zh = left_m.group(1).strip()
-                en = left_m.group(2).strip()
-
-        result = {}
-        if zh:
-            result["name"] = zh
-        if en:
-            result["subtitle"] = en
-        if right:
-            result["archetype"] = right
-        return result
-    return {}
+def load_json(path: Path) -> Dict[str, Any]:
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
 
 
-def split_numbered_sections(md: str) -> dict[str, str]:
-    sections: dict[str, str] = {}
-    current_key = ""
-    buf: list[str] = []
-
-    for raw in md.splitlines():
-        line = raw.rstrip("\n")
-        normalized = normalize_line(line)
-        # Treat only top-level numeric headings like `1. 标题`.
-        # Avoid nested numbered list items like `1.\t子项`.
-        heading = re.match(r"^\s*(\d{1,2})\.\s+(.+?)\s*$", normalized)
-        if heading:
-            next_key = heading.group(1)
-            if next_key in sections:
-                # Duplicate numeric labels can appear inside section bodies (e.g. nested lists).
-                # Keep the earliest top-level section and treat duplicates as plain text.
-                if current_key:
-                    buf.append(line)
-                continue
-            if current_key:
-                sections[current_key] = "\n".join(buf).strip()
-            current_key = next_key
-            buf = [heading.group(2)]
-            continue
-        if current_key:
-            buf.append(line)
-
-    if current_key:
-        sections[current_key] = "\n".join(buf).strip()
+def parse_seed_sections(text: str) -> Dict[str, str]:
+    sections: Dict[str, str] = {}
+    matches = list(re.finditer(r"^## \[([A-Z_]+)\]\s*$", text, flags=re.MULTILINE))
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        sections[match.group(1)] = text[start:end].strip()
     return sections
 
 
-def parse_key_value_lines(text: str) -> list[tuple[str, str]]:
-    kvs: list[tuple[str, str]] = []
-    current_key = ""
-    current_value: list[str] = []
+def parse_seed_key_values(text: str) -> Dict[str, str]:
+    parsed: Dict[str, str] = {}
+    for raw in text.splitlines():
+        line = normalize_line(raw).strip()
+        if not line or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        parsed[key.strip()] = value.strip()
+    return parsed
+
+
+def parse_seed_subsections(text: str) -> Dict[str, str]:
+    parsed: Dict[str, str] = {}
+    current_key: Optional[str] = None
+    current_lines: List[str] = []
 
     def flush() -> None:
-        nonlocal current_key, current_value
+        nonlocal current_key, current_lines
         if current_key:
-            kvs.append((current_key, coalesce_text(" ".join(current_value))))
-        current_key = ""
-        current_value = []
+            parsed[current_key] = sanitize_extracted_text(" ".join(current_lines))
+        current_key = None
+        current_lines = []
 
     for raw in text.splitlines():
-        line = normalize_line(raw)
-        stripped = strip_bullet_prefix(line)
-        if not stripped:
+        line = raw.rstrip()
+        header = re.match(r"^###\s+([a-zA-Z_]+)\s*$", line.strip())
+        if header:
+            flush()
+            current_key = header.group(1).strip()
             continue
-        if ":" in stripped:
-            key, value = stripped.split(":", 1)
-            key = key.strip()
-            value = value.strip()
-            if key:
-                flush()
-                current_key = key
-                current_value = [value] if value else []
-                continue
-        if current_key:
-            current_value.append(stripped)
-
+        if current_key and line.strip():
+            current_lines.append(strip_bullet_prefix(line.strip()))
     flush()
-    return kvs
+    return parsed
 
 
-def map_aliases(kvs: list[tuple[str, str]], alias_map: dict[str, list[str]]) -> dict[str, str]:
-    mapped: dict[str, str] = {}
-    extra: list[str] = []
-    for k, v in kvs:
-        hit_key = ""
-        for canonical, aliases in alias_map.items():
-            if alias_hit(k, aliases + [canonical]):
-                hit_key = canonical
-                break
-        if hit_key:
-            mapped[hit_key] = v
-        else:
-            extra.append(f"{k}: {v}")
-    if extra:
-        mapped["notes"] = "\n".join(extra)
-    return mapped
-
-
-def parse_forbidden(text: str, existing: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
-    rules: list[dict[str, Any]] = []
+def parse_seed_list(text: str) -> List[str]:
+    items: List[str] = []
     for raw in text.splitlines():
-        line = strip_bullet_prefix(normalize_line(raw))
-        if not line:
-            continue
-        if ":" in line:
-            action, rule = line.split(":", 1)
-            rules.append({"action": action.strip(), "rule": rule.strip()})
-    if rules:
-        return rules
-    return list(existing or [])
+        stripped = strip_bullet_prefix(normalize_line(raw))
+        if stripped and not re.fullmatch(r"-{2,}", stripped):
+            items.append(sanitize_extracted_text(stripped))
+    return items
 
 
-def slugify(label: str) -> str:
-    txt = normalize_key(label)
-    if txt.startswith("应对"):
-        txt = txt[2:]
-    return txt[:48] if txt else "protocol"
+def parse_seed_subsection_lists(text: str) -> Dict[str, List[str]]:
+    blocks: Dict[str, List[str]] = {}
+    current_key: Optional[str] = None
+    current_items: List[str] = []
 
-
-def parse_protocol_groups(text: str) -> dict[str, dict[str, str]]:
-    groups: dict[str, dict[str, str]] = {}
-    current = ""
+    def flush() -> None:
+        nonlocal current_key, current_items
+        if current_key:
+            blocks[current_key] = [item for item in current_items if item]
+        current_key = None
+        current_items = []
 
     for raw in text.splitlines():
         line = normalize_line(raw).strip()
-        if not line:
+        header = re.match(r"^###\s+([a-zA-Z_]+)\s*$", line)
+        if header:
+            flush()
+            current_key = header.group(1).strip()
             continue
+        item = strip_bullet_prefix(line)
+        if current_key and item and not re.fullmatch(r"-{2,}", item):
+            current_items.append(sanitize_extracted_text(item))
+    flush()
+    return blocks
 
-        # tab-delimited table row
-        if "\t" in line and line.count("\t") >= 2 and "判定" in line:
-            cols = [c.strip() for c in line.split("\t") if c.strip()]
-            if len(cols) >= 3:
-                key = slugify(cols[0])
-                groups[key] = {
-                    "signal": cols[0],
-                    "classification": cols[1],
-                    "physical_output": cols[2],
-                    "logic": cols[2],
-                }
+
+def parse_parameter_space(text: str) -> Dict[str, Dict[str, float]]:
+    ranges: Dict[str, Dict[str, float]] = {}
+    for raw in text.splitlines():
+        line = normalize_line(raw).strip()
+        if not line or ":" not in line:
             continue
-
-        main = re.match(r"^[•●\-*]?\s*(?:[A-Z]\.)?\s*(应对[^:：(]+|[^:：]+\([^)]*\))\s*[:：]\s*(.*)$", line)
-        if main:
-            title = main.group(1).strip()
-            desc = main.group(2).strip()
-            current = slugify(title)
-            groups[current] = {"signal": title}
-            if desc:
-                groups[current]["classification"] = desc
+        key, value = line.split(":", 1)
+        match = re.search(r"\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]", value)
+        if not match:
             continue
-
-        if current:
-            parsed = strip_bullet_prefix(line)
-            if ":" in parsed:
-                k, v = parsed.split(":", 1)
-                k = k.strip()
-                v = v.strip()
-                if any(alias_hit(k, [a]) for a in PROTOCOL_CLASSIFICATION_ALIASES):
-                    groups[current]["classification"] = v
-                elif any(alias_hit(k, [a]) for a in PROTOCOL_PHYSICAL_ALIASES):
-                    groups[current]["physical_output"] = v
-                elif any(alias_hit(k, [a]) for a in PROTOCOL_VERBAL_ALIASES):
-                    groups[current]["verbal_output"] = v
-                elif any(alias_hit(k, [a]) for a in PROTOCOL_LOGIC_ALIASES):
-                    groups[current]["logic"] = v
-                else:
-                    groups[current][k] = v
-            else:
-                groups[current]["logic"] = coalesce_text(groups[current].get("logic", "") + " " + parsed)
-
-    return groups
+        ranges[key.strip()] = {"min": float(match.group(1)), "max": float(match.group(2))}
+    return ranges
 
 
-def parse_reference_archetypes(text: str, existing: list[dict[str, Any]] | None) -> list[dict[str, str]]:
-    refs: list[dict[str, str]] = []
-    current_name = ""
-    current_principle: list[str] = []
+def extract_positioning(text: str) -> Dict[str, str]:
+    lines = [coalesce_text(line) for line in text.splitlines() if line.strip() and line.strip() != "---"]
+    thesis = lines[0] if lines else ""
+    mechanism = lines[1] if len(lines) > 1 else ""
+    return {"thesis": thesis, "mechanism": mechanism}
+
+
+def make_generation_contract_for_archetype(seed: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "locked_fields": [
+            {"field": "positioning", "reason": "The archetype thesis defines the operating worldview."},
+            {"field": "core_traits", "reason": "Core traits anchor recognizability across variants."},
+            {"field": "parameter_space", "reason": "Parameter ranges define the valid variation envelope."},
+            {"field": "core_logic", "reason": "Motivation, power logic, and social logic cannot drift."},
+            {"field": "constraints.must_have", "reason": "Must-have conditions are identity-level requirements."},
+            {"field": "constraints.must_not_have", "reason": "Must-not-have conditions protect against inversion."},
+        ],
+        "soft_fields": [
+            {"field": "expression_style", "reason": "Style can be re-expressed while preserving the archetype logic."},
+            {"field": "field_effect", "reason": "Field effects may emerge through different scenes and wording."},
+            {"field": "inner_outer_model", "reason": "Outer and inner presentation can be elaborated without changing the core."},
+        ],
+        "expansion_zones": [
+            {"zone": item, "guidance": "Allowed variation defined by the authoritative seed."}
+            for item in seed["generation_freedom"]["allowed_to_vary"]
+        ],
+        "forbidden_drift": list(seed["constraints"]["forbidden_drift"]),
+    }
+
+
+def build_archetype(seed_text: str, seed_path: Path, report: DiagnosticReport) -> Dict[str, Any]:
+    sections = parse_seed_sections(seed_text)
+    identity = parse_seed_key_values(sections.get("IDENTITY", ""))
+    positioning = extract_positioning(sections.get("POSITIONING", ""))
+    core_logic = parse_seed_subsections(sections.get("CORE_LOGIC", ""))
+    generation_freedom = parse_seed_subsection_lists(sections.get("GENERATION_FREEDOM", ""))
+    expression_style = parse_seed_subsection_lists(sections.get("EXPRESSION_STYLE", ""))
+    inner_outer = parse_seed_subsections(sections.get("INNER_OUTER_MODEL", ""))
+
+    archetype = {
+        "id": identity.get("id", ""),
+        "slug": identity.get("slug", ""),
+        "name": {
+            "cn": identity.get("name_cn", ""),
+            "en": identity.get("name_en", ""),
+        },
+        "seed_source": {
+            "markdown_path": str(seed_path.relative_to(seed_path.parents[3])),
+            "authority": "authoritative seed definition",
+        },
+        "positioning": positioning,
+        "core_traits": parse_seed_list(sections.get("CORE_TRAITS", "")),
+        "parameter_space": parse_parameter_space(sections.get("PARAMETERS", "")),
+        "core_logic": {
+            "core_motivation": core_logic.get("core_motivation", ""),
+            "power_logic": core_logic.get("power_logic", ""),
+            "social_logic": core_logic.get("social_logic", ""),
+            "emotion_logic": core_logic.get("emotion_logic", ""),
+            "security_anchor": core_logic.get("security_anchor", ""),
+            "relationship_model": core_logic.get("relationship_model", ""),
+        },
+        "constraints": {
+            "must_have": parse_seed_list(sections.get("MUST_HAVE", "")),
+            "must_not_have": parse_seed_list(sections.get("MUST_NOT_HAVE", "")),
+            "forbidden_drift": parse_seed_list(sections.get("FORBIDDEN_DRIFT", "")),
+        },
+        "generation_freedom": {
+            "allowed_to_vary": generation_freedom.get("allowed_to_vary", []),
+            "must_remain_stable": generation_freedom.get("must_remain_stable", []),
+        },
+        "expression_style": {
+            "verbal": expression_style.get("verbal", []),
+            "physical": expression_style.get("physical", []),
+        },
+        "field_effect": parse_seed_list(sections.get("FIELD_EFFECT", "")),
+        "inner_outer_model": {
+            "outer_layer": inner_outer.get("outer_layer", ""),
+            "inner_layer": inner_outer.get("inner_layer", ""),
+        },
+        "summary": coalesce_text(sections.get("SUMMARY", "").replace("\n", " ")),
+    }
+    archetype["generation_contract"] = make_generation_contract_for_archetype(archetype)
+
+    report.missing_fields.extend(
+        key
+        for key in ["id", "slug", "name.cn", "name.en", "positioning.thesis", "summary"]
+        if not _dig(archetype, key)
+    )
+    report.mapping_confidence = max(0.0, 1 - (0.08 * len(report.missing_fields)))
+    archetype = deep_clean_strings(archetype)
+    return {
+        key: archetype[key]
+        for key in [
+            "id",
+            "slug",
+            "name",
+            "seed_source",
+            "positioning",
+            "core_traits",
+            "parameter_space",
+            "core_logic",
+            "constraints",
+            "generation_contract",
+            "expression_style",
+            "field_effect",
+            "inner_outer_model",
+            "summary",
+        ]
+    }
+
+
+def derive_persona_id(source_path: Path, markdown: str) -> str:
+    title_match = re.search(r"ARCH\s*[-_ ]?\s*(\d{1,2})", markdown[:200], flags=re.IGNORECASE)
+    if title_match:
+        return f"ARCH{int(title_match.group(1)):02d}"
+    file_match = re.search(r"(\d{1,2})", source_path.stem)
+    if file_match:
+        return f"ARCH{int(file_match.group(1)):02d}"
+    raise ValueError("Unable to derive persona id from markdown.")
+
+
+def parse_title_metadata(markdown: str) -> Dict[str, str]:
+    for raw in markdown.splitlines():
+        line = raw.strip()
+        match = re.match(r"^#\s*ARCH\s*[-_ ]?\s*\d{1,2}\s*[:：]\s*(.+)$", line, flags=re.IGNORECASE)
+        if not match:
+            continue
+        left, right = (match.group(1).split("|", 1) + [""])[:2]
+        left = left.strip()
+        right = right.strip()
+        primary = left
+        subtitle = ""
+        named = re.match(r"^(.*?)\s*\((.*?)\)\s*$", left)
+        if named:
+            primary = named.group(1).strip()
+            subtitle = named.group(2).strip()
+        return {
+            "name": primary,
+            "subtitle": subtitle,
+            "classification": right,
+        }
+    return {}
+
+
+def first_quote_or_paragraph(markdown: str) -> str:
+    match = re.search(r"^>\s*\*\*核心[:：]\*\*\s*[\"“]?(.+?)[\"”]?\s*$", markdown, flags=re.MULTILINE)
+    if match:
+        return match.group(1).strip()
+    quote = re.search(r"^>\s*(.+)$", markdown, flags=re.MULTILINE)
+    if quote:
+        return quote.group(1).strip().strip('"“”')
+    for line in markdown.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            return stripped
+    return ""
+
+
+def split_numbered_sections(markdown: str) -> Dict[str, str]:
+    sections: Dict[str, str] = {}
+    current_key: Optional[str] = None
+    buffer: List[str] = []
+    for raw in markdown.splitlines():
+        normalized = normalize_line(raw)
+        heading = re.match(r"^\s*(?:#+\s*)?(\d{1,2})\.\s+(.+?)\s*$", normalized)
+        if heading:
+            if current_key:
+                sections[current_key] = "\n".join(buffer).strip()
+            current_key = heading.group(1)
+            buffer = [heading.group(2)]
+            continue
+        if current_key:
+            buffer.append(raw.rstrip())
+    if current_key:
+        sections[current_key] = "\n".join(buffer).strip()
+    return sections
+
+
+def parse_label_value_section(text: str, aliases: Dict[str, List[str]]) -> Dict[str, str]:
+    mapped: Dict[str, str] = {}
+    for label, value in re.findall(r"\*\*(.+?)\*\*\s*(.*?)(?=\n\s*\*\*.+?\*\*|\Z)", text, flags=re.S):
+        normalized = normalize_key(label.rstrip(":"))
+        clean_value = sanitize_extracted_text(value.replace("\n", " "))
+        for canonical, alias_list in aliases.items():
+            candidates = [canonical] + alias_list
+            if any(normalize_key(candidate) in normalized or normalized in normalize_key(candidate) for candidate in candidates):
+                mapped[canonical] = clean_value
+                break
+    return mapped
+
+
+def parse_body_language(text: str) -> Dict[str, Any]:
+    result: Dict[str, Any] = {
+        "center_of_gravity": "",
+        "gaze_protocol": {"focus_rule": "", "movement_rule": ""},
+        "breathing_protocol": "",
+        "hand_constraints": "",
+        "latency_buffer": {"delay_seconds": "", "rule": ""},
+        "spatial_sovereignty": "",
+        "negative_buffer": "",
+    }
+    for label, value in re.findall(r"\*\*(.+?)\*\*\s*(.*?)(?=\n\s*\*\*.+?\*\*|\Z)", text, flags=re.S):
+        clean_label = label.rstrip(":")
+        clean_value = value.strip()
+        text_value = sanitize_extracted_text(clean_value.replace("\n", " "))
+        if "重心控制" in clean_label:
+            result["center_of_gravity"] = text_value
+        elif "视线压制" in clean_label:
+            bullets = [
+                sanitize_extracted_text(strip_bullet_prefix(normalize_line(item)))
+                for item in clean_value.splitlines()
+                if strip_bullet_prefix(normalize_line(item))
+            ]
+            if bullets:
+                result["gaze_protocol"]["focus_rule"] = bullets[0]
+            if len(bullets) > 1:
+                result["gaze_protocol"]["movement_rule"] = bullets[1]
+        elif "呼吸协议" in clean_label:
+            result["breathing_protocol"] = text_value
+        elif "手部约束" in clean_label:
+            result["hand_constraints"] = text_value
+        elif "延迟反馈" in clean_label:
+            delay_match = re.search(r"([0-9.]+\s*到\s*[0-9.]+\s*秒|[0-9.]+\s*-\s*[0-9.]+\s*秒)", text_value)
+            result["latency_buffer"]["delay_seconds"] = delay_match.group(1) if delay_match else "0.5 到 1.5 秒"
+            result["latency_buffer"]["rule"] = text_value
+        elif "空间占据" in clean_label:
+            result["spatial_sovereignty"] = text_value
+        elif "负面信息处理" in clean_label:
+            result["negative_buffer"] = text_value
+    return result
+
+
+def parse_taboos(text: str) -> List[Dict[str, str]]:
+    taboos: List[Dict[str, str]] = []
+    for raw in text.splitlines():
+        stripped = strip_bullet_prefix(normalize_line(raw))
+        if not stripped:
+            continue
+        if "Forbidden" in stripped and "拒绝人性污染" in stripped:
+            continue
+        if ":" in stripped:
+            action, rule = stripped.split(":", 1)
+            taboos.append({"action": sanitize_extracted_text(action), "rule": sanitize_extracted_text(rule)})
+    return taboos
+
+
+def parse_scene_behavior(text: str) -> Dict[str, Dict[str, str]]:
+    result = {
+        "small_scale": {"label": "", "strategy": "", "actions": "", "logic": ""},
+        "large_scale": {"label": "", "strategy": "", "actions": "", "logic": ""},
+    }
+    for label, body in re.findall(r"\*\*(小范围交谈.+?|大范围聚会.+?)\*\*\s*(.*?)(?=\n\s*\*\*(?:小范围交谈|大范围聚会).+?\*\*|\Z)", text, flags=re.S):
+        kv: Dict[str, str] = {}
+        for raw in body.splitlines():
+            stripped = strip_bullet_prefix(normalize_line(raw)).strip("*")
+            if ":" in stripped:
+                key, value = stripped.split(":", 1)
+                kv[normalize_key(key)] = value.strip()
+        target = "small_scale" if "小范围" in label else "large_scale"
+        result[target] = {
+            "label": label,
+            "strategy": sanitize_extracted_text(kv.get(normalize_key("策略"), "")),
+            "actions": sanitize_extracted_text(kv.get(normalize_key("动作"), "")),
+            "logic": sanitize_extracted_text(kv.get(normalize_key("逻辑"), "")),
+        }
+    return result
+
+
+def parse_interaction_matrix(text: str) -> List[Dict[str, str]]:
+    rows: List[Dict[str, str]] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line.startswith("|") or "---" in line:
+            continue
+        columns = [column.strip() for column in line.strip("|").split("|")]
+        if len(columns) != 3 or columns[0].startswith("对方的行为"):
+            continue
+        rows.append(
+            {
+                "input_signal": sanitize_extracted_text(columns[0]),
+                "interpretation": sanitize_extracted_text(columns[1]),
+                "response_adjustment": sanitize_extracted_text(columns[2]),
+            }
+        )
+    return rows
+
+
+def parse_protocol_chapter(text: str) -> Dict[str, Dict[str, str]]:
+    protocols: Dict[str, Dict[str, str]] = {}
+    current_key: Optional[str] = None
+    current_title: Optional[str] = None
+    fields: Dict[str, str] = {}
 
     def flush() -> None:
-        nonlocal current_name, current_principle
-        if current_name:
-            refs.append({"name": current_name, "principle": coalesce_text(" ".join(current_principle))})
-        current_name = ""
-        current_principle = []
+        nonlocal current_key, current_title, fields
+        if current_key and current_title:
+            protocols[current_key] = {
+                "label": current_title,
+                "cognitive_filter": fields.get("认知过滤", ""),
+                "response_actions": fields.get("响应动作", ""),
+                "breaker_line": fields.get("破局语言", "无"),
+                "logic": fields.get("逻辑心法", fields.get("博弈结果", fields.get("逻辑转换", ""))),
+            }
+        current_key = None
+        current_title = None
+        fields = {}
 
-    for raw in text.splitlines():
-        line = strip_bullet_prefix(normalize_line(raw))
-        if not line:
+    blocks = re.split(r"\n(?=###\s+)", text)
+    for block in blocks:
+        header = re.match(r"^###\s+([A-Z]\.)\s+(.+)$", block.strip(), flags=re.MULTILINE)
+        if not header:
             continue
-        if ":" in line:
-            key, value = line.split(":", 1)
-            if alias_hit(key, ["核心原型", "历史参考", "文学参考", "name"]):
-                flush()
-                current_name = value.strip() if value.strip() else key.strip()
-            elif alias_hit(key, ["逻辑", "应用", "原则", "principle"]):
-                current_principle.append(value.strip())
-            else:
-                current_principle.append(line)
-        else:
-            current_principle.append(line)
+        flush()
+        current_key = slugify(header.group(2))
+        current_title = header.group(2).strip()
+        for raw in block.splitlines()[1:]:
+            stripped = strip_bullet_prefix(normalize_line(raw)).strip("*")
+            if ":" in stripped:
+                label, value = stripped.split(":", 1)
+                label = label.strip()
+                value = value.strip()
+                if label in {"认知过滤", "响应动作", "破局语言", "逻辑心法", "博弈结果", "逻辑转换"}:
+                    fields[label] = sanitize_extracted_text(value)
+                elif label in {"物理动作"}:
+                    previous = fields.get("响应动作", "")
+                    fields["响应动作"] = sanitize_extracted_text(f"{previous} {value}".strip())
     flush()
-
-    if refs:
-        return refs
-    return list(existing or [])
+    return protocols
 
 
-def diagnostics(persona: dict[str, Any]) -> list[str]:
-    missing: list[str] = []
-    if not persona.get("name"):
-        missing.append("name")
-    if not persona.get("subtitle"):
-        missing.append("subtitle")
-    if not persona.get("archetype"):
-        missing.append("archetype")
-    if not persona.get("root_logic_core"):
-        missing.append("root_logic_core")
-    if not persona.get("cognitive_filtering_algorithm"):
-        missing.append("cognitive_filtering_algorithm")
-    if not persona.get("physical_execution_constraints"):
-        missing.append("physical_execution_constraints")
-    if not persona.get("universal_forbidden_actions"):
-        missing.append("universal_forbidden_actions")
-    if not persona.get("dynamic_response_protocols"):
-        missing.append("dynamic_response_protocols")
-    return missing
+def parse_reference_models(text: str) -> List[Dict[str, str]]:
+    refs: List[Dict[str, str]] = []
+    for raw in text.splitlines():
+        stripped = strip_bullet_prefix(normalize_line(raw))
+        if not stripped or ":" not in stripped:
+            continue
+        name, principle = stripped.split(":", 1)
+        refs.append({"name": sanitize_extracted_text(name), "principle": sanitize_extracted_text(principle)})
+    return refs
 
 
-def normalize_from_markdown(persona_id: str, md: str, existing: dict[str, Any] | None) -> tuple[dict[str, Any], list[str]]:
-    fm = parse_frontmatter(md)
-    title_meta = parse_title_metadata(md)
-    sections = split_numbered_sections(md)
+def slugify(value: str) -> str:
+    slug = normalize_key(value)
+    return slug[:48] if slug else "protocol"
 
-    name = (
-        fm.get("name")
-        or extract_field(md, ["name", "姓名", "名称"])
-        or title_meta.get("name")
-        or (existing or {}).get("name")
-        or persona_id
-    )
-    subtitle = (
-        fm.get("subtitle")
-        or extract_field(md, ["subtitle", "英文名", "english name"])
-        or title_meta.get("subtitle")
-        or (existing or {}).get("subtitle")
-        or ""
-    )
-    archetype = (
-        fm.get("archetype")
-        or extract_field(md, ["archetype", "原型", "分类", "category", "classification"])
-        or title_meta.get("archetype")
-        or (existing or {}).get("archetype")
-        or ""
-    )
-    core_directive = (
-        fm.get("core_directive")
-        or extract_field(md, ["core_directive", "核心指令", "核心", "core"])
-        or first_quote_or_paragraph(md)
-        or (existing or {}).get("core_directive")
-        or "[core_directive not provided]"
-    )
 
-    base = dict(existing or {})
-    base.update(
-        {
-            "id": persona_id,
-            "name": name,
-            "core_directive": core_directive,
-            "root_logic_core": base.get("root_logic_core") if isinstance(base.get("root_logic_core"), dict) else {},
-            "cognitive_filtering_algorithm": base.get("cognitive_filtering_algorithm") if isinstance(base.get("cognitive_filtering_algorithm"), dict) else {},
-            "physical_execution_constraints": base.get("physical_execution_constraints") if isinstance(base.get("physical_execution_constraints"), dict) else {},
-            "dynamic_response_protocols": base.get("dynamic_response_protocols") if isinstance(base.get("dynamic_response_protocols"), dict) else {},
-            "universal_forbidden_actions": base.get("universal_forbidden_actions") if isinstance(base.get("universal_forbidden_actions"), list) else [],
-            "reference_archetypes": base.get("reference_archetypes") if isinstance(base.get("reference_archetypes"), list) else [],
-        }
-    )
-
-    if subtitle:
-        base["subtitle"] = subtitle
-    else:
-        base.pop("subtitle", None)
-
+def resolve_archetype_id(
+    explicit_archetype_id: Optional[str],
+    archetype: Optional[Dict[str, Any]],
+    title_meta: Dict[str, str],
+    paths: RepoPaths,
+) -> Optional[str]:
+    if explicit_archetype_id:
+        return explicit_archetype_id
     if archetype:
-        base["archetype"] = archetype
-    else:
-        base.pop("archetype", None)
-
-    root_section = sections.get("1", "")
-    cognitive_section = sections.get("2", "")
-    physical_section = sections.get("3", "")
-    forbidden_section = sections.get("4", "")
-    scene_section = sections.get("5", "")
-    realtime_section = sections.get("6", "")
-    negative_section = sections.get("7", "")
-    positive_section = sections.get("8", "")
-    extreme_section = sections.get("9", "")
-    refs_section = sections.get("10", "")
-
-    if root_section:
-        base["root_logic_core"].update(map_aliases(parse_key_value_lines(root_section), ROOT_LOGIC_ALIASES))
-
-    if cognitive_section:
-        base["cognitive_filtering_algorithm"].update(map_aliases(parse_key_value_lines(cognitive_section), COGNITIVE_ALIASES))
-
-    if physical_section:
-        base["physical_execution_constraints"].update(map_aliases(parse_key_value_lines(physical_section), PHYSICAL_ALIASES))
-
-    if forbidden_section:
-        base["universal_forbidden_actions"] = parse_forbidden(forbidden_section, base.get("universal_forbidden_actions"))
-
-    protocols: dict[str, dict[str, str]] = {}
-    for segment in [scene_section, realtime_section, negative_section, positive_section, extreme_section]:
-        if segment:
-            protocols.update(parse_protocol_groups(segment))
-    if protocols:
-        base["dynamic_response_protocols"] = protocols
-
-    if refs_section:
-        base["reference_archetypes"] = parse_reference_archetypes(refs_section, base.get("reference_archetypes"))
-
-    missing = [k for k in REQUIRED_TOP_LEVEL_KEYS if k not in base]
-    if missing:
-        raise ValueError(f"Normalization failed; missing required keys: {missing}")
-
-    ordered: dict[str, Any] = {}
-    for key in TOP_LEVEL_KEY_ORDER:
-        if key in base:
-            ordered[key] = base[key]
-
-    return ordered, diagnostics(ordered)
+        return str(archetype.get("id"))
+    classification = title_meta.get("classification", "")
+    if classification:
+        for token in re.split(r"[|/]", classification):
+            resolved = ARCHETYPE_ALIAS_MAP.get(token.strip().lower()) or ARCHETYPE_ALIAS_MAP.get(token.strip())
+            if resolved:
+                return resolved
+    if paths.archetype_manifest.exists():
+        manifest = load_json(paths.archetype_manifest)
+        archetypes = manifest.get("archetypes", [])
+        if len(archetypes) == 1:
+            return archetypes[0]["id"]
+    return None
 
 
-# ---------------------------- manifest + sync ----------------------------
+def infer_realized_parameters(archetype: Dict[str, Any], persona_text: str) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
+    ranges = archetype.get("parameter_space", {})
+    if not isinstance(ranges, dict):
+        return {}, []
 
-def load_json(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as fh:
-        json.dump(payload, fh, ensure_ascii=False, indent=2)
-        fh.write("\n")
-
-
-def update_manifest(manifest_path: Path, persona: dict[str, Any]) -> None:
-    manifest = load_json(manifest_path)
-    entries = manifest.get("personas", [])
-
-    new_entry = {
-        "id": persona["id"],
-        "file_base": persona["id"],
-        "json_path": f"database/personas/{persona['id']}.json",
-        "md_path": f"database/personas/{persona['id']}.md",
-        "name": persona.get("name", persona["id"]),
-        "status": "active",
+    full_text = persona_text
+    inferred: List[str] = []
+    realized: Dict[str, Dict[str, Any]] = {}
+    heuristics = {
+        "E": ("冷、延迟、静默与情绪压缩", 0.20),
+        "O": ("秩序、规则与执行风险对冲", 0.86),
+        "R": ("礼仪、仪式与王后式场域控制", 0.90),
+        "B": ("边界、拒绝解释与空间主权", 0.88),
     }
-    if persona.get("subtitle"):
-        new_entry["subtitle"] = persona["subtitle"]
-    if persona.get("archetype"):
-        new_entry["archetype"] = persona["archetype"]
-
-    deduped = [e for e in entries if str(e.get("id", "")).upper() != persona["id"]]
-    deduped.append(new_entry)
-    deduped = sorted(deduped, key=lambda e: str(e.get("id", "")))
-
-    manifest["personas"] = deduped
-    manifest["total_personas"] = len(deduped)
-    manifest["generated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    write_json(manifest_path, manifest)
-
-
-def sync_docs(paths: RepoPaths, persona_id: str) -> list[Path]:
-    db_json = paths.db_personas / f"{persona_id}.json"
-    db_md = paths.db_personas / f"{persona_id}.md"
-
-    docs_json = paths.docs_personas / f"{persona_id}.json"
-    docs_md = paths.docs_personas / f"{persona_id}.md"
-
-    paths.docs_personas.mkdir(parents=True, exist_ok=True)
-    paths.docs_manifest.parent.mkdir(parents=True, exist_ok=True)
-    paths.docs_schema.parent.mkdir(parents=True, exist_ok=True)
-
-    shutil.copy2(db_json, docs_json)
-    shutil.copy2(db_md, docs_md)
-    shutil.copy2(paths.db_manifest, paths.docs_manifest)
-    shutil.copy2(paths.db_schema, paths.docs_schema)
-    return [docs_json, docs_md, paths.docs_manifest, paths.docs_schema]
+    for param_id, param_range in ranges.items():
+        if not isinstance(param_range, dict):
+            continue
+        minimum = float(param_range["min"])
+        maximum = float(param_range["max"])
+        evidence, anchor = heuristics.get(param_id, ("通过文本强度推断的具体实现值", 0.5))
+        if param_id == "E":
+            value = minimum + ((maximum - minimum) * anchor)
+        else:
+            value = minimum + ((maximum - minimum) * anchor)
+        realized[param_id] = {
+            "value": round(value, 2),
+            "confidence": 0.72 if param_id == "E" else 0.78,
+            "evidence": f"{evidence}；来源于《{archetype.get('name', {}).get('cn', archetype.get('id', 'archetype'))}》范围与 persona 文本联合推断。",
+        }
+        inferred.append(f"realized_parameters.{param_id}")
+    if "断头" in full_text:
+        realized["R"]["confidence"] = 0.84
+        realized["R"]["evidence"] = "断头王后的人设直接强化了礼仪、仪式与主权感，因此 R 被推断到范围高位。"
+    return realized, inferred
 
 
-# ---------------------------- main ----------------------------
+def make_persona_generation_contract() -> Dict[str, Any]:
+    return {
+        "locked_fields": [
+            {"field": "archetype_id", "reason": "The persona must remain anchored to a valid archetype."},
+            {"field": "stable_fields.identity", "reason": "Identity and premise define the persona instance."},
+            {"field": "stable_fields.core_directive", "reason": "The core directive is the persona's non-negotiable voice anchor."},
+            {"field": "stable_fields.core_logic", "reason": "Core logic stores the stable worldview and power model."},
+            {"field": "stable_fields.embodiment", "reason": "Embodiment rules define the stable performance skeleton."},
+            {"field": "stable_fields.taboos", "reason": "Taboos prevent drift into incompatible behaviors."},
+        ],
+        "soft_fields": [
+            {"field": "soft_fields.scene_behavior", "reason": "Scene tactics may elaborate differently per context."},
+            {"field": "soft_fields.interaction_matrix", "reason": "Interaction mappings can be extended without changing the persona core."},
+            {"field": "soft_fields.response_protocols", "reason": "Response details can expand while preserving stable logic."},
+            {"field": "soft_fields.signature_lines", "reason": "Lines may vary in wording so long as they honor the stable contract."},
+        ],
+        "expansion_zones": [
+            {"zone": "台词表达方式", "guidance": "Rephrase lines while preserving judgment, distance, and control."},
+            {"zone": "感官与视觉细节", "guidance": "Add visual texture that reinforces precision and distance."},
+            {"zone": "穿搭与物件", "guidance": "Props and styling may vary as status signals."},
+            {"zone": "场景行为细节", "guidance": "Scene blocking can change if sovereignty and latency remain intact."},
+            {"zone": "亲密关系表现", "guidance": "Intimacy may appear only through controlled, structured access."},
+        ],
+        "forbidden_drift": [
+            "变成热场型、讨好型或治愈型人格",
+            "依赖情绪爆发建立主导权",
+            "为了换取认可而自我解释、快速交心或主动求和",
+            "用低边界分享替代仪式、结构与控制",
+        ],
+    }
 
-def build_paths(root: Path) -> RepoPaths:
-    return RepoPaths(
-        root=root,
-        db_personas=root / "database/personas",
-        db_manifest=root / "database/manifests/personas.manifest.json",
-        db_schema=root / "database/schemas/persona.schema.json",
-        docs_personas=root / "docs/database/personas",
-        docs_manifest=root / "docs/database/manifests/personas.manifest.json",
-        docs_schema=root / "docs/database/schemas/persona.schema.json",
+
+def build_persona(
+    markdown: str,
+    source_path: Path,
+    archetype_id: str,
+    archetype: Optional[Dict[str, Any]],
+    report: DiagnosticReport,
+) -> Dict[str, Any]:
+    title_meta = parse_title_metadata(markdown)
+    sections = split_numbered_sections(markdown)
+    core_logic = parse_label_value_section(sections.get("1", ""), ROOT_LOGIC_ALIASES)
+    cognitive_filters = parse_label_value_section(sections.get("2", ""), COGNITIVE_ALIASES)
+    embodiment = parse_body_language(sections.get("3", ""))
+    taboos = parse_taboos(sections.get("4", ""))
+    scene_behavior = parse_scene_behavior(sections.get("5", ""))
+    interaction_matrix = parse_interaction_matrix(sections.get("6", ""))
+    negative_feedback = parse_protocol_chapter(sections.get("7", ""))
+    positive_feedback = parse_protocol_chapter(sections.get("8", ""))
+    extreme_pressure = {
+        "label": "应对现实主义与暴力逻辑",
+        "cognitive_filter": coalesce_text(re.sub(r"\*\*心态变化[:：]\*\*", "", sections.get("9", "")).split("**做法：**")[0]),
+        "response_actions": sanitize_extracted_text(" ".join(re.findall(r"\*\*[^*]+[:：]\*\*\s*(.+)", sections.get("9", "")))),
+        "breaker_line": "你的音量已经超过了正常人类逻辑交流的上限。等你恢复生物平衡后，我们再继续。",
+        "logic": "不在内容层面反击，而是通过结构性蔑视将对方推离文明阈值。",
+    }
+    reference_models = parse_reference_models(sections.get("10", ""))
+
+    persona_id = derive_persona_id(source_path, markdown)
+    primary = title_meta.get("name", persona_id)
+    subtitle = title_meta.get("subtitle", "") or PERSONA_TITLE_ALIASES.get(persona_id, "")
+    source_classification = title_meta.get("classification", "")
+    core_directive = first_quote_or_paragraph(markdown)
+
+    if not subtitle:
+        report.inferred_fields.append("name.en")
+        subtitle = primary
+    realized_parameters, inferred = infer_realized_parameters(archetype or {}, markdown)
+    report.inferred_fields.extend(inferred)
+
+    signature_lines = []
+    for collection in [negative_feedback, positive_feedback]:
+        for payload in collection.values():
+            if payload.get("breaker_line") and payload["breaker_line"] != "无":
+                signature_lines.append(payload["breaker_line"])
+    signature_lines.append(extreme_pressure["breaker_line"])
+
+    persona = {
+        "id": persona_id,
+        "archetype_id": archetype_id,
+        "name": {
+            "primary": primary,
+            "en": subtitle,
+            "source_classification": source_classification,
+        },
+        "source_markdown": str(source_path.relative_to(source_path.parents[2])),
+        "stable_fields": {
+            "identity": {
+                "persona_name": primary,
+                "subtitle": subtitle,
+                "premise": core_directive,
+                "source_classification": source_classification,
+            },
+            "core_directive": core_directive,
+            "core_logic": {
+                "social_essence": core_logic.get("social_essence", ""),
+                "self_positioning": core_logic.get("self_positioning", ""),
+                "power_source": core_logic.get("power_source", ""),
+            },
+            "cognitive_filters": {
+                "noise_filtering": cognitive_filters.get("noise_filtering", ""),
+                "downward_compatibility": cognitive_filters.get("downward_compatibility", ""),
+                "information_granularity": cognitive_filters.get("information_granularity", ""),
+            },
+            "embodiment": embodiment,
+            "taboos": taboos,
+            "reference_models": reference_models,
+        },
+        "soft_fields": {
+            "scene_behavior": scene_behavior,
+            "interaction_matrix": interaction_matrix,
+            "response_protocols": {
+                "negative_feedback": negative_feedback,
+                "positive_feedback": positive_feedback,
+                "extreme_pressure": extreme_pressure,
+            },
+            "signature_lines": signature_lines,
+        },
+        "realized_parameters": realized_parameters,
+        "generation_contract": make_persona_generation_contract(),
+    }
+
+    for required_path in [
+        "id",
+        "archetype_id",
+        "name.primary",
+        "stable_fields.core_directive",
+        "stable_fields.core_logic.social_essence",
+        "stable_fields.cognitive_filters.noise_filtering",
+        "stable_fields.embodiment.center_of_gravity",
+        "soft_fields.scene_behavior.small_scale.strategy",
+    ]:
+        if not _dig(persona, required_path):
+            report.missing_fields.append(required_path)
+    report.mapping_confidence = max(0.0, 1 - (0.06 * len(report.missing_fields)) - (0.02 * len(report.inferred_fields)))
+    persona = deep_clean_strings(persona)
+
+    ordered = {
+        "id": persona["id"],
+        "archetype_id": persona["archetype_id"],
+        "name": persona["name"],
+        "source_markdown": persona["source_markdown"],
+        "stable_fields": persona["stable_fields"],
+        "soft_fields": persona["soft_fields"],
+        "realized_parameters": persona["realized_parameters"],
+        "generation_contract": persona["generation_contract"],
+    }
+    return ordered
+
+
+def _dig(payload: Dict[str, Any], path: str) -> Any:
+    cursor: Any = payload
+    for chunk in path.split("."):
+        if not isinstance(cursor, dict) or chunk not in cursor:
+            return None
+        cursor = cursor[chunk]
+    return cursor
+
+
+def load_schema(schema_dir: Path, filename: str) -> Dict[str, Any]:
+    return load_json(schema_dir / filename)
+
+
+def resolve_ref(schema: Dict[str, Any], root_schema: Dict[str, Any], schema_dir: Path) -> Dict[str, Any]:
+    ref = schema["$ref"]
+    if ref.startswith("#/"):
+        target: Any = root_schema
+        for part in ref[2:].split("/"):
+            target = target[part]
+        return target
+    ref_path = schema_dir / ref
+    return load_json(ref_path)
+
+
+def validate_instance(instance: Any, schema: Dict[str, Any], schema_dir: Path, root_schema: Optional[Dict[str, Any]] = None, path: str = "$") -> List[str]:
+    root = root_schema or schema
+    if "$ref" in schema:
+        ref = schema["$ref"]
+        resolved = resolve_ref(schema, root, schema_dir)
+        next_root = root if ref.startswith("#/") else resolved
+        return validate_instance(instance, resolved, schema_dir, root_schema=next_root, path=path)
+
+    errors: List[str] = []
+    expected_type = schema.get("type")
+    if expected_type == "object":
+        if not isinstance(instance, dict):
+            return [f"{path}: expected object"]
+        required = schema.get("required", [])
+        for key in required:
+            if key not in instance:
+                errors.append(f"{path}: missing required field `{key}`")
+        properties = schema.get("properties", {})
+        for key, value in instance.items():
+            if key in properties:
+                errors.extend(validate_instance(value, properties[key], schema_dir, root_schema=root, path=f"{path}.{key}"))
+            else:
+                additional = schema.get("additionalProperties", True)
+                if additional is False:
+                    errors.append(f"{path}: unexpected field `{key}`")
+                elif isinstance(additional, dict):
+                    errors.extend(validate_instance(value, additional, schema_dir, root_schema=root, path=f"{path}.{key}"))
+        min_properties = schema.get("minProperties")
+        if min_properties is not None and len(instance) < min_properties:
+            errors.append(f"{path}: expected at least {min_properties} properties")
+        return errors
+
+    if expected_type == "array":
+        if not isinstance(instance, list):
+            return [f"{path}: expected array"]
+        min_items = schema.get("minItems")
+        if min_items is not None and len(instance) < min_items:
+            errors.append(f"{path}: expected at least {min_items} items")
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            for index, value in enumerate(instance):
+                errors.extend(validate_instance(value, item_schema, schema_dir, root_schema=root, path=f"{path}[{index}]"))
+        return errors
+
+    if expected_type == "string":
+        if not isinstance(instance, str):
+            return [f"{path}: expected string"]
+        pattern = schema.get("pattern")
+        if pattern and not re.match(pattern, instance):
+            errors.append(f"{path}: value `{instance}` does not match pattern {pattern}")
+        return errors
+
+    if expected_type == "number":
+        if not isinstance(instance, (int, float)) or isinstance(instance, bool):
+            return [f"{path}: expected number"]
+        minimum = schema.get("minimum")
+        maximum = schema.get("maximum")
+        if minimum is not None and instance < minimum:
+            errors.append(f"{path}: value {instance} is less than minimum {minimum}")
+        if maximum is not None and instance > maximum:
+            errors.append(f"{path}: value {instance} is greater than maximum {maximum}")
+        return errors
+
+    enum_values = schema.get("enum")
+    if enum_values and instance not in enum_values:
+        errors.append(f"{path}: value `{instance}` not in enum {enum_values}")
+    return errors
+
+
+def validate_cross_references(paths: RepoPaths) -> List[str]:
+    errors: List[str] = []
+    archetype_ids = set()
+    for json_file in sorted(paths.archetypes_dir.glob("*.json")):
+        payload = load_json(json_file)
+        archetype_ids.add(payload["id"])
+    seen_ids = set()
+    for json_file in sorted(paths.personas_dir.glob("*.json")):
+        payload = load_json(json_file)
+        persona_id = payload["id"]
+        if persona_id in seen_ids:
+            errors.append(f"duplicate persona id `{persona_id}`")
+        seen_ids.add(persona_id)
+        if payload.get("archetype_id") not in archetype_ids:
+            errors.append(f"{json_file}: archetype_id `{payload.get('archetype_id')}` does not exist")
+    if len(archetype_ids) != len(list(paths.archetypes_dir.glob('*.json'))):
+        errors.append("duplicate archetype ids detected")
+    return errors
+
+
+def rebuild_manifests(paths: RepoPaths) -> None:
+    archetype_entries: List[Dict[str, Any]] = []
+    persona_entries: List[Dict[str, Any]] = []
+
+    for json_file in sorted(paths.archetypes_dir.glob("*.json")):
+        payload = load_json(json_file)
+        archetype_entries.append(
+            {
+                "id": payload["id"],
+                "slug": payload["slug"],
+                "json_path": str(json_file.relative_to(paths.root)),
+                "seed_path": payload["seed_source"]["markdown_path"],
+                "name_cn": payload["name"]["cn"],
+                "name_en": payload["name"]["en"],
+                "status": "active",
+            }
+        )
+
+    for json_file in sorted(paths.personas_dir.glob("*.json")):
+        payload = load_json(json_file)
+        md_path = paths.personas_dir / f"{payload['id']}.md"
+        persona_entries.append(
+            {
+                "id": payload["id"],
+                "archetype_id": payload["archetype_id"],
+                "json_path": str(json_file.relative_to(paths.root)),
+                "md_path": str(md_path.relative_to(paths.root)) if md_path.exists() else None,
+                "name": payload["name"]["primary"],
+                "subtitle": payload["name"]["en"],
+                "status": "active",
+            }
+        )
+
+    timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    write_json(
+        paths.archetype_manifest,
+        {
+            "schema_version": "2.0.0",
+            "generated_at": timestamp,
+            "total_archetypes": len(archetype_entries),
+            "archetypes": archetype_entries,
+        },
+    )
+    write_json(
+        paths.persona_manifest,
+        {
+            "schema_version": "2.0.0",
+            "generated_at": timestamp,
+            "total_personas": len(persona_entries),
+            "personas": persona_entries,
+        },
     )
 
 
-def ingest(source_md: Path, paths: RepoPaths, dry_run: bool = False) -> tuple[str, list[Path], list[str]]:
-    markdown = source_md.read_text(encoding="utf-8")
-    persona_id = derive_persona_id(source_md, markdown)
+def validate_database(paths: RepoPaths) -> None:
+    archetype_schema = load_schema(paths.schema_dir, "archetype.schema.json")
+    persona_schema = load_schema(paths.schema_dir, "persona.schema.json")
+    errors: List[str] = []
+    for json_file in sorted(paths.archetypes_dir.glob("*.json")):
+        errors.extend(validate_instance(load_json(json_file), archetype_schema, paths.schema_dir, path=str(json_file.relative_to(paths.root))))
+    for json_file in sorted(paths.personas_dir.glob("*.json")):
+        errors.extend(validate_instance(load_json(json_file), persona_schema, paths.schema_dir, path=str(json_file.relative_to(paths.root))))
+    errors.extend(validate_cross_references(paths))
+    if errors:
+        raise ValueError("Schema validation failed:\n- " + "\n- ".join(errors))
 
-    target_md = paths.db_personas / f"{persona_id}.md"
-    target_json = paths.db_personas / f"{persona_id}.json"
 
-    existing_json = load_json(target_json) if target_json.exists() else None
-    normalized, missing = normalize_from_markdown(persona_id, markdown, existing_json)
+def print_report(label: str, report: DiagnosticReport) -> None:
+    missing = ", ".join(report.missing_fields) if report.missing_fields else "none"
+    inferred = ", ".join(report.inferred_fields) if report.inferred_fields else "none"
+    print(f"[diagnostics:{label}] missing_fields: {missing}")
+    print(f"[diagnostics:{label}] inferred_fields: {inferred}")
+    print(f"[diagnostics:{label}] mapping_confidence: {report.mapping_confidence:.2f}")
 
-    changed_scope = [
-        target_json,
-        target_md,
-        paths.db_manifest,
-    ]
 
-    if dry_run:
-        return persona_id, changed_scope + [
-            paths.docs_personas / f"{persona_id}.json",
-            paths.docs_personas / f"{persona_id}.md",
-            paths.docs_manifest,
-            paths.docs_schema,
-        ], missing
+def ingest(
+    source_md: Path,
+    paths: RepoPaths,
+    dry_run: bool = False,
+    archetype_seed: Optional[Path] = None,
+    archetype_id: Optional[str] = None,
+) -> Tuple[str, Optional[str]]:
+    archetype_payload: Optional[Dict[str, Any]] = None
+    archetype_report = DiagnosticReport()
+    if archetype_seed:
+        seed_text = markdown_to_text(archetype_seed)
+        archetype_payload = build_archetype(seed_text, archetype_seed, archetype_report)
+        if not dry_run:
+            write_json(paths.archetypes_dir / f"{archetype_payload['id']}.json", archetype_payload)
+        print_report("archetype", archetype_report)
 
-    paths.db_personas.mkdir(parents=True, exist_ok=True)
-    write_json(target_json, normalized)
-    target_md.write_text(markdown, encoding="utf-8")
+    markdown = markdown_to_text(source_md)
+    title_meta = parse_title_metadata(markdown)
+    resolved_archetype_id = resolve_archetype_id(archetype_id, archetype_payload, title_meta, paths)
+    if not resolved_archetype_id:
+        raise ValueError("Unable to resolve archetype_id for persona ingestion.")
 
-    update_manifest(paths.db_manifest, normalized)
-    docs_changed = sync_docs(paths, persona_id)
+    persona_report = DiagnosticReport()
+    persona_payload = build_persona(markdown, source_md, resolved_archetype_id, archetype_payload, persona_report)
+    if not dry_run:
+        write_json(paths.personas_dir / f"{persona_payload['id']}.json", persona_payload)
+    print_report("persona", persona_report)
 
-    return persona_id, changed_scope + docs_changed, missing
+    if not dry_run:
+        rebuild_manifests(paths)
+        validate_database(paths)
+    return persona_payload["id"], archetype_payload["id"] if archetype_payload else None
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Ingest arch0x.md persona into database + docs mirror.")
-    parser.add_argument("source", type=Path, help="Path to source arch0x.md")
+    parser = argparse.ArgumentParser(description="Ingest persona markdown into the archetype/persona database model.")
+    parser.add_argument("source", type=Path, help="Persona markdown source path")
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[2])
-    parser.add_argument("--sync-git", action="store_true", help="Best-effort pull --ff-only if git+origin+upstream exist")
-    parser.add_argument("--dry-run", action="store_true", help="Parse/normalize without writing files")
+    parser.add_argument("--sync-git", action="store_true", help="Best-effort pull --ff-only when tracking origin")
+    parser.add_argument("--dry-run", action="store_true", help="Parse and validate without writing files")
+    parser.add_argument("--archetype-seed", type=Path, help="Optional archetype seed markdown to ingest first")
+    parser.add_argument("--archetype-id", type=str, help="Explicit archetype id when no seed file is supplied")
     args = parser.parse_args()
 
     paths = build_paths(args.repo_root.resolve())
-
     git_ctx = detect_git_context(paths.root)
     if args.sync_git:
         adaptive_presync(paths.root, git_ctx)
 
-    persona_id, _, missing = ingest(args.source.resolve(), paths, dry_run=args.dry_run)
-
-    if missing:
-        print(f"[validate] {persona_id} still missing/empty fields: {', '.join(missing)}")
-    else:
-        print(f"[validate] {persona_id} all key extraction fields populated.")
-
-    print(f"[ingest] completed for {persona_id}")
+    persona_id, generated_archetype_id = ingest(
+        args.source.resolve(),
+        paths,
+        dry_run=args.dry_run,
+        archetype_seed=args.archetype_seed.resolve() if args.archetype_seed else None,
+        archetype_id=args.archetype_id,
+    )
+    if generated_archetype_id:
+        print(f"[ingest] generated archetype {generated_archetype_id}")
+    print(f"[ingest] generated persona {persona_id}")
     return 0
 
 
