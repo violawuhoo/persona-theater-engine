@@ -1,67 +1,25 @@
 {
-  "schema_version": "1.0.0",
-  "generated_at": "2026-04-15T06:00:21Z",
-  "total_personas": 6,
+  "schema_version": "2.0.0",
+  "generated_at": "2026-04-16T15:17:33Z",
+  "total_personas": 2,
   "personas": [
     {
       "id": "ARCH01",
-      "file_base": "ARCH01",
+      "archetype_id": "ARCHETYPE_01",
       "json_path": "database/personas/ARCH01.json",
       "md_path": "database/personas/ARCH01.md",
-      "name": "断头王后",
-      "status": "active",
-      "subtitle": "The Beheaded Queen",
-      "archetype": "秩序垄断者 / 仪式主权者"
+      "name": "高冷建模脸",
+      "subtitle": "The CGI Cold",
+      "status": "active"
     },
     {
       "id": "ARCH02",
-      "file_base": "ARCH02",
+      "archetype_id": "ARCHETYPE_02",
       "json_path": "database/personas/ARCH02.json",
       "md_path": "database/personas/ARCH02.md",
-      "name": "水银先知",
-      "status": "active",
-      "subtitle": "The Mercury Prophet",
-      "archetype": "流态模糊者 / 概率操控者"
-    },
-    {
-      "id": "ARCH03",
-      "file_base": "ARCH03",
-      "json_path": "database/personas/ARCH03.json",
-      "md_path": "database/personas/ARCH03.md",
-      "name": "食腐鸦",
-      "status": "active",
-      "subtitle": "The Carrion Crow",
-      "archetype": "阴影拾荒者 / 负空间操控者"
-    },
-    {
-      "id": "ARCH04",
-      "file_base": "ARCH04",
-      "json_path": "database/personas/ARCH04.json",
-      "md_path": "database/personas/ARCH04.md",
-      "name": "熔岩朋克",
-      "status": "active",
-      "subtitle": "The Molten Punk",
-      "archetype": "熵增制造者 / 激进破坏者"
-    },
-    {
-      "id": "ARCH05",
-      "file_base": "ARCH05",
-      "json_path": "database/personas/ARCH05.json",
-      "md_path": "database/personas/ARCH05.md",
-      "name": "逆流孤儿",
-      "status": "active",
-      "subtitle": "The Retrograde Orphan",
-      "archetype": "认知协议全维度手册"
-    },
-    {
-      "id": "ARCH06",
-      "file_base": "ARCH06",
-      "json_path": "database/personas/ARCH06.json",
-      "md_path": "database/personas/ARCH06.md",
-      "name": "守门人",
-      "status": "active",
-      "subtitle": "The Sentinel",
-      "archetype": "认知协议详情"
+      "name": "社交悍匪",
+      "subtitle": "The Social Fugitive",
+      "status": "active"
     }
   ]
 }

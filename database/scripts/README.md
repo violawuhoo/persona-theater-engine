@@ -15,7 +15,8 @@ That single command will:
 3. generate `/database/archetypes/ARCHETYPE_XX.json`
 4. generate `/database/personas/ARCHXX.json`
 5. rebuild manifests
-6. validate the database and print diagnostics
+6. sync the generated docs mirror under `/docs/database/`
+7. validate the database, mirror, and print diagnostics
 
 ## Diagnostics
 
@@ -36,3 +37,4 @@ The CLI reports:
 
 - The canonical seed structure is defined in `/database/docs/archetypes/archetype_seed_template.md`.
 - The standard input is the tagged persona protocol markdown used in the current database.
+- `database/**` is the single source of truth; `docs/database/**` is a generated mirror for runtime read access.

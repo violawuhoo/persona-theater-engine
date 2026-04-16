@@ -1,0 +1,325 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "archetype.schema.json",
+  "title": "Archetype Schema",
+  "type": "object",
+  "required": [
+    "id",
+    "slug",
+    "name",
+    "seed_source",
+    "source_profile",
+    "positioning",
+    "core_temperature",
+    "core_traits",
+    "parameter_space",
+    "core_logic",
+    "behavioral_model",
+    "expression_rules",
+    "constraints",
+    "spatial_algorithms",
+    "social_layers",
+    "details",
+    "generation_freedom",
+    "generation_contract",
+    "summary"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^ARCHETYPE_[0-9]{2,}$"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "name": {
+      "type": "object",
+      "required": [
+        "cn",
+        "en"
+      ],
+      "properties": {
+        "cn": {
+          "type": "string"
+        },
+        "en": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "seed_source": {
+      "type": "object",
+      "required": [
+        "markdown_path",
+        "authority"
+      ],
+      "properties": {
+        "markdown_path": {
+          "type": "string"
+        },
+        "authority": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_profile": {
+      "type": "object",
+      "required": [
+        "derived_from",
+        "source_template"
+      ],
+      "properties": {
+        "derived_from": {
+          "type": "string"
+        },
+        "source_template": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "positioning": {
+      "type": "object",
+      "required": [
+        "thesis",
+        "mechanism"
+      ],
+      "properties": {
+        "thesis": {
+          "type": "string"
+        },
+        "mechanism": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "core_temperature": {
+      "type": "string"
+    },
+    "core_traits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parameter_space": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "min",
+          "max"
+        ],
+        "properties": {
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "core_logic": {
+      "type": "object",
+      "required": [
+        "core_motivation",
+        "power_logic",
+        "social_logic",
+        "emotion_logic",
+        "security_anchor",
+        "blind_spot",
+        "conflict_logic",
+        "repair_logic"
+      ],
+      "properties": {
+        "core_motivation": {
+          "type": "string"
+        },
+        "power_logic": {
+          "type": "string"
+        },
+        "social_logic": {
+          "type": "string"
+        },
+        "emotion_logic": {
+          "type": "string"
+        },
+        "security_anchor": {
+          "type": "string"
+        },
+        "blind_spot": {
+          "type": "string"
+        },
+        "conflict_logic": {
+          "type": "string"
+        },
+        "repair_logic": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "behavioral_model": {
+      "type": "object",
+      "required": [
+        "visual_style",
+        "physical_style",
+        "verbal_style"
+      ],
+      "properties": {
+        "visual_style": {
+          "type": "string"
+        },
+        "physical_style": {
+          "type": "string"
+        },
+        "verbal_style": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "expression_rules": {
+      "type": "object",
+      "required": [
+        "canonical_expression_mode",
+        "signature_line_patterns"
+      ],
+      "properties": {
+        "canonical_expression_mode": {
+          "type": "string"
+        },
+        "signature_line_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "must_have",
+        "must_not_have",
+        "forbidden_drift"
+      ],
+      "properties": {
+        "must_have": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "must_not_have": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden_drift": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "spatial_algorithms": {
+      "type": "object",
+      "required": [
+        "crowded",
+        "one_on_one"
+      ],
+      "properties": {
+        "crowded": {
+          "type": "string"
+        },
+        "one_on_one": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "social_layers": {
+      "type": "object",
+      "required": [
+        "outer_layer",
+        "inner_layer"
+      ],
+      "properties": {
+        "outer_layer": {
+          "type": "string"
+        },
+        "inner_layer": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "details": {
+      "type": "object",
+      "required": [
+        "sensory_profile",
+        "symbolic_objects",
+        "breakdown_repair"
+      ],
+      "properties": {
+        "sensory_profile": {
+          "type": "string"
+        },
+        "symbolic_objects": {
+          "type": "string"
+        },
+        "breakdown_repair": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "generation_freedom": {
+      "type": "object",
+      "required": [
+        "allowed_to_vary",
+        "must_remain_stable",
+        "forbidden_drift"
+      ],
+      "properties": {
+        "allowed_to_vary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "must_remain_stable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden_drift": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "generation_contract": {
+      "$ref": "generation_contract.schema.json"
+    },
+    "summary": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

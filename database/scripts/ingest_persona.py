@@ -13,8 +13,10 @@ The pipeline keeps the database layer authoritative and schema-validated:
 from __future__ import annotations
 
 import argparse
+import filecmp
 import json
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -55,7 +57,9 @@ class RepoPaths:
     personas_dir: Path
     manifests_dir: Path
     schema_dir: Path
+    docs_dir: Path
     docs_archetypes_dir: Path
+    docs_database_dir: Path
 
     @property
     def archetype_manifest(self) -> Path:
@@ -135,7 +139,9 @@ def build_paths(root: Path) -> RepoPaths:
         personas_dir=root / "database" / "personas",
         manifests_dir=root / "database" / "manifests",
         schema_dir=root / "database" / "schema",
+        docs_dir=root / "database" / "docs",
         docs_archetypes_dir=root / "database" / "docs" / "archetypes",
+        docs_database_dir=root / "docs" / "database",
     )
 
 
@@ -1662,6 +1668,85 @@ def validate_database(paths: RepoPaths) -> None:
         raise ValueError("Schema validation failed:\n- " + "\n- ".join(errors))
 
 
+def sync_docs_mirror(paths: RepoPaths) -> None:
+    mirror_root = paths.docs_database_dir
+    mirror_root.mkdir(parents=True, exist_ok=True)
+
+    managed_targets = [
+        mirror_root / "archetypes",
+        mirror_root / "personas",
+        mirror_root / "manifests",
+        mirror_root / "schema",
+        mirror_root / "docs",
+        mirror_root / "schemas",
+    ]
+    for target in managed_targets:
+        if target.exists():
+            shutil.rmtree(target)
+
+    copy_plan = [
+        (paths.archetypes_dir, mirror_root / "archetypes"),
+        (paths.personas_dir, mirror_root / "personas"),
+        (paths.manifests_dir, mirror_root / "manifests"),
+        (paths.schema_dir, mirror_root / "schema"),
+        (paths.docs_dir, mirror_root / "docs"),
+    ]
+    for source_dir, destination_dir in copy_plan:
+        shutil.copytree(
+            source_dir,
+            destination_dir,
+            ignore=shutil.ignore_patterns(".DS_Store"),
+        )
+
+    ds_store = mirror_root / ".DS_Store"
+    if ds_store.exists():
+        ds_store.unlink()
+
+
+def collect_mirror_files(root: Path) -> List[Path]:
+    return sorted(path for path in root.rglob("*") if path.is_file() and path.name != ".DS_Store")
+
+
+def validate_docs_mirror(paths: RepoPaths) -> None:
+    mirror_root = paths.docs_database_dir
+    copy_plan = [
+        (paths.archetypes_dir, mirror_root / "archetypes"),
+        (paths.personas_dir, mirror_root / "personas"),
+        (paths.manifests_dir, mirror_root / "manifests"),
+        (paths.schema_dir, mirror_root / "schema"),
+        (paths.docs_dir, mirror_root / "docs"),
+    ]
+
+    errors: List[str] = []
+    for source_dir, mirror_dir in copy_plan:
+        if not mirror_dir.exists():
+            errors.append(f"missing mirror directory `{mirror_dir.relative_to(paths.root)}`")
+            continue
+
+        source_files = collect_mirror_files(source_dir)
+        mirror_files = collect_mirror_files(mirror_dir)
+        source_rel = {path.relative_to(source_dir) for path in source_files}
+        mirror_rel = {path.relative_to(mirror_dir) for path in mirror_files}
+
+        missing = sorted(source_rel - mirror_rel)
+        stale = sorted(mirror_rel - source_rel)
+        for rel_path in missing:
+            errors.append(f"missing mirrored file `{(mirror_dir / rel_path).relative_to(paths.root)}`")
+        for rel_path in stale:
+            errors.append(f"stale mirrored file `{(mirror_dir / rel_path).relative_to(paths.root)}`")
+
+        for rel_path in sorted(source_rel & mirror_rel):
+            if not filecmp.cmp(source_dir / rel_path, mirror_dir / rel_path, shallow=False):
+                errors.append(f"stale content in `{(mirror_dir / rel_path).relative_to(paths.root)}`")
+
+    legacy_schema_dir = mirror_root / "schemas"
+    if legacy_schema_dir.exists():
+        errors.append(f"legacy mirror directory still present `{legacy_schema_dir.relative_to(paths.root)}`")
+
+    if errors:
+        raise ValueError("Docs mirror validation failed:\n- " + "\n- ".join(errors))
+
+
 def print_report(label: str, report: DiagnosticReport) -> None:
     missing = ", ".join(report.missing_fields) if report.missing_fields else "none"
     inferred = ", ".join(report.inferred_fields) if report.inferred_fields else "none"
@@ -1709,6 +1794,8 @@ def ingest(
     if not dry_run:
         rebuild_manifests(paths)
         validate_database(paths)
+        sync_docs_mirror(paths)
+        validate_docs_mirror(paths)
     return persona_payload["id"], archetype_payload["id"] if archetype_payload else None
 
 

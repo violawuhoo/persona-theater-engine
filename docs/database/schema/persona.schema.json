@@ -1,0 +1,401 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "persona.schema.json",
+  "title": "Persona Schema",
+  "type": "object",
+  "required": [
+    "id",
+    "archetype_id",
+    "name",
+    "source_markdown",
+    "stable_fields",
+    "soft_fields",
+    "realized_parameters",
+    "generation_contract"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^ARCH[0-9]{2}$"
+    },
+    "archetype_id": {
+      "type": "string",
+      "pattern": "^ARCHETYPE_[0-9]{2,}$"
+    },
+    "name": {
+      "type": "object",
+      "required": [
+        "primary",
+        "en"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string"
+        },
+        "en": {
+          "type": "string"
+        },
+        "source_classification": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_markdown": {
+      "type": "string"
+    },
+    "stable_fields": {
+      "type": "object",
+      "required": [
+        "identity",
+        "core_directive",
+        "core_logic",
+        "cognitive_filters",
+        "embodiment",
+        "taboos",
+        "reference_models"
+      ],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "required": [
+            "persona_name",
+            "subtitle",
+            "premise"
+          ],
+          "properties": {
+            "persona_name": {
+              "type": "string"
+            },
+            "subtitle": {
+              "type": "string"
+            },
+            "premise": {
+              "type": "string"
+            },
+            "source_classification": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "core_directive": {
+          "type": "string"
+        },
+        "core_logic": {
+          "type": "object",
+          "required": [
+            "social_essence",
+            "self_positioning",
+            "power_source"
+          ],
+          "properties": {
+            "social_essence": {
+              "type": "string"
+            },
+            "self_positioning": {
+              "type": "string"
+            },
+            "power_source": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "cognitive_filters": {
+          "type": "object",
+          "required": [
+            "noise_filtering",
+            "downward_compatibility",
+            "information_granularity"
+          ],
+          "properties": {
+            "noise_filtering": {
+              "type": "string"
+            },
+            "downward_compatibility": {
+              "type": "string"
+            },
+            "information_granularity": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "embodiment": {
+          "type": "object",
+          "required": [
+            "center_of_gravity",
+            "gaze_protocol",
+            "breathing_protocol",
+            "hand_constraints",
+            "latency_buffer",
+            "spatial_sovereignty",
+            "negative_buffer"
+          ],
+          "properties": {
+            "center_of_gravity": {
+              "type": "string"
+            },
+            "gaze_protocol": {
+              "type": "object",
+              "required": [
+                "focus_rule",
+                "movement_rule"
+              ],
+              "properties": {
+                "focus_rule": {
+                  "type": "string"
+                },
+                "movement_rule": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "breathing_protocol": {
+              "type": "string"
+            },
+            "hand_constraints": {
+              "type": "string"
+            },
+            "latency_buffer": {
+              "type": "object",
+              "required": [
+                "delay_seconds",
+                "rule"
+              ],
+              "properties": {
+                "delay_seconds": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "spatial_sovereignty": {
+              "type": "string"
+            },
+            "negative_buffer": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "taboos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "action",
+              "rule"
+            ],
+            "properties": {
+              "action": {
+                "type": "string"
+              },
+              "rule": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "reference_models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "principle"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "principle": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "soft_fields": {
+      "type": "object",
+      "required": [
+        "scene_behavior",
+        "interaction_matrix",
+        "response_protocols",
+        "signature_lines"
+      ],
+      "properties": {
+        "scene_behavior": {
+          "type": "object",
+          "required": [
+            "small_scale",
+            "large_scale"
+          ],
+          "properties": {
+            "small_scale": {
+              "$ref": "#/definitions/scene_block"
+            },
+            "large_scale": {
+              "$ref": "#/definitions/scene_block"
+            }
+          },
+          "additionalProperties": false
+        },
+        "interaction_matrix": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/interaction_rule"
+          }
+        },
+        "response_protocols": {
+          "type": "object",
+          "required": [
+            "negative_feedback",
+            "positive_feedback",
+            "extreme_pressure"
+          ],
+          "properties": {
+            "negative_feedback": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "$ref": "#/definitions/response_protocol"
+              }
+            },
+            "positive_feedback": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "$ref": "#/definitions/response_protocol"
+              }
+            },
+            "extreme_pressure": {
+              "$ref": "#/definitions/response_protocol"
+            }
+          },
+          "additionalProperties": false
+        },
+        "signature_lines": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "realized_parameters": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "value",
+          "confidence",
+          "evidence"
+        ],
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "generation_contract": {
+      "$ref": "generation_contract.schema.json"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "scene_block": {
+      "type": "object",
+      "required": [
+        "label",
+        "strategy",
+        "actions",
+        "logic"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "strategy": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "string"
+        },
+        "logic": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "interaction_rule": {
+      "type": "object",
+      "required": [
+        "input_signal",
+        "interpretation",
+        "response_adjustment"
+      ],
+      "properties": {
+        "input_signal": {
+          "type": "string"
+        },
+        "interpretation": {
+          "type": "string"
+        },
+        "response_adjustment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "response_protocol": {
+      "type": "object",
+      "required": [
+        "label",
+        "cognitive_filter",
+        "response_actions",
+        "breaker_line",
+        "logic"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "cognitive_filter": {
+          "type": "string"
+        },
+        "response_actions": {
+          "type": "string"
+        },
+        "breaker_line": {
+          "type": "string"
+        },
+        "logic": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
