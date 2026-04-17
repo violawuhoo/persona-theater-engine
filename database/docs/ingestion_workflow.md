@@ -1,67 +1,25 @@
 # Ingestion Workflow
 
-The database now uses a single-input workflow. The only human-authored file required for a new persona is:
+The active pipeline is **seed-only ingestion**.
 
-- `/database/personas/ARCHXX.md`
+## Single authored input
 
-## Canonical pipeline
+- `/database/archetypes/ARCHETYPE_XX_seed.md`
 
-1. Run `database/scripts/ingest_persona.py` with `ARCHXX.md`.
-2. The CLI parses the persona markdown and derives a generalized mother-model seed.
-3. The generated seed is written to `/database/docs/archetypes/ARCHETYPE_XX_seed.md`.
-4. The CLI generates `/database/archetypes/ARCHETYPE_XX.json` from that seed.
-5. The CLI generates `/database/personas/ARCHXX.json` from the original persona markdown.
-6. The CLI rebuilds archetype and persona manifests from disk.
-7. The CLI syncs the generated docs mirror under `/docs/database/`.
-8. The CLI validates all generated JSON and the docs mirror, then emits diagnostics.
+No runtime input is read from `/database/docs/**`.
 
-## Minimal input standard
+## Pipeline steps
 
-The canonical `ARCHXX.md` input should provide enough information to derive:
+1. Parse strict seed markdown.
+2. Generate archetype JSON in `/database/archetype_models/ARCHETYPE_XX.json`.
+3. Generate persona JSON in `/database/personas/ARCHXX.json`.
+4. Rebuild manifests from generated files on disk.
+5. Validate outputs using `/database/schema/*.json`.
+6. Sync docs mirror under `/docs/database/`.
 
-- archetype identity
-- explicit or inferable parameter values
-- stable logic
-- scene behavior
-- taboos / drift blockers
-- generation freedom boundaries
+## Outputs
 
-The current standard persona source is the tagged protocol format used by `ARCH01.md` and `ARCH02.md`.
+- Archetype models: `/database/archetype_models/*.json`
+- Personas: `/database/personas/*.json`
+- Manifests: `/database/manifests/*.manifest.json`
 
-## Output locations
-
-- Seed markdown: `/database/docs/archetypes/ARCHETYPE_XX_seed.md`
-- Archetype JSON: `/database/archetypes/ARCHETYPE_XX.json`
-- Persona JSON: `/database/personas/ARCHXX.json`
-- Manifests: `/database/manifests/archetypes.manifest.json`, `/database/manifests/personas.manifest.json`
-- Docs mirror: `/docs/database/`
-
-## Validation behavior
-
-After generation, the CLI reports:
-
-- `missing_fields`
-- `inferred_fields`
-- `mapping_confidence`
-
-Validation then checks:
-
-- archetype schema
-- persona schema
-- generation contract references
-- persona `archetype_id` linkage
-- manifest consistency through rebuild-from-disk
-- docs mirror consistency against authoritative `database/**`
-
-## Adding a new persona
-
-1. Create `/database/personas/ARCHXX.md`.
-2. Run:
-
-```bash
-python3 database/scripts/ingest_persona.py database/personas/ARCHXX.md
-```
-
-3. Review the seed, archetype JSON, persona JSON, manifests, and diagnostics.
-4. Confirm the refreshed `/docs/database/` mirror matches the generated database artifacts.
-5. Commit the markdown source plus all generated database artifacts together.
