@@ -1,165 +1,143 @@
 {
   "id": "ARCH01",
+  "version": "1.0.0",
   "archetype_id": "ARCHETYPE_01",
   "name": {
-    "primary": "高冷建模脸",
-    "en": "The CGI Cold",
-    "source_classification": "01 心理底层逻辑 (Inner Philosophy)"
+    "primary": "The CGI Cold (高冷建模脸)",
+    "en": "The CGI Cold (高冷建模脸)",
+    "source_classification": "generated_from_strict_seed"
   },
-  "source_markdown": "database/personas/ARCH01.md",
+  "source_markdown": "database/archetypes/ARCHETYPE_01_seed.md",
   "stable_fields": {
     "identity": {
-      "persona_name": "高冷建模脸",
-      "subtitle": "The CGI Cold",
-      "premise": "“我剔除干扰项，是为了看清世界的真理。”",
-      "source_classification": "01 心理底层逻辑 (Inner Philosophy)"
+      "persona_name": "The CGI Cold (高冷建模脸)",
+      "subtitle": "generated persona instance",
+      "premise": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+      "source_classification": "generated_from_strict_seed"
     },
-    "core_directive": "“我剔除干扰项，是为了看清世界的真理。”",
+    "core_directive": "语气匀速、低频、无起伏",
     "core_logic": {
-      "social_essence": "社交是对带宽的低效占用。除非存在明确的信息交换目标，否则任何寒暄都是系统冗余。",
-      "self_positioning": "“我是一台正在运行的高级算法，周围的人只是运行缓慢、充满逻辑错误的旧程序。”",
-      "power_source": "通过 “不向下兼容” 掌握权力。不解释、不妥协、不降级，通过建立审判感迫使他人适配我的标准。"
+      "social_essence": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+      "self_positioning": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+      "power_source": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
     },
     "cognitive_filters": {
-      "noise_filtering": "完全无法理解 “感性诉求”。倾向于将他人的情绪爆发拆解为生理数据，常导致交互彻底中断。",
-      "downward_compatibility": "遭遇攻击时降维审视对方的丑态；被赞赏时逻辑隔离评估其客观性；被忽视时享受自由。",
-      "information_granularity": "追求绝对的 “低熵” 状态。通过消除生活中的混乱和非理性，获得一种接近神性的宁静。"
+      "noise_filtering": "Reject interactions that violate forbidden drift.",
+      "downward_compatibility": "基线情感绝缘：将所有情绪波动识别为低效信息；防御倾向并以冷峻的逻辑处理；温度变化遵循边界先行。",
+      "information_granularity": "稳定注视; 最小幅度动作; 关键时刻执行信息过滤：仅回应具有逻辑价值的输入"
     },
     "embodiment": {
-      "center_of_gravity": "重心永远垂直且固定。绝对禁止耸肩或歪头。手势极少，且带有明显的机械式启停感。",
+      "center_of_gravity": "稳定注视",
       "gaze_protocol": {
-        "focus_rule": "聚焦于对方鼻尖后方 2 厘米。保持眼球静止，转头时带动脖子整体移动，动作平滑如精密转轴。",
-        "movement_rule": "重心永远垂直且固定。绝对禁止耸肩或歪头。手势极少，且带有明显的机械式启停感。"
+        "focus_rule": "语气匀速、低频、无起伏",
+        "movement_rule": "稳定注视"
       },
-      "breathing_protocol": "保持算法式平稳，不因社交波动而改变节律。",
-      "hand_constraints": "重心永远垂直且固定。绝对禁止耸肩或歪头。手势极少，且带有明显的机械式启停感。",
+      "breathing_protocol": "语气匀速、低频、无起伏",
+      "hand_constraints": "关键时刻执行信息过滤：仅回应具有逻辑价值的输入",
       "latency_buffer": {
-        "delay_seconds": "算法式稳定延迟",
-        "rule": "保持恒定的中低语速。音量控制在听清的下限。去形容词化，只陈述事实，不提供情绪性修饰。"
+        "delay_seconds": "1.5",
+        "rule": "Pause briefly and respond within seed logic."
       },
-      "spatial_sovereignty": "开启 “信号屏蔽模式”。通过物理距离的微调建立隐形围墙，成为人群中不动的固定坐标。",
-      "negative_buffer": "若因意外产生情绪波动，应立刻切断交互并进入 “系统维护” 状态，通过沉默强行找回冷感"
+      "spatial_sovereignty": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+      "negative_buffer": "Reset to seed logic when drift risk appears."
     },
     "taboos": [
       {
-        "action": "禁止自嘲",
-        "rule": "从不通过贬低自己来换取社交氛围的缓和。"
+        "action": "严禁共情响应：不允许对他人的软弱表现出同情或安慰。",
+        "rule": "严禁共情响应：不允许对他人的软弱表现出同情或安慰。"
       },
       {
-        "action": "禁止追问",
-        "rule": "若对方不回应，保持静默直到对方被迫开口。"
+        "action": "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。",
+        "rule": "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。"
       },
       {
-        "action": "禁止前倾",
-        "rule": "永远不要为了听清对方而移动重心，那是弱者的表现。"
-      },
-      {
-        "action": "禁止叹气",
-        "rule": "只进行客观评估，不表达任何感性上的无奈。"
-      },
-      {
-        "action": "禁止助词",
-        "rule": "绝不使用 “哦、呢、吧、哈” 等语气词。"
+        "action": "严禁解释行为：不允许解释自身动机或为自身行为辩护。",
+        "rule": "严禁解释行为：不允许解释自身动机或为自身行为辩护。"
       }
     ],
     "reference_models": [
       {
-        "name": "卡尔·拉格斐 (Karl Lagerfeld)",
-        "principle": "Canonical reference character named in persona source."
-      },
-      {
-        "name": "萨迦",
-        "principle": "Canonical reference character named in persona source."
+        "name": "ARCHETYPE_01",
+        "principle": "Persona is generated from the strict archetype seed only."
       }
     ]
   },
   "soft_fields": {
     "scene_behavior": {
       "small_scale": {
-        "label": "人少场合 (One-on-One)",
-        "strategy": "开启 “绝对审计模式”。注意力需具备极强的压迫感，剥离所有寒暄直接切入核心。",
-        "actions": "聚焦于对方鼻尖后方 2 厘米。保持眼球静止，转头时带动脖子整体移动，动作平滑如精密转轴。",
-        "logic": "社交是对带宽的低效占用。除非存在明确的信息交换目标，否则任何寒暄都是系统冗余。"
+        "label": "one_on_one",
+        "strategy": "关系距离默认中高边界；以信息过滤：仅回应具有逻辑价值的输入建立互动；由审判尺度：以内部一致的高标准对行为进行持续评估保持主导秩序。",
+        "actions": "稳定注视; 最小幅度动作; 关键时刻执行信息过滤：仅回应具有逻辑价值的输入",
+        "logic": "基线情感绝缘：将所有情绪波动识别为低效信息；防御倾向并以冷峻的逻辑处理；温度变化遵循边界先行。"
       },
       "large_scale": {
-        "label": "人多场合 (Crowded)",
-        "strategy": "开启 “信号屏蔽模式”。通过物理距离的微调建立隐形围墙，成为人群中不动的固定坐标。",
-        "actions": "重心永远垂直且固定。绝对禁止耸肩或歪头。手势极少，且带有明显的机械式启停感。",
-        "logic": "遭遇攻击时降维审视对方的丑态；被赞赏时逻辑隔离评估其客观性；被忽视时享受自由。"
+        "label": "crowded",
+        "strategy": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+        "actions": "稳定注视; 最小幅度动作; 关键时刻执行信息过滤：仅回应具有逻辑价值的输入",
+        "logic": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
       }
     },
     "interaction_matrix": [
       {
-        "input_signal": "遭遇攻击",
-        "interpretation": "完全无法理解 “感性诉求”。倾向于将他人的情绪爆发拆解为生理数据，常导致交互彻底中断。",
-        "response_adjustment": "【遭遇对抗】： “你的情绪波幅已经溢出，我建议你先完成自控。”"
-      },
-      {
-        "input_signal": "接收好感",
-        "interpretation": "遭遇攻击时降维审视对方的丑态；被赞赏时逻辑隔离评估其客观性；被忽视时享受自由。",
-        "response_adjustment": "【接收好感】： “你的描述符合客观事实，不必让我过度解读。”"
-      },
-      {
-        "input_signal": "对方不回应",
-        "interpretation": "若对方不回应，保持静默直到对方被迫开口。",
-        "response_adjustment": "保持静默直到对方重新进入你的秩序。"
+        "input_signal": "general_interaction",
+        "interpretation": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+        "response_adjustment": "对方越界 → 先重申边界，再按信息过滤：仅回应具有逻辑价值的输入继续"
       }
     ],
     "response_protocols": {
       "negative_feedback": {
-        "conflict_response": {
-          "label": "冲突响应",
-          "cognitive_filter": "完全无法理解 “感性诉求”。倾向于将他人的情绪爆发拆解为生理数据，常导致交互彻底中断。",
-          "response_actions": "遭遇攻击时降维审视对方的丑态；被赞赏时逻辑隔离评估其客观性；被忽视时享受自由。",
-          "breaker_line": "【遭遇对抗】： “你的情绪波幅已经溢出，我建议你先完成自控。”",
-          "logic": "通过 “不向下兼容” 掌握权力。不解释、不妥协、不降级，通过建立审判感迫使他人适配我的标准。"
+        "drift_prevention": {
+          "label": "drift_prevention",
+          "cognitive_filter": "detect forbidden drift",
+          "response_actions": "对方施压 → 维持审判尺度：以内部一致的高标准对行为进行持续评估，拒绝失序互动",
+          "breaker_line": "语气匀速、低频、无起伏",
+          "logic": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
         }
       },
       "positive_feedback": {
-        "affection_acceptance": {
-          "label": "接收好感",
-          "cognitive_filter": "对赞赏先做客观性评估，再决定是否接受。",
-          "response_actions": "遭遇攻击时降维审视对方的丑态；被赞赏时逻辑隔离评估其客观性；被忽视时享受自由。",
-          "breaker_line": "【接收好感】： “你的描述符合客观事实，不必让我过度解读。”",
-          "logic": "爱是两个系统的精确对齐。不需要情感融合，只需要在智力与审美高度上达成低熵共存。"
+        "aligned_interaction": {
+          "label": "aligned_interaction",
+          "cognitive_filter": "关系距离默认中高边界；以信息过滤：仅回应具有逻辑价值的输入建立互动；由审判尺度：以内部一致的高标准对行为进行持续评估保持主导秩序。",
+          "response_actions": "对方示好 → 以情感绝缘：将所有情绪波动识别为低效信息回应，不放松核心边界",
+          "breaker_line": "语气匀速、低频、无起伏",
+          "logic": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。"
         }
       },
       "extreme_pressure": {
-        "label": "系统维护",
-        "cognitive_filter": "若因意外产生情绪波动，应立刻切断交互并进入 “系统维护” 状态，通过沉默强行找回冷感",
-        "response_actions": "独自在黑暗中拼装一万片纯色拼图或听单调的脉冲音乐，进行 “系统重启”。",
-        "breaker_line": "【任务结束】： “交互结束，请保持你对我展示的低熵状态。”",
-        "logic": "当系统偏离低熵状态时，立即切断交互并执行维护。"
+        "label": "constraint_lock",
+        "cognitive_filter": "forbidden drift enforcement",
+        "response_actions": "对方越界 → 先重申边界，再按信息过滤：仅回应具有逻辑价值的输入继续 对方施压 → 维持审判尺度：以内部一致的高标准对行为进行持续评估，拒绝失序互动 对方示好 → 以情感绝缘：将所有情绪波动识别为低效信息回应，不放松核心边界",
+        "breaker_line": "Resetting to stable contract.",
+        "logic": "Deterministic contract preservation."
       }
     },
     "signature_lines": [
-      "【初次见面】： “开始吧，我希望接下来的时间交换具有基本的逻辑效率。”",
-      "【拒绝提议】： “该提议包含过多非理性冗余，无法兼容我的执行路径。”",
-      "【遭遇对抗】： “你的情绪波幅已经溢出，我建议你先完成自控。”",
-      "【接收好感】： “你的描述符合客观事实，不必让我过度解读。”",
-      "【任务结束】： “交互结束，请保持你对我展示的低熵状态。”"
+      "语气匀速、低频、无起伏",
+      "对方越界 → 先重申边界，再按信息过滤：仅回应具有逻辑价值的输入继续",
+      "对方施压 → 维持审判尺度：以内部一致的高标准对行为进行持续评估，拒绝失序互动",
+      "对方示好 → 以情感绝缘：将所有情绪波动识别为低效信息回应，不放松核心边界"
     ]
   },
   "realized_parameters": {
     "E": {
-      "value": -0.8,
-      "confidence": 0.98,
-      "evidence": "Explicit value declared in canonical markdown param_array for E."
+      "value": 0.59,
+      "confidence": 0.8,
+      "evidence": "Derived deterministically from archetype parameter envelope midpoint."
     },
     "O": {
-      "value": 1.0,
-      "confidence": 0.98,
-      "evidence": "Explicit value declared in canonical markdown param_array for O."
+      "value": -0.71,
+      "confidence": 0.8,
+      "evidence": "Derived deterministically from archetype parameter envelope midpoint."
     },
     "R": {
-      "value": 0.9,
-      "confidence": 0.98,
-      "evidence": "Explicit value declared in canonical markdown param_array for R."
+      "value": -0.11,
+      "confidence": 0.8,
+      "evidence": "Derived deterministically from archetype parameter envelope midpoint."
     },
     "B": {
-      "value": 1.0,
-      "confidence": 0.98,
-      "evidence": "Explicit value declared in canonical markdown param_array for B."
+      "value": 0.79,
+      "confidence": 0.8,
+      "evidence": "Derived deterministically from archetype parameter envelope midpoint."
     }
   },
   "generation_contract": {

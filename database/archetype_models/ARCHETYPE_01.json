@@ -1,0 +1,184 @@
+{
+  "id": "ARCHETYPE_01",
+  "slug": "the-cgi-cold",
+  "name": {
+    "cn": "The CGI Cold (高冷建模脸)",
+    "en": "The CGI Cold (高冷建模脸)"
+  },
+  "version": "1.0.0",
+  "seed_source": {
+    "markdown_path": "database/archetypes/ARCHETYPE_01_seed.md",
+    "authority": "authoritative strict seed"
+  },
+  "source_profile": {
+    "derived_from": "ARCH01",
+    "source_template": "ARCHETYPE strict seed contract v1"
+  },
+  "positioning": {
+    "thesis": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+    "mechanism": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。"
+  },
+  "core_temperature": "deterministic_from_seed",
+  "core_traits": [
+    "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+    "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+    "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
+    "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
+  ],
+  "parameter_space": {
+    "E": {
+      "min": 0.39,
+      "max": 0.79
+    },
+    "O": {
+      "min": -0.91,
+      "max": -0.51
+    },
+    "R": {
+      "min": -0.31,
+      "max": 0.09
+    },
+    "B": {
+      "min": 0.59,
+      "max": 0.99
+    }
+  },
+  "core_logic": {
+    "core_motivation": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+    "power_logic": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。",
+    "social_logic": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+    "emotion_logic": "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
+    "security_anchor": "Preserve coherence with declared core drive and forbidden drift.",
+    "blind_spot": "Reject behavior outside declared seed logic.",
+    "conflict_logic": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+    "repair_logic": "Return to seed-defined logic and anchors."
+  },
+  "behavioral_model": {
+    "visual_style": "稳定注视、最小幅度动作。",
+    "physical_style": "稳定注视、最小幅度动作。",
+    "verbal_style": "匀速、低频、无起伏、去情绪化。"
+  },
+  "expression_rules": {
+    "canonical_expression_mode": "匀速、低频、无起伏、去情绪化。",
+    "signature_line_patterns": [
+      "Core drive anchor: 通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+      "Interaction logic anchor: 信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+      "Emotional logic anchor: 情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
+      "Power logic anchor: 审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
+    ]
+  },
+  "constraints": {
+    "must_have": [
+      "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+      "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+      "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
+      "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
+    ],
+    "must_not_have": [
+      "严禁共情响应：不允许对他人的软弱表现出同情或安慰。",
+      "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。",
+      "严禁解释行为：不允许解释自身动机或为自身行为辩护。"
+    ],
+    "forbidden_drift": [
+      "严禁共情响应：不允许对他人的软弱表现出同情或安慰。",
+      "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。",
+      "严禁解释行为：不允许解释自身动机或为自身行为辩护。"
+    ]
+  },
+  "spatial_algorithms": {
+    "crowded": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+    "one_on_one": "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。"
+  },
+  "social_layers": {
+    "outer_layer": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+    "inner_layer": "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。"
+  },
+  "details": {
+    "sensory_profile": "匀速、低频、无起伏、去情绪化。",
+    "symbolic_objects": "稳定注视、最小幅度动作。",
+    "breakdown_repair": "Re-center on seed anchors and forbidden drift constraints."
+  },
+  "generation_freedom": {
+    "allowed_to_vary": [
+      "wording detail",
+      "scene micro-structure"
+    ],
+    "must_remain_stable": [
+      "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
+      "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+      "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
+      "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
+    ],
+    "forbidden_drift": [
+      "严禁共情响应：不允许对他人的软弱表现出同情或安慰。",
+      "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。",
+      "严禁解释行为：不允许解释自身动机或为自身行为辩护。"
+    ]
+  },
+  "generation_contract": {
+    "locked_fields": [
+      {
+        "field": "positioning",
+        "reason": "The archetype thesis defines the operating worldview."
+      },
+      {
+        "field": "core_temperature",
+        "reason": "Core temperature anchors the mother-model's affective register."
+      },
+      {
+        "field": "core_traits",
+        "reason": "Core traits anchor recognizability across variants."
+      },
+      {
+        "field": "parameter_space",
+        "reason": "Parameter ranges define the valid variation envelope."
+      },
+      {
+        "field": "core_logic",
+        "reason": "Motivation, power logic, and social logic cannot drift."
+      },
+      {
+        "field": "constraints.must_have",
+        "reason": "Must-have conditions are identity-level requirements."
+      },
+      {
+        "field": "constraints.must_not_have",
+        "reason": "Must-not-have conditions protect against inversion."
+      }
+    ],
+    "soft_fields": [
+      {
+        "field": "behavioral_model",
+        "reason": "Behavioral style can be re-expressed while preserving the archetype logic."
+      },
+      {
+        "field": "expression_rules",
+        "reason": "Line patterns can vary without changing the mother-model."
+      },
+      {
+        "field": "details",
+        "reason": "Sensory and symbolic details may elaborate the same archetype differently."
+      },
+      {
+        "field": "social_layers",
+        "reason": "Outer and inner presentation can be elaborated without changing the core."
+      }
+    ],
+    "expansion_zones": [
+      {
+        "zone": "wording detail",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      },
+      {
+        "zone": "scene micro-structure",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      }
+    ],
+    "forbidden_drift": [
+      "严禁共情响应：不允许对他人的软弱表现出同情或安慰。",
+      "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。",
+      "严禁解释行为：不允许解释自身动机或为自身行为辩护。"
+    ]
+  },
+  "summary": "The CGI Cold (高冷建模脸) remains anchored to core drive, interaction, emotional, and power logic from the seed."
+}

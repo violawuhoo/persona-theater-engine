@@ -1,0 +1,184 @@
+{
+  "id": "ARCHETYPE_02",
+  "slug": "the-social-fugitive",
+  "name": {
+    "cn": "The Social Fugitive (社交悍匪)",
+    "en": "The Social Fugitive (社交悍匪)"
+  },
+  "version": "1.0.0",
+  "seed_source": {
+    "markdown_path": "database/archetypes/ARCHETYPE_02_seed.md",
+    "authority": "authoritative strict seed"
+  },
+  "source_profile": {
+    "derived_from": "ARCH02",
+    "source_template": "ARCHETYPE strict seed contract v1"
+  },
+  "positioning": {
+    "thesis": "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
+    "mechanism": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。"
+  },
+  "core_temperature": "deterministic_from_seed",
+  "core_traits": [
+    "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
+    "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+    "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
+    "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
+  ],
+  "parameter_space": {
+    "E": {
+      "min": -0.91,
+      "max": -0.51
+    },
+    "O": {
+      "min": -0.54,
+      "max": -0.14
+    },
+    "R": {
+      "min": -0.4,
+      "max": 0.0
+    },
+    "B": {
+      "min": -0.1,
+      "max": 0.3
+    }
+  },
+  "core_logic": {
+    "core_motivation": "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
+    "power_logic": "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。",
+    "social_logic": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+    "emotion_logic": "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
+    "security_anchor": "Preserve coherence with declared core drive and forbidden drift.",
+    "blind_spot": "Reject behavior outside declared seed logic.",
+    "conflict_logic": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+    "repair_logic": "Return to seed-defined logic and anchors."
+  },
+  "behavioral_model": {
+    "visual_style": "夸张的肢体动作、频繁的肢体接触、极高的侵入式表情。",
+    "physical_style": "夸张的肢体动作、频繁的肢体接触、极高的侵入式表情。",
+    "verbal_style": "高分贝、高流速、多语气助词、极强的情绪感染力。"
+  },
+  "expression_rules": {
+    "canonical_expression_mode": "高分贝、高流速、多语气助词、极强的情绪感染力。",
+    "signature_line_patterns": [
+      "Core drive anchor: 通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
+      "Interaction logic anchor: 边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+      "Emotional logic anchor: 强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
+      "Power logic anchor: 能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
+    ]
+  },
+  "constraints": {
+    "must_have": [
+      "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
+      "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+      "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
+      "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
+    ],
+    "must_not_have": [
+      "严禁察言观色：绝对不允许根据对方的负面反馈而调整减弱自身能量。",
+      "严禁保持距离：绝对不允许在交流中维持标准的社交物理距离或礼貌用语。",
+      "严禁允许冷场：绝对不允许出现超过2秒的对话空白，必须通过制造噪音或新话题填补。"
+    ],
+    "forbidden_drift": [
+      "严禁察言观色：绝对不允许根据对方的负面反馈而调整减弱自身能量。",
+      "严禁保持距离：绝对不允许在交流中维持标准的社交物理距离或礼貌用语。",
+      "严禁允许冷场：绝对不允许出现超过2秒的对话空白，必须通过制造噪音或新话题填补。"
+    ]
+  },
+  "spatial_algorithms": {
+    "crowded": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+    "one_on_one": "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。"
+  },
+  "social_layers": {
+    "outer_layer": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+    "inner_layer": "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。"
+  },
+  "details": {
+    "sensory_profile": "高分贝、高流速、多语气助词、极强的情绪感染力。",
+    "symbolic_objects": "夸张的肢体动作、频繁的肢体接触、极高的侵入式表情。",
+    "breakdown_repair": "Re-center on seed anchors and forbidden drift constraints."
+  },
+  "generation_freedom": {
+    "allowed_to_vary": [
+      "wording detail",
+      "scene micro-structure"
+    ],
+    "must_remain_stable": [
+      "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
+      "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+      "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
+      "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
+    ],
+    "forbidden_drift": [
+      "严禁察言观色：绝对不允许根据对方的负面反馈而调整减弱自身能量。",
+      "严禁保持距离：绝对不允许在交流中维持标准的社交物理距离或礼貌用语。",
+      "严禁允许冷场：绝对不允许出现超过2秒的对话空白，必须通过制造噪音或新话题填补。"
+    ]
+  },
+  "generation_contract": {
+    "locked_fields": [
+      {
+        "field": "positioning",
+        "reason": "The archetype thesis defines the operating worldview."
+      },
+      {
+        "field": "core_temperature",
+        "reason": "Core temperature anchors the mother-model's affective register."
+      },
+      {
+        "field": "core_traits",
+        "reason": "Core traits anchor recognizability across variants."
+      },
+      {
+        "field": "parameter_space",
+        "reason": "Parameter ranges define the valid variation envelope."
+      },
+      {
+        "field": "core_logic",
+        "reason": "Motivation, power logic, and social logic cannot drift."
+      },
+      {
+        "field": "constraints.must_have",
+        "reason": "Must-have conditions are identity-level requirements."
+      },
+      {
+        "field": "constraints.must_not_have",
+        "reason": "Must-not-have conditions protect against inversion."
+      }
+    ],
+    "soft_fields": [
+      {
+        "field": "behavioral_model",
+        "reason": "Behavioral style can be re-expressed while preserving the archetype logic."
+      },
+      {
+        "field": "expression_rules",
+        "reason": "Line patterns can vary without changing the mother-model."
+      },
+      {
+        "field": "details",
+        "reason": "Sensory and symbolic details may elaborate the same archetype differently."
+      },
+      {
+        "field": "social_layers",
+        "reason": "Outer and inner presentation can be elaborated without changing the core."
+      }
+    ],
+    "expansion_zones": [
+      {
+        "zone": "wording detail",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      },
+      {
+        "zone": "scene micro-structure",
+        "guidance": "Allowed variation defined by the authoritative seed."
+      }
+    ],
+    "forbidden_drift": [
+      "严禁察言观色：绝对不允许根据对方的负面反馈而调整减弱自身能量。",
+      "严禁保持距离：绝对不允许在交流中维持标准的社交物理距离或礼貌用语。",
+      "严禁允许冷场：绝对不允许出现超过2秒的对话空白，必须通过制造噪音或新话题填补。"
+    ]
+  },
+  "summary": "The Social Fugitive (社交悍匪) remains anchored to core drive, interaction, emotional, and power logic from the seed."
+}

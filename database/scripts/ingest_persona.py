@@ -3,8 +3,8 @@
 
 The pipeline keeps the database layer authoritative and schema-validated:
 1) optionally sync git state
-2) parse archetype seed markdown when supplied
-3) parse persona markdown into archetype-linked persona JSON
+2) parse strict archetype seed markdown
+3) generate archetype/persona JSON artifacts
 4) validate payloads against the database schemas
 5) rebuild manifests from actual database files
 6) emit diagnostics for missing fields, inferred fields, and mapping confidence
@@ -109,7 +109,8 @@ ARCHETYPE_SEED_SOFT_WARNING_FIELDS = (
 @dataclass
 class RepoPaths:
     root: Path
-    archetypes_dir: Path
+    archetypes_seed_dir: Path
+    archetype_models_dir: Path
     personas_dir: Path
     manifests_dir: Path
     schema_dir: Path
@@ -191,7 +192,8 @@ def adaptive_presync(root: Path, ctx: GitContext) -> None:
 def build_paths(root: Path) -> RepoPaths:
     return RepoPaths(
         root=root,
-        archetypes_dir=root / "database" / "archetypes",
+        archetypes_seed_dir=root / "database" / "archetypes",
+        archetype_models_dir=root / "database" / "archetype_models",
         personas_dir=root / "database" / "personas",
         manifests_dir=root / "database" / "manifests",
         schema_dir=root / "database" / "schema",
@@ -553,6 +555,10 @@ def parse_archetype_seed_contract(markdown: str) -> Dict[str, Any]:
         soft_warning_fields=ARCHETYPE_SEED_SOFT_WARNING_FIELDS,
         warning_label="seed-contract",
     )
+    for field in ("core_drive", "interaction_logic", "emotional_logic", "power_logic", "voice_anchor", "behavior_anchor", "name"):
+        if isinstance(payload.get(field), list):
+            payload[field] = " ".join(payload[field]).strip()
+
     archetype_id = payload["archetype_id"]
     if not re.match(r"^ARCHETYPE_[0-9]{2,}$", archetype_id):
         raise ValueError(f"Seed field `archetype_id` must match ^ARCHETYPE_[0-9]{{2,}}$, got `{archetype_id}`")
@@ -567,14 +573,19 @@ def persona_id_from_archetype_id(archetype_id: str) -> str:
 
 
 def deterministic_parameter_space(seed: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
+    def _as_text(value: Any) -> str:
+        if isinstance(value, list):
+            return " | ".join(str(item) for item in value)
+        return str(value)
+
     material = "|".join(
         [
-            seed["archetype_id"],
-            seed["name"],
-            seed["core_drive"],
-            seed["interaction_logic"],
-            seed["emotional_logic"],
-            seed["power_logic"],
+            _as_text(seed["archetype_id"]),
+            _as_text(seed["name"]),
+            _as_text(seed["core_drive"]),
+            _as_text(seed["interaction_logic"]),
+            _as_text(seed["emotional_logic"]),
+            _as_text(seed["power_logic"]),
         ]
     )
     digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
@@ -626,7 +637,7 @@ def persona_id_to_archetype_id(persona_id: str) -> str:
 
 
 def derive_seed_path(paths: RepoPaths, persona_id: str) -> Path:
-    return paths.docs_archetypes_dir / f"{persona_id_to_archetype_id(persona_id)}_seed.md"
+    return paths.archetypes_seed_dir / f"{persona_id_to_archetype_id(persona_id)}_seed.md"
 
 
 def build_parameter_range(value: float) -> Tuple[float, float]:
@@ -2541,7 +2552,7 @@ def validate_instance(instance: Any, schema: Dict[str, Any], schema_dir: Path, r
 def validate_cross_references(paths: RepoPaths) -> List[str]:
     errors: List[str] = []
     archetype_ids = set()
-    for json_file in sorted(paths.archetypes_dir.glob("*.json")):
+    for json_file in sorted(paths.archetype_models_dir.glob("*.json")):
         payload = load_json(json_file)
         archetype_ids.add(payload["id"])
     seen_ids = set()
@@ -2553,7 +2564,7 @@ def validate_cross_references(paths: RepoPaths) -> List[str]:
         seen_ids.add(persona_id)
         if payload.get("archetype_id") not in archetype_ids:
             errors.append(f"{json_file}: archetype_id `{payload.get('archetype_id')}` does not exist")
-    if len(archetype_ids) != len(list(paths.archetypes_dir.glob('*.json'))):
+    if len(archetype_ids) != len(list(paths.archetype_models_dir.glob('*.json'))):
         errors.append("duplicate archetype ids detected")
     return errors
 
@@ -2562,7 +2573,7 @@ def rebuild_manifests(paths: RepoPaths) -> None:
     archetype_entries: List[Dict[str, Any]] = []
     persona_entries: List[Dict[str, Any]] = []
 
-    for json_file in sorted(paths.archetypes_dir.glob("*.json")):
+    for json_file in sorted(paths.archetype_models_dir.glob("*.json")):
         payload = load_json(json_file)
         archetype_entries.append(
             {
@@ -2616,7 +2627,7 @@ def validate_database(paths: RepoPaths) -> None:
     archetype_schema = load_schema(paths.schema_dir, "archetype.schema.json")
     persona_schema = load_schema(paths.schema_dir, "persona.schema.json")
     errors: List[str] = []
-    for json_file in sorted(paths.archetypes_dir.glob("*.json")):
+    for json_file in sorted(paths.archetype_models_dir.glob("*.json")):
         errors.extend(validate_instance(load_json(json_file), archetype_schema, paths.schema_dir, path=str(json_file.relative_to(paths.root))))
     for json_file in sorted(paths.personas_dir.glob("*.json")):
         errors.extend(validate_instance(load_json(json_file), persona_schema, paths.schema_dir, path=str(json_file.relative_to(paths.root))))
@@ -2629,35 +2640,25 @@ def sync_docs_mirror(paths: RepoPaths) -> None:
     mirror_root = paths.docs_database_dir
     mirror_root.mkdir(parents=True, exist_ok=True)
 
-    managed_targets = [
-        mirror_root / "archetypes",
-        mirror_root / "personas",
-        mirror_root / "manifests",
-        mirror_root / "schema",
-        mirror_root / "docs",
-        mirror_root / "schemas",
-    ]
-    for target in managed_targets:
-        if target.exists():
-            shutil.rmtree(target)
-
     copy_plan = [
-        (paths.archetypes_dir, mirror_root / "archetypes"),
+        (paths.archetypes_seed_dir, mirror_root / "archetypes"),
+        (paths.archetype_models_dir, mirror_root / "archetype_models"),
         (paths.personas_dir, mirror_root / "personas"),
         (paths.manifests_dir, mirror_root / "manifests"),
-        (paths.schema_dir, mirror_root / "schema"),
-        (paths.docs_dir, mirror_root / "docs"),
     ]
+
+    for child in list(mirror_root.iterdir()):
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
     for source_dir, destination_dir in copy_plan:
         shutil.copytree(
             source_dir,
             destination_dir,
             ignore=shutil.ignore_patterns(".DS_Store"),
         )
-
-    ds_store = mirror_root / ".DS_Store"
-    if ds_store.exists():
-        ds_store.unlink()
 
 
 def collect_mirror_files(root: Path) -> List[Path]:
@@ -2667,14 +2668,19 @@ def collect_mirror_files(root: Path) -> List[Path]:
 def validate_docs_mirror(paths: RepoPaths) -> None:
     mirror_root = paths.docs_database_dir
     copy_plan = [
-        (paths.archetypes_dir, mirror_root / "archetypes"),
+        (paths.archetypes_seed_dir, mirror_root / "archetypes"),
+        (paths.archetype_models_dir, mirror_root / "archetype_models"),
         (paths.personas_dir, mirror_root / "personas"),
         (paths.manifests_dir, mirror_root / "manifests"),
-        (paths.schema_dir, mirror_root / "schema"),
-        (paths.docs_dir, mirror_root / "docs"),
     ]
 
     errors: List[str] = []
+    allowed_dirs = {mirror_dir.name for _, mirror_dir in copy_plan}
+    actual_dirs = {path.name for path in mirror_root.iterdir() if path.is_dir()} if mirror_root.exists() else set()
+    unexpected_dirs = sorted(actual_dirs - allowed_dirs)
+    for directory in unexpected_dirs:
+        errors.append(f"unexpected mirror directory `{(mirror_root / directory).relative_to(paths.root)}`")
+
     for source_dir, mirror_dir in copy_plan:
         if not mirror_dir.exists():
             errors.append(f"missing mirror directory `{mirror_dir.relative_to(paths.root)}`")
@@ -2695,10 +2701,6 @@ def validate_docs_mirror(paths: RepoPaths) -> None:
         for rel_path in sorted(source_rel & mirror_rel):
             if not filecmp.cmp(source_dir / rel_path, mirror_dir / rel_path, shallow=False):
                 errors.append(f"stale content in `{(mirror_dir / rel_path).relative_to(paths.root)}`")
-
-    legacy_schema_dir = mirror_root / "schemas"
-    if legacy_schema_dir.exists():
-        errors.append(f"legacy mirror directory still present `{legacy_schema_dir.relative_to(paths.root)}`")
 
     if errors:
         raise ValueError("Docs mirror validation failed:\n- " + "\n- ".join(errors))
@@ -2730,7 +2732,7 @@ def ingest(
     print_report("persona", persona_report)
 
     if not dry_run:
-        write_json(paths.archetypes_dir / f"{archetype_payload['id']}.json", archetype_payload)
+        write_json(paths.archetype_models_dir / f"{archetype_payload['id']}.json", archetype_payload)
         write_json(paths.personas_dir / f"{persona_payload['id']}.json", persona_payload)
         rebuild_manifests(paths)
         validate_database(paths)
