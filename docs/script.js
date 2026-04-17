@@ -306,6 +306,115 @@ function showConfirm(message, { title = '确认操作', color = '#e74c3c' } = {}
   return showModal(message, { title, color, type: 'confirm' });
 }
 
+// ── COMPILED JSON REMAPPER ────────────────────────────────────
+// Detects compiled persona JSON (stable_fields present) and remaps
+// it into the flat runtime schema the rest of the frontend expects.
+// Returns a plain object with the same top-level keys as the old format.
+function remapCompiledPersona(raw) {
+  const sf   = raw.stable_fields  || {};
+  const sofF = raw.soft_fields    || {};
+  const id   = sf.identity        || {};
+  const emb  = sf.embodiment      || {};
+
+  // ── name: prefer stable_fields.identity.persona_name ────────
+  const name = safeStr(
+    id.persona_name ||
+    (raw.name && typeof raw.name === 'object' ? raw.name.primary : raw.name),
+    SCHEMA_DEFAULTS.name
+  );
+
+  // ── gaze_protocol: rename focus_rule→focus_point, movement_rule→rule ──
+  const rawGaze = emb.gaze_protocol || {};
+  const gaze_protocol = {
+    focus_point: safeStr(rawGaze.focus_rule   || rawGaze.focus_point,
+                         SCHEMA_DEFAULTS.physical_execution_constraints.gaze_protocol.focus_point),
+    rule:        safeStr(rawGaze.movement_rule || rawGaze.rule,
+                         SCHEMA_DEFAULTS.physical_execution_constraints.gaze_protocol.rule)
+  };
+
+  // ── latency_buffer: rename rule→purpose ─────────────────────
+  const rawLbuf = emb.latency_buffer || {};
+  const latency_buffer = {
+    delay_seconds: safeStr(rawLbuf.delay_seconds,
+                           SCHEMA_DEFAULTS.physical_execution_constraints.latency_buffer.delay_seconds),
+    purpose:       safeStr(rawLbuf.purpose || rawLbuf.rule,
+                           SCHEMA_DEFAULTS.physical_execution_constraints.latency_buffer.purpose)
+  };
+
+  // ── physical_execution_constraints ← embodiment ─────────────
+  const physical_execution_constraints = {
+    ...SCHEMA_DEFAULTS.physical_execution_constraints,
+    center_of_gravity:  safeStr(emb.center_of_gravity),
+    breathing_protocol: safeStr(emb.breathing_protocol),
+    hand_constraints:   safeStr(emb.hand_constraints),
+    spatial_sovereignty: safeStr(emb.spatial_sovereignty, ''),
+    gaze_protocol,
+    latency_buffer
+  };
+
+  // ── response_protocols → dynamic_response_protocols ─────────
+  // new keys: negative_feedback.drift_prevention, positive_feedback.aligned_interaction,
+  //           extreme_pressure  →  mapped to runtime keys: attack, validation_received, logical_trap
+  // sub-field remap: breaker_line → verbal_output, response_actions → signal/physical_output
+  const rawProto = sofF.response_protocols || {};
+  const dynamic_response_protocols = {};
+
+  function mapProto(p) {
+    if (!p || typeof p !== 'object') return null;
+    return {
+      signal:          safeStr(p.response_actions || p.signal),
+      verbal_output:   safeStr(p.breaker_line     || p.verbal_output),
+      physical_output: safeStr(p.response_actions || p.physical_output),
+      logic:           safeStr(p.logic)
+    };
+  }
+
+  const negDrift = rawProto.negative_feedback && rawProto.negative_feedback.drift_prevention;
+  if (negDrift) dynamic_response_protocols.attack = mapProto(negDrift);
+
+  const posAligned = rawProto.positive_feedback && rawProto.positive_feedback.aligned_interaction;
+  if (posAligned) dynamic_response_protocols.validation_received = mapProto(posAligned);
+
+  if (rawProto.extreme_pressure)
+    dynamic_response_protocols.logical_trap = mapProto(rawProto.extreme_pressure);
+
+  // Pull any signature_lines as extra verbal references
+  (sofF.signature_lines || []).forEach((line, i) => {
+    if (typeof line === 'string' && line.length > 3) {
+      dynamic_response_protocols[`signature_${i}`] = {
+        signal: line, verbal_output: line, physical_output: '', logic: ''
+      };
+    }
+  });
+
+  // ── taboos → universal_forbidden_actions ────────────────────
+  const universal_forbidden_actions = Array.isArray(sf.taboos) && sf.taboos.length > 0
+    ? sf.taboos.map(t => ({
+        action: safeStr(t.action, '未知禁忌'),
+        rule:   safeStr(t.rule,   '[规则内容缺失]')
+      }))
+    : SCHEMA_DEFAULTS.universal_forbidden_actions;
+
+  return {
+    id:             safeStr(raw.id, SCHEMA_DEFAULTS.id),
+    name,
+    subtitle:       safeStr(id.subtitle,     SCHEMA_DEFAULTS.subtitle),
+    archetype:      safeStr(raw.archetype_id, SCHEMA_DEFAULTS.archetype),
+    core_directive: safeStr(sf.core_directive, SCHEMA_DEFAULTS.core_directive),
+    root_logic_core: {
+      ...SCHEMA_DEFAULTS.root_logic_core,
+      ...(sf.core_logic || {})
+    },
+    cognitive_filtering_algorithm: {
+      ...SCHEMA_DEFAULTS.cognitive_filtering_algorithm,
+      ...(sf.cognitive_filters || {})
+    },
+    physical_execution_constraints,
+    universal_forbidden_actions,
+    dynamic_response_protocols
+  };
+}
+
 // ── SCHEMA NORMALIZER ─────────────────────────────────────────
 // Merge loaded JSON with SCHEMA_DEFAULTS so every field always exists.
 function normalizePersonaSchema(raw) {
@@ -314,21 +423,29 @@ function normalizePersonaSchema(raw) {
     return { ...SCHEMA_DEFAULTS };
   }
 
-  const norm = { ...SCHEMA_DEFAULTS, ...raw };
+  // Detect compiled format (stable_fields present) and remap before normalization
+  const isCompiled = raw.stable_fields && typeof raw.stable_fields === 'object';
+  const source = isCompiled ? remapCompiledPersona(raw) : raw;
+
+  if (isCompiled) {
+    console.log(`[Schema] Compiled format detected — remapped ${safeStr(raw.id)}.`);
+  }
+
+  const norm = { ...SCHEMA_DEFAULTS, ...source };
 
   // Deep-merge each nested module
   norm.root_logic_core = {
     ...SCHEMA_DEFAULTS.root_logic_core,
-    ...(raw.root_logic_core || {})
+    ...(source.root_logic_core || {})
   };
 
   norm.cognitive_filtering_algorithm = {
     ...SCHEMA_DEFAULTS.cognitive_filtering_algorithm,
-    ...(raw.cognitive_filtering_algorithm || {})
+    ...(source.cognitive_filtering_algorithm || {})
   };
 
   // Physical constraints — gaze_protocol and latency_buffer are nested
-  const rawPhys = raw.physical_execution_constraints || {};
+  const rawPhys = source.physical_execution_constraints || {};
   norm.physical_execution_constraints = {
     ...SCHEMA_DEFAULTS.physical_execution_constraints,
     ...rawPhys,
@@ -342,14 +459,14 @@ function normalizePersonaSchema(raw) {
     }
   };
 
-  norm.universal_forbidden_actions = Array.isArray(raw.universal_forbidden_actions)
-    && raw.universal_forbidden_actions.length > 0
-      ? raw.universal_forbidden_actions
+  norm.universal_forbidden_actions = Array.isArray(source.universal_forbidden_actions)
+    && source.universal_forbidden_actions.length > 0
+      ? source.universal_forbidden_actions
       : SCHEMA_DEFAULTS.universal_forbidden_actions;
 
   norm.dynamic_response_protocols =
-    (raw.dynamic_response_protocols && typeof raw.dynamic_response_protocols === 'object')
-      ? raw.dynamic_response_protocols
+    (source.dynamic_response_protocols && typeof source.dynamic_response_protocols === 'object')
+      ? source.dynamic_response_protocols
       : SCHEMA_DEFAULTS.dynamic_response_protocols;
 
   // Validate each forbidden action has required string fields
