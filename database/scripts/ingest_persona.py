@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import filecmp
+import hashlib
 import json
 import re
 import shutil
@@ -48,6 +49,61 @@ COGNITIVE_ALIASES = {
     "downward_compatibility": ["向下兼容", "downward compatibility"],
     "information_granularity": ["信息颗粒度", "information granularity"],
 }
+
+PERSONA_INSTANCE_SECTIONS: Dict[str, Tuple[str, ...]] = {
+    "Identity": ("persona_id", "archetype_id", "name", "version"),
+    "Instance Premise": ("instance_premise", "role_in_interaction"),
+    "Expression": ("voice", "behavioral_signature"),
+    "Boundaries": ("forbidden_behavior",),
+    "Relationship": ("relationship_dynamic", "emotional_tendency"),
+    "Interaction Pattern": ("trigger_response",),
+    "Optional": ("sample_lines", "notes"),
+}
+
+PERSONA_INSTANCE_REQUIRED_FIELDS = (
+    "persona_id",
+    "archetype_id",
+    "name",
+    "version",
+    "instance_premise",
+    "role_in_interaction",
+    "voice",
+    "behavioral_signature",
+    "forbidden_behavior",
+)
+
+PERSONA_INSTANCE_SOFT_WARNING_FIELDS = (
+    "relationship_dynamic",
+    "emotional_tendency",
+    "trigger_response",
+)
+
+ARCHETYPE_SEED_SECTIONS: Dict[str, Tuple[str, ...]] = {
+    "Identity": ("archetype_id", "name", "version"),
+    "Core Drive": ("core_drive",),
+    "Interaction Logic": ("interaction_logic",),
+    "Emotional Logic": ("emotional_logic",),
+    "Power Logic": ("power_logic",),
+    "Forbidden Drift": ("forbidden_drift",),
+    "Expression Anchors": ("voice_anchor", "behavior_anchor"),
+    "Optional": ("notes",),
+}
+
+ARCHETYPE_SEED_HARD_REQUIRED_FIELDS = (
+    "archetype_id",
+    "name",
+    "version",
+    "core_drive",
+    "interaction_logic",
+    "emotional_logic",
+    "power_logic",
+    "forbidden_drift",
+)
+
+ARCHETYPE_SEED_SOFT_WARNING_FIELDS = (
+    "voice_anchor",
+    "behavior_anchor",
+)
 
 
 @dataclass
@@ -177,6 +233,362 @@ def deep_clean_strings(value: Any) -> Any:
     if isinstance(value, dict):
         return {key: deep_clean_strings(item) for key, item in value.items()}
     return value
+
+
+def looks_like_persona_instance_contract(markdown: str) -> bool:
+    return "## Identity" in markdown and "persona_id:" in markdown and "archetype_id:" in markdown
+
+
+def parse_persona_instance_contract(markdown: str) -> Dict[str, Any]:
+    allowed_sections = list(PERSONA_INSTANCE_SECTIONS.keys())
+    allowed_fields = {
+        field_name
+        for fields in PERSONA_INSTANCE_SECTIONS.values()
+        for field_name in fields
+    }
+    required_by_section = {
+        section: {
+            field_name
+            for field_name in fields
+            if field_name not in ("sample_lines", "notes")
+        }
+        for section, fields in PERSONA_INSTANCE_SECTIONS.items()
+    }
+
+    errors: List[str] = []
+    warnings: List[str] = []
+    values: Dict[str, Any] = {}
+    section_fields_seen: Dict[str, List[str]] = {section: [] for section in allowed_sections}
+    seen_sections: List[str] = []
+    current_section: Optional[str] = None
+    current_key: Optional[str] = None
+
+    lines = markdown.splitlines()
+    for line_no, raw in enumerate(lines, start=1):
+        line = raw.rstrip()
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if stripped.startswith("## "):
+            section_name = stripped[3:].strip()
+            if section_name not in PERSONA_INSTANCE_SECTIONS:
+                errors.append(f"line {line_no}: unexpected section header `{section_name}`")
+                current_section = None
+                current_key = None
+                continue
+            if section_name in seen_sections:
+                errors.append(f"line {line_no}: duplicate section header `## {section_name}`")
+            current_section = section_name
+            seen_sections.append(section_name)
+            current_key = None
+            continue
+
+        if current_section is None:
+            errors.append(f"line {line_no}: content must be inside one of: {', '.join(allowed_sections)}")
+            continue
+
+        key_match = re.match(r"^([a-z_]+)\s*:\s*(.*)$", stripped)
+        if key_match:
+            key = key_match.group(1)
+            value = key_match.group(2).strip()
+            if key not in allowed_fields:
+                errors.append(f"line {line_no}: unexpected field key `{key}`")
+                current_key = None
+                continue
+            if key not in PERSONA_INSTANCE_SECTIONS[current_section]:
+                errors.append(f"line {line_no}: field `{key}` is not allowed in section `{current_section}`")
+                current_key = None
+                continue
+            if key in values:
+                errors.append(f"line {line_no}: duplicate field `{key}`")
+                current_key = key
+                continue
+
+            if value:
+                values[key] = sanitize_extracted_text(value)
+            else:
+                values[key] = []
+            section_fields_seen[current_section].append(key)
+            current_key = key
+            continue
+
+        bullet_match = re.match(r"^\s*[-*]\s+(.+)$", line)
+        if bullet_match:
+            if not current_key:
+                errors.append(f"line {line_no}: bullet list item has no active field key")
+                continue
+            current_value = values.get(current_key)
+            if isinstance(current_value, str) and current_value:
+                errors.append(f"line {line_no}: cannot append bullet list to single-line field `{current_key}`")
+                continue
+            if not isinstance(current_value, list):
+                current_value = []
+            current_value.append(sanitize_extracted_text(bullet_match.group(1)))
+            values[current_key] = current_value
+            continue
+
+        if current_key:
+            current_value = values.get(current_key)
+            if isinstance(current_value, list):
+                current_value.append(sanitize_extracted_text(stripped))
+                values[current_key] = current_value
+            elif isinstance(current_value, str) and current_value:
+                errors.append(f"line {line_no}: multi-line text is not allowed for field `{current_key}`")
+            else:
+                values[current_key] = sanitize_extracted_text(stripped)
+            continue
+
+        errors.append(f"line {line_no}: unrecognized content `{stripped}`")
+
+    for section_name, fields in required_by_section.items():
+        missing_section_fields = sorted(fields - set(section_fields_seen[section_name]))
+        for field_name in missing_section_fields:
+            errors.append(f"missing field `{field_name}` in section `{section_name}`")
+    for section_name in allowed_sections:
+        if section_name not in seen_sections:
+            errors.append(f"missing required section header `## {section_name}`")
+
+    for field_name in PERSONA_INSTANCE_REQUIRED_FIELDS:
+        if field_name not in values:
+            errors.append(f"missing required field `{field_name}`")
+            continue
+        field_value = values[field_name]
+        if isinstance(field_value, list):
+            if not [item for item in field_value if item]:
+                errors.append(f"required field `{field_name}` cannot be empty")
+        elif not str(field_value).strip():
+            errors.append(f"required field `{field_name}` cannot be empty")
+
+    for field_name in PERSONA_INSTANCE_SOFT_WARNING_FIELDS:
+        if field_name not in values:
+            warnings.append(f"missing optional field `{field_name}`")
+            continue
+        value = values[field_name]
+        if isinstance(value, list):
+            if not [item for item in value if item]:
+                warnings.append(f"optional field `{field_name}` is empty")
+        elif not str(value).strip():
+            warnings.append(f"optional field `{field_name}` is empty")
+
+    prohibited_key_patterns = [
+        r"\bdyn_param\b",
+        r"^[EORB]\s*:",
+    ]
+    archetype_logic_patterns = [
+        r"\bmotive\b",
+        r"\bphilosophy\b",
+        r"\bcore_logic\b",
+        r"\bpower_logic\b",
+    ]
+    for line_no, raw in enumerate(lines, start=1):
+        stripped = raw.strip()
+        if any(re.search(pattern, stripped, flags=re.IGNORECASE) for pattern in prohibited_key_patterns):
+            errors.append(f"line {line_no}: archetype parameter field detected; persona input cannot redefine archetype dyn params")
+        if any(re.search(pattern, stripped, flags=re.IGNORECASE) for pattern in archetype_logic_patterns):
+            warnings.append(f"line {line_no}: archetype logic-like content detected (`{stripped}`)")
+
+    if errors:
+        raise ValueError("Persona instance contract validation failed:\n- " + "\n- ".join(errors))
+    if warnings:
+        for warning in warnings:
+            print(f"[warning:persona-contract] {warning}")
+
+    normalized: Dict[str, Any] = {}
+    for key, value in values.items():
+        if isinstance(value, list):
+            normalized[key] = [coalesce_text(item) for item in value if coalesce_text(item)]
+        else:
+            normalized[key] = coalesce_text(value)
+    return normalized
+
+
+def parse_strict_markdown_contract(
+    markdown: str,
+    sections: Dict[str, Tuple[str, ...]],
+    hard_required_fields: Tuple[str, ...],
+    soft_warning_fields: Tuple[str, ...],
+    warning_label: str,
+) -> Dict[str, Any]:
+    allowed_sections = list(sections.keys())
+    allowed_fields = {field_name for group in sections.values() for field_name in group}
+    required_by_section = {
+        section_name: {
+            field_name
+            for field_name in field_names
+            if field_name in hard_required_fields
+        }
+        for section_name, field_names in sections.items()
+    }
+
+    errors: List[str] = []
+    warnings: List[str] = []
+    values: Dict[str, Any] = {}
+    section_fields_seen: Dict[str, List[str]] = {section_name: [] for section_name in allowed_sections}
+    seen_sections: List[str] = []
+    current_section: Optional[str] = None
+    current_key: Optional[str] = None
+
+    for line_no, raw in enumerate(markdown.splitlines(), start=1):
+        line = raw.rstrip()
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if stripped.startswith("## "):
+            section_name = stripped[3:].strip()
+            if section_name not in sections:
+                errors.append(f"line {line_no}: unexpected section header `{section_name}`")
+                current_section = None
+                current_key = None
+                continue
+            if section_name in seen_sections:
+                errors.append(f"line {line_no}: duplicate section header `## {section_name}`")
+            seen_sections.append(section_name)
+            current_section = section_name
+            current_key = None
+            continue
+
+        if current_section is None:
+            errors.append(f"line {line_no}: content must be inside one of: {', '.join(allowed_sections)}")
+            continue
+
+        key_match = re.match(r"^([a-z_]+)\s*:\s*(.*)$", stripped)
+        if key_match:
+            key = key_match.group(1)
+            value = key_match.group(2).strip()
+            if key not in allowed_fields:
+                errors.append(f"line {line_no}: unexpected field key `{key}`")
+                current_key = None
+                continue
+            if key not in sections[current_section]:
+                errors.append(f"line {line_no}: field `{key}` is not allowed in section `{current_section}`")
+                current_key = None
+                continue
+            if key in values:
+                errors.append(f"line {line_no}: duplicate field `{key}`")
+                current_key = None
+                continue
+            values[key] = sanitize_extracted_text(value) if value else []
+            section_fields_seen[current_section].append(key)
+            current_key = key
+            continue
+
+        bullet_match = re.match(r"^\s*[-*]\s+(.+)$", line)
+        if bullet_match:
+            if not current_key:
+                errors.append(f"line {line_no}: bullet list item has no active field key")
+                continue
+            cursor = values.get(current_key)
+            if isinstance(cursor, str) and cursor:
+                errors.append(f"line {line_no}: cannot append bullet list to single-line field `{current_key}`")
+                continue
+            if not isinstance(cursor, list):
+                cursor = []
+            cursor.append(sanitize_extracted_text(bullet_match.group(1)))
+            values[current_key] = cursor
+            continue
+
+        if current_key:
+            cursor = values.get(current_key)
+            if isinstance(cursor, list):
+                cursor.append(sanitize_extracted_text(stripped))
+                values[current_key] = cursor
+            elif isinstance(cursor, str) and cursor:
+                errors.append(f"line {line_no}: multi-line text is not allowed for field `{current_key}`")
+            else:
+                values[current_key] = sanitize_extracted_text(stripped)
+            continue
+
+        errors.append(f"line {line_no}: unrecognized content `{stripped}`")
+
+    for section_name in allowed_sections:
+        if section_name not in seen_sections:
+            errors.append(f"missing required section header `## {section_name}`")
+    for section_name, section_required in required_by_section.items():
+        for field_name in sorted(section_required - set(section_fields_seen[section_name])):
+            errors.append(f"missing field `{field_name}` in section `{section_name}`")
+
+    for field_name in hard_required_fields:
+        if field_name not in values:
+            errors.append(f"missing required field `{field_name}`")
+            continue
+        value = values[field_name]
+        if isinstance(value, list):
+            if not [item for item in value if item]:
+                errors.append(f"required field `{field_name}` cannot be empty")
+        elif not str(value).strip():
+            errors.append(f"required field `{field_name}` cannot be empty")
+
+    for field_name in soft_warning_fields:
+        if field_name not in values:
+            warnings.append(f"missing optional field `{field_name}`")
+            continue
+        value = values[field_name]
+        if isinstance(value, list):
+            if not [item for item in value if item]:
+                warnings.append(f"optional field `{field_name}` is empty")
+        elif not str(value).strip():
+            warnings.append(f"optional field `{field_name}` is empty")
+
+    if errors:
+        raise ValueError("Strict markdown contract validation failed:\n- " + "\n- ".join(errors))
+    for warning in warnings:
+        print(f"[warning:{warning_label}] {warning}")
+
+    normalized: Dict[str, Any] = {}
+    for key, value in values.items():
+        if isinstance(value, list):
+            normalized[key] = [coalesce_text(item) for item in value if coalesce_text(item)]
+        else:
+            normalized[key] = coalesce_text(value)
+    return normalized
+
+
+def parse_archetype_seed_contract(markdown: str) -> Dict[str, Any]:
+    payload = parse_strict_markdown_contract(
+        markdown=markdown,
+        sections=ARCHETYPE_SEED_SECTIONS,
+        hard_required_fields=ARCHETYPE_SEED_HARD_REQUIRED_FIELDS,
+        soft_warning_fields=ARCHETYPE_SEED_SOFT_WARNING_FIELDS,
+        warning_label="seed-contract",
+    )
+    archetype_id = payload["archetype_id"]
+    if not re.match(r"^ARCHETYPE_[0-9]{2,}$", archetype_id):
+        raise ValueError(f"Seed field `archetype_id` must match ^ARCHETYPE_[0-9]{{2,}}$, got `{archetype_id}`")
+    return payload
+
+
+def persona_id_from_archetype_id(archetype_id: str) -> str:
+    match = re.match(r"^ARCHETYPE_([0-9]{2,})$", archetype_id)
+    if not match:
+        raise ValueError(f"Cannot derive persona id from archetype id `{archetype_id}`")
+    return f"ARCH{int(match.group(1)):02d}"
+
+
+def deterministic_parameter_space(seed: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
+    material = "|".join(
+        [
+            seed["archetype_id"],
+            seed["name"],
+            seed["core_drive"],
+            seed["interaction_logic"],
+            seed["emotional_logic"],
+            seed["power_logic"],
+        ]
+    )
+    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
+    channels = ["E", "O", "R", "B"]
+    space: Dict[str, Dict[str, float]] = {}
+    for index, channel in enumerate(channels):
+        pair = digest[index * 2 : index * 2 + 2]
+        raw = int(pair, 16) / 255.0
+        center = round(-0.8 + (1.6 * raw), 2)
+        spread = 0.2
+        minimum = max(-1.0, round(center - spread, 2))
+        maximum = min(1.0, round(center + spread, 2))
+        space[channel] = {"min": minimum, "max": maximum}
+    return space
 
 
 def markdown_to_text(path: Path) -> str:
@@ -1357,17 +1769,561 @@ def make_persona_generation_contract() -> Dict[str, Any]:
     }
 
 
+def build_archetype_from_seed_contract(seed: Dict[str, Any], seed_path: Path, report: DiagnosticReport) -> Dict[str, Any]:
+    archetype_id = seed["archetype_id"]
+    persona_id = persona_id_from_archetype_id(archetype_id)
+    voice_anchor = seed.get("voice_anchor", "")
+    behavior_anchor = seed.get("behavior_anchor", "")
+    forbidden_drift = seed["forbidden_drift"]
+    forbidden_list = forbidden_drift if isinstance(forbidden_drift, list) else [forbidden_drift]
+    forbidden_list = [item for item in forbidden_list if item]
+    if not forbidden_list:
+        report.missing_fields.append("constraints.forbidden_drift")
+        forbidden_list = ["Do not drift outside declared seed logic."]
+
+    parameter_space = deterministic_parameter_space(seed)
+    report.mapping_confidence = 0.98
+
+    archetype = {
+        "id": archetype_id,
+        "slug": kebab_case(seed["name"]),
+        "name": {
+            "cn": seed["name"],
+            "en": seed["name"],
+        },
+        "version": seed["version"],
+        "seed_source": {
+            "markdown_path": str(seed_path.relative_to(seed_path.parents[2])),
+            "authority": "authoritative strict seed",
+        },
+        "source_profile": {
+            "derived_from": persona_id,
+            "source_template": "ARCHETYPE strict seed contract v1",
+        },
+        "positioning": {
+            "thesis": seed["core_drive"],
+            "mechanism": seed["interaction_logic"],
+        },
+        "core_temperature": "deterministic_from_seed",
+        "core_traits": [
+            seed["core_drive"],
+            seed["interaction_logic"],
+            seed["emotional_logic"],
+            seed["power_logic"],
+        ],
+        "parameter_space": parameter_space,
+        "core_logic": {
+            "core_motivation": seed["core_drive"],
+            "power_logic": seed["power_logic"],
+            "social_logic": seed["interaction_logic"],
+            "emotion_logic": seed["emotional_logic"],
+            "security_anchor": "Preserve coherence with declared core drive and forbidden drift.",
+            "blind_spot": "Reject behavior outside declared seed logic.",
+            "conflict_logic": seed["interaction_logic"],
+            "repair_logic": "Return to seed-defined logic and anchors.",
+        },
+        "behavioral_model": {
+            "visual_style": behavior_anchor or "No explicit behavior anchor provided; maintain deterministic neutral posture.",
+            "physical_style": behavior_anchor or "No explicit behavior anchor provided; maintain deterministic neutral posture.",
+            "verbal_style": voice_anchor or "No explicit voice anchor provided; maintain concise deterministic expression.",
+        },
+        "expression_rules": {
+            "canonical_expression_mode": voice_anchor or "Default deterministic voice anchored to seed logic.",
+            "signature_line_patterns": [
+                f"Core drive anchor: {seed['core_drive']}",
+                f"Interaction logic anchor: {seed['interaction_logic']}",
+                f"Emotional logic anchor: {seed['emotional_logic']}",
+                f"Power logic anchor: {seed['power_logic']}",
+            ],
+        },
+        "constraints": {
+            "must_have": [seed["core_drive"], seed["interaction_logic"], seed["emotional_logic"], seed["power_logic"]],
+            "must_not_have": forbidden_list,
+            "forbidden_drift": forbidden_list,
+        },
+        "spatial_algorithms": {
+            "crowded": seed["interaction_logic"],
+            "one_on_one": seed["emotional_logic"],
+        },
+        "social_layers": {
+            "outer_layer": seed["interaction_logic"],
+            "inner_layer": seed["emotional_logic"],
+        },
+        "details": {
+            "sensory_profile": voice_anchor or "Derived from seed without extra sensory annotations.",
+            "symbolic_objects": behavior_anchor or "Derived from seed without extra symbolic objects.",
+            "breakdown_repair": "Re-center on seed anchors and forbidden drift constraints.",
+        },
+        "generation_freedom": {
+            "allowed_to_vary": ["wording detail", "scene micro-structure"],
+            "must_remain_stable": [seed["core_drive"], seed["interaction_logic"], seed["emotional_logic"], seed["power_logic"]],
+            "forbidden_drift": forbidden_list,
+        },
+        "generation_contract": make_generation_contract_for_archetype(
+            {
+                "constraints": {
+                    "must_have": [seed["core_drive"], seed["interaction_logic"], seed["emotional_logic"], seed["power_logic"]],
+                    "must_not_have": forbidden_list,
+                    "forbidden_drift": forbidden_list,
+                },
+                "generation_freedom": {
+                    "allowed_to_vary": ["wording detail", "scene micro-structure"],
+                    "forbidden_drift": forbidden_list,
+                },
+            }
+        ),
+        "summary": f"{seed['name']} remains anchored to core drive, interaction, emotional, and power logic from the seed.",
+    }
+    return deep_clean_strings(archetype)
+
+
+def _split_clauses(text: str) -> List[str]:
+    fragments = re.split(r"[，,。；;、\n]", text)
+    return [coalesce_text(item) for item in fragments if coalesce_text(item)]
+
+
+def _derive_voice(seed: Dict[str, Any]) -> str:
+    anchor = seed.get("voice_anchor", "")
+    if anchor:
+        primary = _split_clauses(anchor)
+        compact = "、".join(primary[:3]) if primary else anchor
+        return f"语气{compact}"
+    interaction = _split_clauses(seed["interaction_logic"])
+    emotional = _split_clauses(seed["emotional_logic"])
+    power = _split_clauses(seed["power_logic"])
+    pieces = []
+    if interaction:
+        pieces.append(f"先{interaction[0]}")
+    if emotional:
+        pieces.append(f"并保持{emotional[0]}")
+    if power:
+        pieces.append(f"维持{power[0]}")
+    return "，".join(pieces[:3]) or "语气克制、边界清晰、响应稳定"
+
+
+def _derive_behavioral_signature(seed: Dict[str, Any]) -> List[str]:
+    anchor = seed.get("behavior_anchor", "")
+    clauses = _split_clauses(anchor) if anchor else []
+    if clauses:
+        traits = clauses[:3]
+    else:
+        interaction = _split_clauses(seed["interaction_logic"])
+        power = _split_clauses(seed["power_logic"])
+        traits = []
+        if interaction:
+            traits.append(f"先执行{interaction[0]}")
+        if power:
+            traits.append(f"互动中保持{power[0]}")
+        traits.append("响应前短暂停顿并复述边界")
+    while len(traits) < 2:
+        traits.append("保持稳定节奏与边界")
+    return traits[:3]
+
+
+def _derive_relationship_dynamic(seed: Dict[str, Any]) -> str:
+    interaction = _split_clauses(seed["interaction_logic"])
+    power = _split_clauses(seed["power_logic"])
+    first = interaction[0] if interaction else seed["interaction_logic"]
+    second = power[0] if power else seed["power_logic"]
+    return f"关系距离默认中高边界；以{first}建立互动；由{second}保持主导秩序。"
+
+
+def _derive_emotional_tendency(seed: Dict[str, Any]) -> str:
+    emotional = _split_clauses(seed["emotional_logic"])
+    first = emotional[0] if emotional else seed["emotional_logic"]
+    second = emotional[1] if len(emotional) > 1 else "受压时先收缩再校准"
+    return f"基线{first}；防御倾向{second}；温度变化遵循边界先行。"
+
+
+def _derive_trigger_response(seed: Dict[str, Any]) -> List[str]:
+    interaction = _split_clauses(seed["interaction_logic"])
+    power = _split_clauses(seed["power_logic"])
+    emotional = _split_clauses(seed["emotional_logic"])
+    i = interaction[0] if interaction else seed["interaction_logic"]
+    p = power[0] if power else seed["power_logic"]
+    e = emotional[0] if emotional else seed["emotional_logic"]
+    return [
+        f"对方越界 → 先重申边界，再按{i}继续",
+        f"对方施压 → 维持{p}，拒绝失序互动",
+        f"对方示好 → 以{e}回应，不放松核心边界",
+    ]
+
+
+def compile_persona_policy_fields(seed: Dict[str, Any], report: DiagnosticReport) -> Dict[str, Any]:
+    missing_voice_anchor = not bool(seed.get("voice_anchor"))
+    missing_behavior_anchor = not bool(seed.get("behavior_anchor"))
+    if missing_voice_anchor:
+        report.inferred_fields.append("voice (fallback from interaction/emotional/power logic)")
+    if missing_behavior_anchor:
+        report.inferred_fields.append("behavioral_signature (fallback from interaction/power logic)")
+    return {
+        "voice": _derive_voice(seed),
+        "behavioral_signature": _derive_behavioral_signature(seed),
+        "relationship_dynamic": _derive_relationship_dynamic(seed),
+        "emotional_tendency": _derive_emotional_tendency(seed),
+        "trigger_response": _derive_trigger_response(seed),
+        "forbidden_behavior": seed["forbidden_drift"] if isinstance(seed["forbidden_drift"], list) else [seed["forbidden_drift"]],
+    }
+
+
+def apply_drift_guardrails(seed: Dict[str, Any], policy_fields: Dict[str, Any]) -> Dict[str, Any]:
+    normalized = dict(policy_fields)
+    forbidden = [item for item in normalized["forbidden_behavior"] if item]
+    canonical_forbidden = seed["forbidden_drift"] if isinstance(seed["forbidden_drift"], list) else [seed["forbidden_drift"]]
+    for item in canonical_forbidden:
+        if item and item not in forbidden:
+            forbidden.append(item)
+    normalized["forbidden_behavior"] = forbidden
+
+    dominant_power = bool(re.search(r"主导|控制|边界|标准|秩序", seed["power_logic"]))
+    if dominant_power and re.search(r"讨好|迎合|服从|取悦", normalized["voice"]):
+        normalized["voice"] = _derive_voice(seed)
+
+    interaction_rule = _split_clauses(seed["interaction_logic"])
+    if interaction_rule:
+        must_phrase = interaction_rule[0]
+        signature = normalized["behavioral_signature"]
+        if all(must_phrase not in item for item in signature):
+            signature = signature[:2] + [f"关键时刻执行{must_phrase}"]
+            normalized["behavioral_signature"] = signature[:3]
+
+    emotional_rule = _split_clauses(seed["emotional_logic"])
+    if emotional_rule and emotional_rule[0] not in normalized["emotional_tendency"]:
+        normalized["emotional_tendency"] = _derive_emotional_tendency(seed)
+
+    if not normalized["trigger_response"]:
+        normalized["trigger_response"] = _derive_trigger_response(seed)
+    return normalized
+
+
+def validate_persona_policy_invariants(seed: Dict[str, Any], policy_fields: Dict[str, Any]) -> None:
+    required_paths = [
+        ("voice", policy_fields.get("voice")),
+        ("behavioral_signature", policy_fields.get("behavioral_signature")),
+        ("relationship_dynamic", policy_fields.get("relationship_dynamic")),
+        ("emotional_tendency", policy_fields.get("emotional_tendency")),
+        ("trigger_response", policy_fields.get("trigger_response")),
+        ("forbidden_behavior", policy_fields.get("forbidden_behavior")),
+    ]
+    missing = [name for name, value in required_paths if not value]
+    if missing:
+        raise ValueError(f"Persona generation policy invariant failed: empty generated fields `{', '.join(missing)}`")
+
+    forbidden_seed = seed["forbidden_drift"] if isinstance(seed["forbidden_drift"], list) else [seed["forbidden_drift"]]
+    forbidden_generated = policy_fields["forbidden_behavior"]
+    if any(item not in forbidden_generated for item in forbidden_seed):
+        raise ValueError("Persona generation policy invariant failed: forbidden_behavior weaker than forbidden_drift")
+
+
+def build_persona_from_seed_contract(seed: Dict[str, Any], source_path: Path, archetype: Dict[str, Any], report: DiagnosticReport) -> Dict[str, Any]:
+    persona_id = persona_id_from_archetype_id(seed["archetype_id"])
+    policy_fields = compile_persona_policy_fields(seed, report)
+    policy_fields = apply_drift_guardrails(seed, policy_fields)
+    validate_persona_policy_invariants(seed, policy_fields)
+    taboos = [{"action": item, "rule": item} for item in policy_fields["forbidden_behavior"]]
+
+    persona = {
+        "id": persona_id,
+        "version": seed["version"],
+        "archetype_id": seed["archetype_id"],
+        "name": {
+            "primary": seed["name"],
+            "en": seed["name"],
+            "source_classification": "generated_from_strict_seed",
+        },
+        "source_markdown": str(source_path.relative_to(source_path.parents[2])),
+        "stable_fields": {
+            "identity": {
+                "persona_name": seed["name"],
+                "subtitle": "generated persona instance",
+                "premise": seed["core_drive"],
+                "source_classification": "generated_from_strict_seed",
+            },
+            "core_directive": policy_fields["voice"],
+            "core_logic": {
+                "social_essence": seed["interaction_logic"],
+                "self_positioning": seed["core_drive"],
+                "power_source": seed["power_logic"],
+            },
+            "cognitive_filters": {
+                "noise_filtering": "Reject interactions that violate forbidden drift.",
+                "downward_compatibility": policy_fields["emotional_tendency"],
+                "information_granularity": "; ".join(policy_fields["behavioral_signature"]),
+            },
+            "embodiment": {
+                "center_of_gravity": policy_fields["behavioral_signature"][0],
+                "gaze_protocol": {
+                    "focus_rule": policy_fields["voice"],
+                    "movement_rule": policy_fields["behavioral_signature"][0],
+                },
+                "breathing_protocol": policy_fields["voice"],
+                "hand_constraints": policy_fields["behavioral_signature"][-1],
+                "latency_buffer": {
+                    "delay_seconds": "1.5",
+                    "rule": "Pause briefly and respond within seed logic.",
+                },
+                "spatial_sovereignty": seed["interaction_logic"],
+                "negative_buffer": "Reset to seed logic when drift risk appears.",
+            },
+            "taboos": taboos,
+            "reference_models": [
+                {
+                    "name": seed["archetype_id"],
+                    "principle": "Persona is generated from the strict archetype seed only.",
+                }
+            ],
+        },
+        "soft_fields": {
+            "scene_behavior": {
+                "small_scale": {
+                    "label": "one_on_one",
+                    "strategy": policy_fields["relationship_dynamic"],
+                    "actions": "; ".join(policy_fields["behavioral_signature"]),
+                    "logic": policy_fields["emotional_tendency"],
+                },
+                "large_scale": {
+                    "label": "crowded",
+                    "strategy": seed["interaction_logic"],
+                    "actions": "; ".join(policy_fields["behavioral_signature"]),
+                    "logic": seed["power_logic"],
+                },
+            },
+            "interaction_matrix": [
+                {
+                    "input_signal": "general_interaction",
+                    "interpretation": seed["interaction_logic"],
+                    "response_adjustment": policy_fields["trigger_response"][0],
+                }
+            ],
+            "response_protocols": {
+                "negative_feedback": {
+                    "drift_prevention": {
+                        "label": "drift_prevention",
+                        "cognitive_filter": "detect forbidden drift",
+                        "response_actions": policy_fields["trigger_response"][1],
+                        "breaker_line": policy_fields["voice"],
+                        "logic": seed["power_logic"],
+                    }
+                },
+                "positive_feedback": {
+                    "aligned_interaction": {
+                        "label": "aligned_interaction",
+                        "cognitive_filter": policy_fields["relationship_dynamic"],
+                        "response_actions": policy_fields["trigger_response"][2],
+                        "breaker_line": policy_fields["voice"],
+                        "logic": seed["core_drive"],
+                    }
+                },
+                "extreme_pressure": {
+                    "label": "constraint_lock",
+                    "cognitive_filter": "forbidden drift enforcement",
+                    "response_actions": " ".join(policy_fields["trigger_response"]),
+                    "breaker_line": "Resetting to stable contract.",
+                    "logic": "Deterministic contract preservation.",
+                },
+            },
+            "signature_lines": [policy_fields["voice"]] + policy_fields["trigger_response"],
+        },
+        "realized_parameters": infer_realized_parameters_from_archetype(archetype),
+        "generation_contract": make_persona_generation_contract(),
+    }
+    report.mapping_confidence = max(0.0, 1 - (0.02 * len(report.inferred_fields)))
+    return deep_clean_strings(persona)
+
+
+def infer_realized_parameters_from_archetype(archetype: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    realized: Dict[str, Dict[str, Any]] = {}
+    for param_id, envelope in archetype.get("parameter_space", {}).items():
+        minimum = envelope.get("min")
+        maximum = envelope.get("max")
+        if isinstance(minimum, (int, float)) and isinstance(maximum, (int, float)):
+            value = round((minimum + maximum) / 2, 2)
+        else:
+            value = 0.0
+        realized[param_id] = {
+            "value": value,
+            "confidence": 0.8,
+            "evidence": "Derived deterministically from archetype parameter envelope midpoint.",
+        }
+    return realized
+
+
+def build_persona_from_instance_contract(
+    contract: Dict[str, Any],
+    source_path: Path,
+    archetype: Dict[str, Any],
+    report: DiagnosticReport,
+) -> Dict[str, Any]:
+    persona_id = contract["persona_id"]
+    archetype_id = contract["archetype_id"]
+    persona_name = contract["name"]
+    role_in_interaction = contract.get("role_in_interaction", "")
+
+    forbidden = contract["forbidden_behavior"]
+    if isinstance(forbidden, list):
+        taboo_entries = [{"action": item, "rule": item} for item in forbidden if item]
+    else:
+        taboo_entries = [{"action": forbidden, "rule": forbidden}] if forbidden else []
+
+    sample_lines = contract.get("sample_lines", [])
+    if isinstance(sample_lines, str):
+        sample_lines = [sample_lines] if sample_lines else []
+
+    trigger_response = contract.get("trigger_response", "")
+    relationship_dynamic = contract.get("relationship_dynamic", "")
+    emotional_tendency = contract.get("emotional_tendency", "")
+
+    core_logic = archetype.get("core_logic", {})
+    behavioral = archetype.get("behavioral_model", {})
+    details = archetype.get("details", {})
+
+    persona = {
+        "id": persona_id,
+        "version": contract["version"],
+        "archetype_id": archetype_id,
+        "name": {
+            "primary": persona_name,
+            "en": role_in_interaction or persona_name,
+            "source_classification": "persona_instance_contract_v1",
+        },
+        "source_markdown": str(source_path.relative_to(source_path.parents[2])),
+        "stable_fields": {
+            "identity": {
+                "persona_name": persona_name,
+                "subtitle": role_in_interaction,
+                "premise": contract["instance_premise"],
+                "source_classification": "persona_instance_contract_v1",
+            },
+            "core_directive": contract["voice"],
+            "core_logic": {
+                "social_essence": core_logic.get("social_logic", ""),
+                "self_positioning": core_logic.get("core_motivation", ""),
+                "power_source": core_logic.get("power_logic", ""),
+            },
+            "cognitive_filters": {
+                "noise_filtering": core_logic.get("blind_spot", ""),
+                "downward_compatibility": core_logic.get("security_anchor", ""),
+                "information_granularity": contract["behavioral_signature"],
+            },
+            "embodiment": {
+                "center_of_gravity": behavioral.get("physical_style", ""),
+                "gaze_protocol": {
+                    "focus_rule": behavioral.get("visual_style", ""),
+                    "movement_rule": contract["behavioral_signature"],
+                },
+                "breathing_protocol": contract["voice"],
+                "hand_constraints": behavioral.get("physical_style", ""),
+                "latency_buffer": {
+                    "delay_seconds": "2.0",
+                    "rule": "Respond after controlled pause to preserve persona consistency.",
+                },
+                "spatial_sovereignty": archetype.get("spatial_algorithms", {}).get("one_on_one", ""),
+                "negative_buffer": details.get("breakdown_repair", ""),
+            },
+            "taboos": taboo_entries,
+            "reference_models": [
+                {
+                    "name": archetype.get("name", {}).get("cn", archetype.get("id", archetype_id)),
+                    "principle": "Persona inherits archetype logic without redefining mother-model.",
+                }
+            ],
+        },
+        "soft_fields": {
+            "scene_behavior": {
+                "small_scale": {
+                    "label": "relationship_dynamic",
+                    "strategy": relationship_dynamic,
+                    "actions": contract["behavioral_signature"],
+                    "logic": contract["instance_premise"],
+                },
+                "large_scale": {
+                    "label": "emotional_tendency",
+                    "strategy": emotional_tendency,
+                    "actions": contract["voice"],
+                    "logic": trigger_response,
+                },
+            },
+            "interaction_matrix": [
+                {
+                    "input_signal": "trigger_response",
+                    "interpretation": relationship_dynamic,
+                    "response_adjustment": trigger_response,
+                }
+            ],
+            "response_protocols": {
+                "negative_feedback": {
+                    "boundary_enforcement": {
+                        "label": "boundary_enforcement",
+                        "cognitive_filter": contract["forbidden_behavior"] if isinstance(contract["forbidden_behavior"], str) else "; ".join(contract["forbidden_behavior"]),
+                        "response_actions": trigger_response,
+                        "breaker_line": sample_lines[0] if sample_lines else "",
+                        "logic": contract["voice"],
+                    }
+                },
+                "positive_feedback": {
+                    "relational_growth": {
+                        "label": "relational_growth",
+                        "cognitive_filter": relationship_dynamic,
+                        "response_actions": emotional_tendency,
+                        "breaker_line": sample_lines[1] if len(sample_lines) > 1 else "",
+                        "logic": contract["instance_premise"],
+                    }
+                },
+                "extreme_pressure": {
+                    "label": "trigger_response",
+                    "cognitive_filter": contract["behavioral_signature"],
+                    "response_actions": trigger_response,
+                    "breaker_line": sample_lines[2] if len(sample_lines) > 2 else "",
+                    "logic": "Fallback response remains bounded by persona contract and archetype constraints.",
+                },
+            },
+            "signature_lines": sample_lines or [contract["voice"]],
+        },
+        "realized_parameters": infer_realized_parameters_from_archetype(archetype),
+        "generation_contract": make_persona_generation_contract(),
+    }
+
+    for required_path in [
+        "id",
+        "version",
+        "archetype_id",
+        "name.primary",
+        "stable_fields.identity.premise",
+        "stable_fields.core_directive",
+        "stable_fields.taboos",
+    ]:
+        if not _dig(persona, required_path):
+            report.missing_fields.append(required_path)
+
+    if not relationship_dynamic:
+        report.inferred_fields.append("soft_fields.scene_behavior.small_scale.strategy")
+    if not emotional_tendency:
+        report.inferred_fields.append("soft_fields.scene_behavior.large_scale.strategy")
+    if not trigger_response:
+        report.inferred_fields.append("soft_fields.interaction_matrix[0].response_adjustment")
+
+    report.mapping_confidence = max(0.0, 1 - (0.06 * len(report.missing_fields)) - (0.02 * len(report.inferred_fields)))
+    return deep_clean_strings(persona)
+
+
 def build_persona(
     markdown: str,
     source_path: Path,
     archetype_id: str,
     archetype: Optional[Dict[str, Any]],
     report: DiagnosticReport,
+    parsed_contract: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    if parsed_contract is not None:
+        if archetype is None:
+            raise ValueError("Persona contract ingestion requires an existing archetype payload.")
+        return build_persona_from_instance_contract(parsed_contract, source_path, archetype, report)
+
     if is_tagged_persona(markdown):
         persona = parse_tagged_persona(markdown, source_path, archetype_id, report)
         return {
             "id": persona["id"],
+            "version": "0.0.0-legacy",
             "archetype_id": persona["archetype_id"],
             "name": persona["name"],
             "source_markdown": persona["source_markdown"],
@@ -1477,6 +2433,7 @@ def build_persona(
 
     ordered = {
         "id": persona["id"],
+        "version": "0.0.0-legacy",
         "archetype_id": persona["archetype_id"],
         "name": persona["name"],
         "source_markdown": persona["source_markdown"],
@@ -1756,42 +2713,25 @@ def print_report(label: str, report: DiagnosticReport) -> None:
 
 
 def ingest(
-    source_md: Path,
+    seed_md: Path,
     paths: RepoPaths,
     dry_run: bool = False,
-    archetype_seed: Optional[Path] = None,
-    archetype_id: Optional[str] = None,
 ) -> Tuple[str, Optional[str]]:
-    markdown = markdown_to_text(source_md)
-    persona_id = derive_persona_id(source_md, markdown)
-    seed_output_path = archetype_seed.resolve() if archetype_seed else derive_seed_path(paths, persona_id)
-    template_text = markdown_to_text(paths.seed_template)
-
+    markdown = markdown_to_text(seed_md)
+    seed_payload = parse_archetype_seed_contract(markdown)
     seed_report = DiagnosticReport()
-    generated_seed_markdown, generated_archetype_id = synthesize_seed_markdown(markdown, source_md, template_text, seed_report)
-    if not dry_run:
-        paths.docs_archetypes_dir.mkdir(parents=True, exist_ok=True)
-        seed_output_path.write_text(generated_seed_markdown, encoding="utf-8")
     print_report("seed", seed_report)
 
     archetype_report = DiagnosticReport()
-    archetype_payload = build_archetype(generated_seed_markdown, seed_output_path, archetype_report)
-    if not dry_run:
-        write_json(paths.archetypes_dir / f"{archetype_payload['id']}.json", archetype_payload)
+    archetype_payload = build_archetype_from_seed_contract(seed_payload, seed_md, archetype_report)
     print_report("archetype", archetype_report)
-
-    title_meta = parse_title_metadata(markdown)
-    resolved_archetype_id = archetype_id or generated_archetype_id or resolve_archetype_id(None, archetype_payload, title_meta, paths)
-    if not resolved_archetype_id:
-        raise ValueError("Unable to resolve archetype_id for persona ingestion.")
-
     persona_report = DiagnosticReport()
-    persona_payload = build_persona(markdown, source_md, resolved_archetype_id, archetype_payload, persona_report)
-    if not dry_run:
-        write_json(paths.personas_dir / f"{persona_payload['id']}.json", persona_payload)
+    persona_payload = build_persona_from_seed_contract(seed_payload, seed_md, archetype_payload, persona_report)
     print_report("persona", persona_report)
 
     if not dry_run:
+        write_json(paths.archetypes_dir / f"{archetype_payload['id']}.json", archetype_payload)
+        write_json(paths.personas_dir / f"{persona_payload['id']}.json", persona_payload)
         rebuild_manifests(paths)
         validate_database(paths)
         sync_docs_mirror(paths)
@@ -1800,13 +2740,11 @@ def ingest(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Ingest persona markdown into the single-input archetype/persona database model.")
-    parser.add_argument("source", type=Path, help="Persona markdown source path")
+    parser = argparse.ArgumentParser(description="Generate archetype/persona JSON artifacts from a strict archetype seed markdown.")
+    parser.add_argument("source", type=Path, help="Archetype seed markdown path (database/archetypes/ARCHETYPE_XX_seed.md)")
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--sync-git", action="store_true", help="Best-effort pull --ff-only when tracking origin")
     parser.add_argument("--dry-run", action="store_true", help="Parse and validate without writing files")
-    parser.add_argument("--archetype-seed", type=Path, help="Optional override path for the generated archetype seed markdown")
-    parser.add_argument("--archetype-id", type=str, help="Optional explicit archetype id override")
     args = parser.parse_args()
 
     paths = build_paths(args.repo_root.resolve())
@@ -1818,8 +2756,6 @@ def main() -> int:
         args.source.resolve(),
         paths,
         dry_run=args.dry_run,
-        archetype_seed=args.archetype_seed.resolve() if args.archetype_seed else None,
-        archetype_id=args.archetype_id,
     )
     if generated_archetype_id:
         print(f"[ingest] generated archetype {generated_archetype_id}")

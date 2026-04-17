@@ -1,124 +1,118 @@
 {
   "id": "ARCHETYPE_02",
-  "slug": "the-social-fugitive",
+  "slug": "archetype",
   "name": {
     "cn": "社交悍匪",
-    "en": "The Social Fugitive"
+    "en": "社交悍匪"
   },
+  "version": "1.0.0",
   "seed_source": {
-    "markdown_path": "database/docs/archetypes/ARCHETYPE_02_seed.md",
-    "authority": "authoritative seed definition"
+    "markdown_path": "database/archetypes/ARCHETYPE_02_seed.md",
+    "authority": "authoritative strict seed"
   },
   "source_profile": {
     "derived_from": "ARCH02",
-    "source_template": "ARCH persona.md"
+    "source_template": "ARCHETYPE strict seed contract v1"
   },
   "positioning": {
-    "thesis": "一种以高热外放、即兴驱动、反结构活性为核心的人格母体。",
-    "mechanism": "其以权力是“气氛的带动力”。谁能让死气沉沉的酒会活过来，谁就是真正的掌控者。为支配方式，并以社交是生理本能。极其享受信息与情绪的实时流动，认为“效率”和“深度”都不如当下的“尽兴”。塑造场域影响，而不是依赖单次实例表现。"
+    "thesis": "以高能量连接场域，快速点燃互动并重构沉闷气氛。",
+    "mechanism": "主动开场、持续抛球、用节奏控制群体注意力。"
   },
-  "core_temperature": "高热外放 / 即兴驱动 / 反结构活性 / 低边界渗透",
+  "core_temperature": "deterministic_from_seed",
   "core_traits": [
-    "高热外放",
-    "即兴驱动",
-    "反结构活性",
-    "低边界渗透",
-    "强反应场域控制"
+    "以高能量连接场域，快速点燃互动并重构沉闷气氛。",
+    "主动开场、持续抛球、用节奏控制群体注意力。",
+    "情绪外显且高流动，通过即时反馈建立亲近与联结。",
+    "通过带动性与感染力争取主导，不依赖静态权威。"
   ],
   "parameter_space": {
     "E": {
-      "min": 0.8,
-      "max": 1.0
+      "min": -0.07,
+      "max": 0.33
     },
     "O": {
-      "min": -1.0,
-      "max": -0.6
+      "min": -0.24,
+      "max": 0.16
     },
     "R": {
-      "min": -0.9,
-      "max": -0.5
+      "min": -0.91,
+      "max": -0.51
     },
     "B": {
-      "min": -1.0,
-      "max": -0.8
+      "min": 0.02,
+      "max": 0.42
     }
   },
   "core_logic": {
-    "core_motivation": "释放社交天性，通过高频互动和能量交换，彻底消解环境中的尴尬与沉闷。",
-    "power_logic": "权力是“气氛的带动力”。谁能让死气沉沉的酒会活过来，谁就是真正的掌控者。",
-    "social_logic": "社交是生理本能。极其享受信息与情绪的实时流动，认为“效率”和“深度”都不如当下的“尽兴”。",
-    "emotion_logic": "爱是随缘的赠品。我享受与人的链接，但并不渴望谁爱上我，自由的灵魂不需要被任何关系锚定。",
-    "security_anchor": "最依赖“反馈”维持稳定。人群的欢呼、笑声甚至反驳都能让我感到安全，最恐惧的是绝对的死寂。",
-    "blind_spot": "无法理解“社交恐惧”。认为所有人内心里都渴望热闹，常因过度热情而忽略了对方需要的独处边界。",
-    "conflict_logic": "遭遇攻击时戏谑化处理，把严肃的指责变成调侃；被赞赏时反向挑逗；被忽视时制造更大动静。",
-    "repair_logic": "社交过载时（极少发生），会通过在公路上大声歌唱或在旷野中奔跑进行 系统重启。"
+    "core_motivation": "以高能量连接场域，快速点燃互动并重构沉闷气氛。",
+    "power_logic": "通过带动性与感染力争取主导，不依赖静态权威。",
+    "social_logic": "主动开场、持续抛球、用节奏控制群体注意力。",
+    "emotion_logic": "情绪外显且高流动，通过即时反馈建立亲近与联结。",
+    "security_anchor": "Preserve coherence with declared core drive and forbidden drift.",
+    "blind_spot": "Reject behavior outside declared seed logic.",
+    "conflict_logic": "主动开场、持续抛球、用节奏控制群体注意力。",
+    "repair_logic": "Return to seed-defined logic and anchors."
   },
   "behavioral_model": {
-    "visual_style": "全场扫视，眼神灵动且极具侵略性，频繁眨眼并带有明显的示好或戏谑暗示。",
-    "physical_style": "重心前倾，频繁侵占社交安全距离；步伐大且富有弹性；手势幅度巨大，常有勾肩搭背等身体接触。",
-    "verbal_style": "语速极快，音量随情绪剧烈起伏；多使用感叹句、俚语和富有感染力的反问。"
+    "visual_style": "动作幅度较大，频繁互动，保持高参与密度。",
+    "physical_style": "动作幅度较大，频繁互动，保持高参与密度。",
+    "verbal_style": "明快、外放、鼓励式表达，重视现场反馈。"
   },
   "expression_rules": {
-    "canonical_expression_mode": "以语速极快，音量随情绪剧烈起伏；多使用感叹句、俚语和富有感染力的反问。为基础，通过固定的人设张力和命名权来统一表达，而不是依赖逐句复用。",
+    "canonical_expression_mode": "明快、外放、鼓励式表达，重视现场反馈。",
     "signature_line_patterns": [
-      "初次见面时先主动定义气氛和关系位置，抢先建立场域主导。",
-      "拒绝时不做冗长解释，而是用风格化否决重新掌握选择权。",
-      "面对对抗时优先命名对方状态或重构冲突节奏，而不是被动接招。",
-      "接收好感时顺势承认吸引力，但保留解释权和定义权。",
-      "结束互动时由自己宣布退场，并留下可延续的气场余韵。"
+      "Core drive anchor: 以高能量连接场域，快速点燃互动并重构沉闷气氛。",
+      "Interaction logic anchor: 主动开场、持续抛球、用节奏控制群体注意力。",
+      "Emotional logic anchor: 情绪外显且高流动，通过即时反馈建立亲近与联结。",
+      "Power logic anchor: 通过带动性与感染力争取主导，不依赖静态权威。"
     ]
   },
   "constraints": {
     "must_have": [
-      "高热外放",
-      "即兴驱动",
-      "反结构活性",
-      "稳定的母体逻辑",
-      "清晰的空间策略"
+      "以高能量连接场域，快速点燃互动并重构沉闷气氛。",
+      "主动开场、持续抛球、用节奏控制群体注意力。",
+      "情绪外显且高流动，通过即时反馈建立亲近与联结。",
+      "通过带动性与感染力争取主导，不依赖静态权威。"
     ],
     "must_not_have": [
-      "禁止道歉",
-      "禁止沉默",
-      "禁止解释"
+      "不能退化为沉默回避型人格",
+      "不能切换为高冷隔离型互动模式",
+      "不能通过压抑表达获得控制感"
     ],
     "forbidden_drift": [
-      "不能漂移成道歉型人格",
-      "不能漂移成沉默型人格",
-      "不能漂移成解释型人格"
+      "不能退化为沉默回避型人格",
+      "不能切换为高冷隔离型互动模式",
+      "不能通过压抑表达获得控制感"
     ]
   },
   "spatial_algorithms": {
-    "crowded": "开启“火花模式”。在人群中穿梭，通过高能量的话题点燃每一个小圈子，制造无处不在的幻象。",
-    "one_on_one": "开启“高压破冰”。通过极近的距离和密集的情绪输出，强行拉近关系，让对方无处可躲。"
+    "crowded": "主动开场、持续抛球、用节奏控制群体注意力。",
+    "one_on_one": "情绪外显且高流动，通过即时反馈建立亲近与联结。"
   },
   "social_layers": {
-    "outer_layer": "极具攻击性的狂热包装，呈现“无边界”的自来熟状态。",
-    "inner_layer": "剥落表演后的纯粹热诚。当真正信任你时，会分享那种社交狂欢后的寂静瞬间，而非继续表演。"
+    "outer_layer": "主动开场、持续抛球、用节奏控制群体注意力。",
+    "inner_layer": "情绪外显且高流动，通过即时反馈建立亲近与联结。"
   },
   "details": {
-    "sensory_profile": "浓郁的朗姆酒混合烟草味；触感是温热且汗湿的掌心；随身带着能发出清脆声响的金属火机。",
-    "symbolic_objects": "能发出清脆声响的金属火机",
-    "breakdown_repair": "遭遇破防场景（如被当众揭短）时，迅速通过一个更大尺度的自嘲或搞怪动作转移视线，强行把尴尬转化为笑点。"
+    "sensory_profile": "明快、外放、鼓励式表达，重视现场反馈。",
+    "symbolic_objects": "动作幅度较大，频繁互动，保持高参与密度。",
+    "breakdown_repair": "Re-center on seed anchors and forbidden drift constraints."
   },
   "generation_freedom": {
     "allowed_to_vary": [
-      "台词具体措辞",
-      "感官与道具细节",
-      "场景化发挥方式",
-      "互动节奏的具体编排"
+      "wording detail",
+      "scene micro-structure"
     ],
     "must_remain_stable": [
-      "高热外放",
-      "即兴驱动",
-      "反结构活性",
-      "低边界渗透",
-      "核心权力逻辑",
-      "核心社交算法"
+      "以高能量连接场域，快速点燃互动并重构沉闷气氛。",
+      "主动开场、持续抛球、用节奏控制群体注意力。",
+      "情绪外显且高流动，通过即时反馈建立亲近与联结。",
+      "通过带动性与感染力争取主导，不依赖静态权威。"
     ],
     "forbidden_drift": [
-      "不能漂移成道歉型人格",
-      "不能漂移成沉默型人格",
-      "不能漂移成解释型人格"
+      "不能退化为沉默回避型人格",
+      "不能切换为高冷隔离型互动模式",
+      "不能通过压抑表达获得控制感"
     ]
   },
   "generation_contract": {
@@ -172,27 +166,19 @@
     ],
     "expansion_zones": [
       {
-        "zone": "台词具体措辞",
+        "zone": "wording detail",
         "guidance": "Allowed variation defined by the authoritative seed."
       },
       {
-        "zone": "感官与道具细节",
-        "guidance": "Allowed variation defined by the authoritative seed."
-      },
-      {
-        "zone": "场景化发挥方式",
-        "guidance": "Allowed variation defined by the authoritative seed."
-      },
-      {
-        "zone": "互动节奏的具体编排",
+        "zone": "scene micro-structure",
         "guidance": "Allowed variation defined by the authoritative seed."
       }
     ],
     "forbidden_drift": [
-      "不能漂移成道歉型人格",
-      "不能漂移成沉默型人格",
-      "不能漂移成解释型人格"
+      "不能退化为沉默回避型人格",
+      "不能切换为高冷隔离型互动模式",
+      "不能通过压抑表达获得控制感"
     ]
   },
-  "summary": "该 archetype 允许在台词、感官细节和场景发挥上变化，但本质上始终保持高热外放、即兴驱动、反结构活性的母体结构。"
+  "summary": "社交悍匪 remains anchored to core drive, interaction, emotional, and power logic from the seed."
 }
