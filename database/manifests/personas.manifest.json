@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-04-16T15:17:33Z",
+  "generated_at": "2026-04-17T03:45:20Z",
   "total_personas": 2,
   "personas": [
     {
@@ -9,7 +9,7 @@
       "json_path": "database/personas/ARCH01.json",
       "md_path": "database/personas/ARCH01.md",
       "name": "高冷建模脸",
-      "subtitle": "The CGI Cold",
+      "subtitle": "高冷建模脸",
       "status": "active"
     },
     {
@@ -18,7 +18,7 @@
       "json_path": "database/personas/ARCH02.json",
       "md_path": "database/personas/ARCH02.md",
       "name": "社交悍匪",
-      "subtitle": "The Social Fugitive",
+      "subtitle": "社交悍匪",
       "status": "active"
     }
   ]

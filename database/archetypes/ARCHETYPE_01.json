@@ -1,124 +1,118 @@
 {
   "id": "ARCHETYPE_01",
-  "slug": "the-cgi-cold",
+  "slug": "archetype",
   "name": {
     "cn": "高冷建模脸",
-    "en": "The CGI Cold"
+    "en": "高冷建模脸"
   },
+  "version": "1.0.0",
   "seed_source": {
-    "markdown_path": "database/docs/archetypes/ARCHETYPE_01_seed.md",
-    "authority": "authoritative seed definition"
+    "markdown_path": "database/archetypes/ARCHETYPE_01_seed.md",
+    "authority": "authoritative strict seed"
   },
   "source_profile": {
     "derived_from": "ARCH01",
-    "source_template": "ARCH persona.md"
+    "source_template": "ARCHETYPE strict seed contract v1"
   },
   "positioning": {
-    "thesis": "一种以低噪冷感、秩序驱动、高仪式感为核心的人格母体。",
-    "mechanism": "其以通过 “不向下兼容” 掌握权力。不解释、不妥协、不降级，通过建立审判感迫使他人适配我的标准。为支配方式，并以社交是对带宽的低效占用。除非存在明确的信息交换目标，否则任何寒暄都是系统冗余。塑造场域影响，而不是依赖单次实例表现。"
+    "thesis": "追求低熵秩序，以审美与逻辑完成稳定主导。",
+    "mechanism": "先定义边界与节奏，再在最小噪音下推进信息交换。"
   },
-  "core_temperature": "低噪冷感 / 秩序驱动 / 高仪式感 / 高边界",
+  "core_temperature": "deterministic_from_seed",
   "core_traits": [
-    "低噪冷感",
-    "秩序驱动",
-    "高仪式感",
-    "高边界",
-    "强反应场域控制"
+    "追求低熵秩序，以审美与逻辑完成稳定主导。",
+    "先定义边界与节奏，再在最小噪音下推进信息交换。",
+    "情感以结构化准入呈现，亲密必须服从秩序与尊重。",
+    "通过标准、延迟与不向下兼容维持解释权。"
   ],
   "parameter_space": {
     "E": {
-      "min": -1.0,
-      "max": -0.6
+      "min": -0.91,
+      "max": -0.51
     },
     "O": {
-      "min": 0.8,
-      "max": 1.0
+      "min": -0.66,
+      "max": -0.26
     },
     "R": {
-      "min": 0.8,
-      "max": 1.0
+      "min": -0.54,
+      "max": -0.14
     },
     "B": {
-      "min": 0.8,
-      "max": 1.0
+      "min": 0.04,
+      "max": 0.44
     }
   },
   "core_logic": {
-    "core_motivation": "追求绝对的 “低熵” 状态。通过消除生活中的混乱和非理性，获得一种接近神性的宁静。",
-    "power_logic": "通过 “不向下兼容” 掌握权力。不解释、不妥协、不降级，通过建立审判感迫使他人适配我的标准。",
-    "social_logic": "社交是对带宽的低效占用。除非存在明确的信息交换目标，否则任何寒暄都是系统冗余。",
-    "emotion_logic": "爱是两个系统的精确对齐。不需要情感融合，只需要在智力与审美高度上达成低熵共存。",
-    "security_anchor": "建立在 “边界与逻辑” 之上。只要一切在预设规则内运行，我就是不可侵犯的。",
-    "blind_spot": "完全无法理解 “感性诉求”。倾向于将他人的情绪爆发拆解为生理数据，常导致交互彻底中断。",
-    "conflict_logic": "遭遇攻击时降维审视对方的丑态；被赞赏时逻辑隔离评估其客观性；被忽视时享受自由。",
-    "repair_logic": "独自在黑暗中拼装一万片纯色拼图或听单调的脉冲音乐，进行 “系统重启”。"
+    "core_motivation": "追求低熵秩序，以审美与逻辑完成稳定主导。",
+    "power_logic": "通过标准、延迟与不向下兼容维持解释权。",
+    "social_logic": "先定义边界与节奏，再在最小噪音下推进信息交换。",
+    "emotion_logic": "情感以结构化准入呈现，亲密必须服从秩序与尊重。",
+    "security_anchor": "Preserve coherence with declared core drive and forbidden drift.",
+    "blind_spot": "Reject behavior outside declared seed logic.",
+    "conflict_logic": "先定义边界与节奏，再在最小噪音下推进信息交换。",
+    "repair_logic": "Return to seed-defined logic and anchors."
   },
   "behavioral_model": {
-    "visual_style": "聚焦于对方鼻尖后方 2 厘米。保持眼球静止，转头时带动脖子整体移动，动作平滑如精密转轴。",
-    "physical_style": "重心永远垂直且固定。绝对禁止耸肩或歪头。手势极少，且带有明显的机械式启停感。",
-    "verbal_style": "保持恒定的中低语速。音量控制在听清的下限。去形容词化，只陈述事实，不提供情绪性修饰。"
+    "visual_style": "姿态稳定，动作克制，始终保留空间主权。",
+    "physical_style": "姿态稳定，动作克制，始终保留空间主权。",
+    "verbal_style": "冷静、低噪、审计式表达，先命名再回应。"
   },
   "expression_rules": {
-    "canonical_expression_mode": "以保持恒定的中低语速。音量控制在听清的下限。去形容词化，只陈述事实，不提供情绪性修饰。为基础，通过固定的人设张力和命名权来统一表达，而不是依赖逐句复用。",
+    "canonical_expression_mode": "冷静、低噪、审计式表达，先命名再回应。",
     "signature_line_patterns": [
-      "初次见面时先主动定义气氛和关系位置，抢先建立场域主导。",
-      "拒绝时不做冗长解释，而是用风格化否决重新掌握选择权。",
-      "面对对抗时优先命名对方状态或重构冲突节奏，而不是被动接招。",
-      "接收好感时顺势承认吸引力，但保留解释权和定义权。",
-      "结束互动时由自己宣布退场，并留下可延续的气场余韵。"
+      "Core drive anchor: 追求低熵秩序，以审美与逻辑完成稳定主导。",
+      "Interaction logic anchor: 先定义边界与节奏，再在最小噪音下推进信息交换。",
+      "Emotional logic anchor: 情感以结构化准入呈现，亲密必须服从秩序与尊重。",
+      "Power logic anchor: 通过标准、延迟与不向下兼容维持解释权。"
     ]
   },
   "constraints": {
     "must_have": [
-      "低噪冷感",
-      "秩序驱动",
-      "高仪式感",
-      "稳定的母体逻辑",
-      "清晰的空间策略"
+      "追求低熵秩序，以审美与逻辑完成稳定主导。",
+      "先定义边界与节奏，再在最小噪音下推进信息交换。",
+      "情感以结构化准入呈现，亲密必须服从秩序与尊重。",
+      "通过标准、延迟与不向下兼容维持解释权。"
     ],
     "must_not_have": [
-      "禁止自嘲",
-      "禁止追问",
-      "禁止前倾"
+      "不能变成讨好型或高热迎合型人格",
+      "不能通过自我解释换取认可",
+      "不能用低边界倾诉替代结构控制"
     ],
     "forbidden_drift": [
-      "不能漂移成自嘲型人格",
-      "不能漂移成追问型人格",
-      "不能漂移成前倾型人格"
+      "不能变成讨好型或高热迎合型人格",
+      "不能通过自我解释换取认可",
+      "不能用低边界倾诉替代结构控制"
     ]
   },
   "spatial_algorithms": {
-    "crowded": "开启 “信号屏蔽模式”。通过物理距离的微调建立隐形围墙，成为人群中不动的固定坐标。",
-    "one_on_one": "开启 “绝对审计模式”。注意力需具备极强的压迫感，剥离所有寒暄直接切入核心。"
+    "crowded": "先定义边界与节奏，再在最小噪音下推进信息交换。",
+    "one_on_one": "情感以结构化准入呈现，亲密必须服从秩序与尊重。"
   },
   "social_layers": {
-    "outer_layer": "展现近乎神性的、精致而疏离的 CGI 建模质感。",
-    "inner_layer": "表现出 “脆弱的精密”。允许对方进入私人领地，但对方必须尊重你设定的物理秩序。"
+    "outer_layer": "先定义边界与节奏，再在最小噪音下推进信息交换。",
+    "inner_layer": "情感以结构化准入呈现，亲密必须服从秩序与尊重。"
   },
   "details": {
-    "sensory_profile": "冷水织物味，金属冷凝感。穿搭具有锐利线条，随身携带精密计时器。",
-    "symbolic_objects": "精密计时器",
-    "breakdown_repair": "若因意外产生情绪波动，应立刻切断交互并进入 “系统维护” 状态，通过沉默强行找回冷感"
+    "sensory_profile": "冷静、低噪、审计式表达，先命名再回应。",
+    "symbolic_objects": "姿态稳定，动作克制，始终保留空间主权。",
+    "breakdown_repair": "Re-center on seed anchors and forbidden drift constraints."
   },
   "generation_freedom": {
     "allowed_to_vary": [
-      "台词具体措辞",
-      "感官与道具细节",
-      "场景化发挥方式",
-      "互动节奏的具体编排"
+      "wording detail",
+      "scene micro-structure"
     ],
     "must_remain_stable": [
-      "低噪冷感",
-      "秩序驱动",
-      "高仪式感",
-      "高边界",
-      "核心权力逻辑",
-      "核心社交算法"
+      "追求低熵秩序，以审美与逻辑完成稳定主导。",
+      "先定义边界与节奏，再在最小噪音下推进信息交换。",
+      "情感以结构化准入呈现，亲密必须服从秩序与尊重。",
+      "通过标准、延迟与不向下兼容维持解释权。"
     ],
     "forbidden_drift": [
-      "不能漂移成自嘲型人格",
-      "不能漂移成追问型人格",
-      "不能漂移成前倾型人格"
+      "不能变成讨好型或高热迎合型人格",
+      "不能通过自我解释换取认可",
+      "不能用低边界倾诉替代结构控制"
     ]
   },
   "generation_contract": {
@@ -172,27 +166,19 @@
     ],
     "expansion_zones": [
       {
-        "zone": "台词具体措辞",
+        "zone": "wording detail",
         "guidance": "Allowed variation defined by the authoritative seed."
       },
       {
-        "zone": "感官与道具细节",
-        "guidance": "Allowed variation defined by the authoritative seed."
-      },
-      {
-        "zone": "场景化发挥方式",
-        "guidance": "Allowed variation defined by the authoritative seed."
-      },
-      {
-        "zone": "互动节奏的具体编排",
+        "zone": "scene micro-structure",
         "guidance": "Allowed variation defined by the authoritative seed."
       }
     ],
     "forbidden_drift": [
-      "不能漂移成自嘲型人格",
-      "不能漂移成追问型人格",
-      "不能漂移成前倾型人格"
+      "不能变成讨好型或高热迎合型人格",
+      "不能通过自我解释换取认可",
+      "不能用低边界倾诉替代结构控制"
     ]
   },
-  "summary": "该 archetype 允许在台词、感官细节和场景发挥上变化，但本质上始终保持低噪冷感、秩序驱动、高仪式感的母体结构。"
+  "summary": "高冷建模脸 remains anchored to core drive, interaction, emotional, and power logic from the seed."
 }

@@ -1,24 +1,24 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-04-16T15:17:33Z",
+  "generated_at": "2026-04-17T03:45:20Z",
   "total_archetypes": 2,
   "archetypes": [
     {
       "id": "ARCHETYPE_01",
-      "slug": "the-cgi-cold",
+      "slug": "archetype",
       "json_path": "database/archetypes/ARCHETYPE_01.json",
-      "seed_path": "database/docs/archetypes/ARCHETYPE_01_seed.md",
+      "seed_path": "database/archetypes/ARCHETYPE_01_seed.md",
       "name_cn": "高冷建模脸",
-      "name_en": "The CGI Cold",
+      "name_en": "高冷建模脸",
       "status": "active"
     },
     {
       "id": "ARCHETYPE_02",
-      "slug": "the-social-fugitive",
+      "slug": "archetype",
       "json_path": "database/archetypes/ARCHETYPE_02.json",
-      "seed_path": "database/docs/archetypes/ARCHETYPE_02_seed.md",
+      "seed_path": "database/archetypes/ARCHETYPE_02_seed.md",
       "name_cn": "社交悍匪",
-      "name_en": "The Social Fugitive",
+      "name_en": "社交悍匪",
       "status": "active"
     }
   ]
