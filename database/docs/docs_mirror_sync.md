@@ -1,15 +1,22 @@
-# Docs Mirror Sync
+# Docs Database Mirror Sync
 
-`database/**` is authoritative. `/docs/database/**` is a generated mirror.
+The mirror is one-way and deterministic:
 
-## Mirrored classes
+- source: `/database`
+- mirror: `/docs/database`
 
-- `/database/archetypes/*.md` -> `/docs/database/archetypes/*.md`
-- `/database/archetype_models/*.json` -> `/docs/database/archetype_models/*.json`
-- `/database/personas/*.json` -> `/docs/database/personas/*.json`
-- `/database/manifests/*.json` -> `/docs/database/manifests/*.json`
-- `/database/schema/*.json` -> `/docs/database/schema/*.json`
-- `/database/docs/**` -> `/docs/database/docs/**`
+Only these directories are mirrored:
 
-Legacy `/docs/database/schemas/` is considered stale and removed by sync validation.
+- `database/archetypes`
+- `database/archetype_models`
+- `database/personas`
+- `database/manifests`
 
+Excluded from mirror:
+
+- `database/docs`
+- `database/legacy`
+- `database/scripts`
+- `database/schema`
+
+Mirror sync runs at the end of ingestion, after generation and validation.

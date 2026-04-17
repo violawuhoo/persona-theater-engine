@@ -17,11 +17,21 @@ The CLI:
 3. generates persona JSON in `/database/personas/`
 4. rebuilds manifests in `/database/manifests/`
 5. validates using `/database/schema/`
-6. syncs `/docs/database/` mirror
+6. syncs the one-way `/docs/database/` mirror
+
+## Mirror scope
+
+Only runtime directories are mirrored to `/docs/database/`:
+
+- `archetypes`
+- `archetype_models`
+- `personas`
+- `manifests`
+
+`database/docs`, `database/legacy`, `database/scripts`, and `database/schema` are not mirrored.
 
 ## Notes
 
 - Seed markdown is the only human-authored runtime input.
 - `/database/docs/**` is documentation-only.
 - Legacy persona markdown is archived under `/database/legacy/`.
-
