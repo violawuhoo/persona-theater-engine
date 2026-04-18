@@ -22,6 +22,8 @@ let selectedPersona     = null;
 let currentPersonaData  = null;
 let currentRotation     = 0;
 let currentCarouselIndex = 0;   // preserved across Browse ↔ Detail transitions
+let currentSceneContext = { scene: '', scale: '' };  // bound during Theater activation
+let usedGachaTips       = new Set();                 // dedup within current session
 
 // ── PERSONA REGISTRY (MANIFEST-DRIVEN) ───────────────────────
 const PERSONA_MANIFEST_PATH = './database/manifests/personas.manifest.json';
@@ -871,6 +873,8 @@ async function startTheater() {
   }
 
   const personaDisplayName = safeStr(currentPersonaData.consumer_fields.display_name);
+  currentSceneContext = { scene, scale };
+  usedGachaTips.clear();
   console.log(`[Theater] Starting — Persona: ${currentPersonaData.id}, Scene: ${scene}, Target: ${target}`);
 
   // ── Phase 1: Show calibration overlay immediately ────────
@@ -1132,55 +1136,125 @@ function rotateWheel(delta) {
 // ── GACHA SYSTEM ──────────────────────────────────────────────
 function startGachaSystem() {
   if (gachaTimer) clearInterval(gachaTimer);
-  console.log('[Gacha] 锦囊系统已激活。');
+  console.log('[Gacha] 场景锦囊已激活。');
   gachaTimer = setInterval(() => {
     if (isTheaterModeActive) triggerGacha();
   }, CONFIG.GACHA_INTERVAL_MS);
 }
 
+// ── SCENE TIP GENERATOR ───────────────────────────────────────
+// Returns ONE actionable sentence bound to current scene/scale.
+// Sources (priority): reaction_cues > scene_tactics > taboos
+// Guarantees: no exact match with theaterContent, no repeat in session.
+function generateSceneTip(persona, sceneContext, theaterContent) {
+  if (!persona) return '[数据缺失]';
+
+  const ts = persona.theater_support || {};
+  const cf = persona.consumer_fields  || {};
+
+  // ── P1: theater_support.reaction_cues[].guidance ──
+  const cues = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
+  const p1   = cues
+    .map(c => safeStr(c && c.guidance))
+    .filter(s => s && s !== MISSING && s !== '[缺失]');
+
+  // ── P2: theater_support.scene_tactics (scale-aware, split to sentences) ──
+  const st        = ts.scene_tactics || {};
+  const isLarge   = sceneContext.scale &&
+    (sceneContext.scale.includes('5-8') || sceneContext.scale.includes('>8'));
+  const rawTactic = isLarge
+    ? safeStr(st.large_scale, safeStr(st.small_scale))
+    : safeStr(st.small_scale, safeStr(st.large_scale));
+  const p2 = (rawTactic && rawTactic !== MISSING && rawTactic !== '[缺失]')
+    ? rawTactic.split(/[。；！？\n]/).map(s => s.trim()).filter(s => s.length > 5)
+    : [];
+
+  // ── P3: consumer_fields.taboos (limited) ──
+  const p3 = (Array.isArray(cf.taboos) ? cf.taboos : [])
+    .map(t => safeStr(t))
+    .filter(s => s && s !== MISSING && s !== '[缺失]');
+
+  // Weighted pool: P1 appears 3x (favored), P2 and P3 appear once each
+  const weighted = [...p1, ...p1, ...p1, ...p2, ...p3];
+
+  // ── Filter 1: not in usedGachaTips AND not exact substring of theaterContent ──
+  const fresh = weighted.filter(s => !usedGachaTips.has(s) && !theaterContent.includes(s));
+
+  // ── Filter 2: fallback — at least avoid exact theater match (allow re-use) ──
+  const noOverlap = weighted.filter(s => !theaterContent.includes(s));
+
+  const pool = fresh.length > 0 ? fresh : noOverlap;
+  if (pool.length === 0) return '[数据缺失]';
+
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  usedGachaTips.add(pick);
+  return pick;
+}
+
+// ── AI REWRITE HELPER ────────────────────────────────────────
+// Converts a line to short imperative form (≤20 chars) using AI.
+// Only called when semantic overlap is detected. Degrades gracefully.
+async function rewriteTipImperative(originalLine, sceneLabel) {
+  try {
+    const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${CONFIG.KIMI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'moonshot-v1-8k',
+        messages: [
+          {
+            role: 'system',
+            content: '你是行为指令转换器。将输入改写为1句祈使提醒句，保留原意，尽量≤20汉字，禁止解释，只输出结果句子。'
+          },
+          {
+            role: 'user',
+            content: `场景：${sceneLabel}\n原文：${originalLine}\n改写为祈使句：`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 60
+      })
+    });
+    if (!response.ok) return originalLine;
+    const data   = await response.json();
+    const result = data?.choices?.[0]?.message?.content?.trim();
+    return result || originalLine;
+  } catch {
+    return originalLine;
+  }
+}
+
+// ── SEMANTIC OVERLAP DETECTION ────────────────────────────────
+// Returns true if tip shares ≥8 consecutive chars with theaterContent.
+function hasSemanticOverlap(tip, theaterContent, minLen = 8) {
+  if (!tip || tip.length < minLen) return false;
+  for (let i = 0; i <= tip.length - minLen; i++) {
+    if (theaterContent.includes(tip.substring(i, i + minLen))) return true;
+  }
+  return false;
+}
+
 async function triggerGacha() {
   // Don't stack modals if one is already open
   if (!document.getElementById('modal-overlay').classList.contains('hidden')) return;
+  if (!currentPersonaData) return;
 
-  const baseTips = [
-    '【动作】现在，缓慢调整坐姿，占据更大的物理空间。',
-    '【停顿】在下一个人说完话后，数到3再开口。',
-    '【眼神】看向远处，持续5秒，表现出你在思考更宏大的事。',
-    '【呼吸】检查此刻的呼吸节律——确保胸腔起伏对他人不可见。'
-  ];
+  // Collect all visible theater text to check for overlap
+  const theaterText = contentData.map(d => d.text || '').join('\n');
 
-  let personaTips = [];
+  // Generate scene-bound tip from persona data
+  let tip = generateSceneTip(currentPersonaData, currentSceneContext, theaterText);
 
-  if (currentPersonaData) {
-    const cf = currentPersonaData.consumer_fields || {};
-    const ts = currentPersonaData.theater_support || {};
-
-    // Taboo reminders from consumer_fields.taboos (strings)
-    if (Array.isArray(cf.taboos)) {
-      personaTips = cf.taboos.map(t => `【禁忌提醒】${safeStr(t)}`);
-    }
-
-    // One random reaction cue from theater_support.reaction_cues
-    const cues = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
-    if (cues.length > 0) {
-      const pick = cues[Math.floor(Math.random() * cues.length)];
-      personaTips.push(`【应激提醒·${safeStr(pick.trigger)}】${safeStr(pick.guidance)}`);
-    }
-
-    // One random signature line from consumer_fields.signature_lines_pool
-    const sigLines = Array.isArray(cf.signature_lines_pool) ? cf.signature_lines_pool : [];
-    if (sigLines.length > 0) {
-      const pick = sigLines[Math.floor(Math.random() * sigLines.length)];
-      personaTips.push(`【破局语言·参考】"${safeStr(pick)}"`);
-    }
+  // If semantic overlap detected → rewrite to action form via AI
+  if (tip !== '[数据缺失]' && hasSemanticOverlap(tip, theaterText)) {
+    tip = await rewriteTipImperative(tip, currentSceneContext.scene);
   }
 
-  const allTips = [...baseTips, ...personaTips];
-  const tip     = allTips[Math.floor(Math.random() * allTips.length)];
-
   if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-  await showAlert(tip, { title: '🎭 随机锦囊', color: getPersonaColor() });
+  await showAlert(tip, { title: '💡 场景锦囊', color: getPersonaColor() });
 }
 
 // ── EXIT THEATER ──────────────────────────────────────────────
@@ -1193,6 +1267,8 @@ async function exitTheater() {
 
   isTheaterModeActive = false;
   if (gachaTimer) clearInterval(gachaTimer);
+  usedGachaTips.clear();
+  currentSceneContext = { scene: '', scale: '' };
 
   document.getElementById('theater-screen').classList.add('hidden');
   document.getElementById('carousel').classList.remove('hidden');
