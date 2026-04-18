@@ -12,4 +12,4 @@ A persona is a generated artifact.
 
 - Policy: `/database/docs/personas/persona_generation_policy.md`
 - Schema: `/database/schema/persona.schema.json`
-
+- Consumer contract: `/database/docs/persona_consumer_contract.md`

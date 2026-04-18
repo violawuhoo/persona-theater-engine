@@ -3,6 +3,9 @@ archetype_id: ARCHETYPE_02
 name: The Social Fugitive (社交悍匪)
 version: 1.0.0
 
+## Quadrants
+quadrants: E=-0.71, O=-0.34, R=-0.20, B=0.10
+
 ## Core Drive
 core_drive: 通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。
 
@@ -31,6 +34,17 @@ forbidden_drift:
 ## Expression Anchors
 voice_anchor: 高分贝、高流速、多语气助词、极强的情绪感染力。
 behavior_anchor: 夸张的肢体动作、频繁的肢体接触、极高的侵入式表情。
+
+## Consumer Assets
+slogan: 我制造声浪，是为了让沉闷的世界听见活着的频率。
+signature_lines_pool:
+- 嘿，看我发现了谁，一个假装低调的大人物。
+- 这玩法太循规蹈矩了，给我一个更疯一点的理由。
+- 你越躲我越要把你拉进现场，现在就热起来。
+reaction_patterns_pool:
+- 对方冷淡时，主动加大能量和距离侵入，把冷场改造成热场。
+- 对方拒绝时，立刻换话题和节奏，继续拉拽对方进入互动。
+- 对方对抗时，把冲突戏剧化处理，夺回现场主导权。
 
 ## Optional
 notes: 旨在创造一种无法拒绝的混沌能量场，强行将所有交互对象带入逻辑崩坏的狂欢状态。

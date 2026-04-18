@@ -9,9 +9,9 @@
     "archetype_id",
     "name",
     "source_markdown",
+    "consumer_fields",
     "stable_fields",
     "soft_fields",
-    "realized_parameters",
     "generation_contract"
   ],
   "properties": {
@@ -49,23 +49,105 @@
     "source_markdown": {
       "type": "string"
     },
+    "consumer_fields": {
+      "type": "object",
+      "required": [
+        "display_name",
+        "quadrants",
+        "slogan",
+        "core_essence",
+        "social_essence",
+        "signature_lines_pool",
+        "taboos",
+        "theater_logic",
+        "behavior_style",
+        "language_style",
+        "reaction_patterns_pool"
+      ],
+      "properties": {
+        "display_name": {
+          "type": "string"
+        },
+        "quadrants": {
+          "$ref": "#/definitions/quadrants"
+        },
+        "slogan": {
+          "type": "string"
+        },
+        "core_essence": {
+          "type": "string"
+        },
+        "social_essence": {
+          "type": "string"
+        },
+        "signature_lines_pool": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "taboos": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "theater_logic": {
+          "type": "object",
+          "required": [
+            "core_drive",
+            "interaction_logic",
+            "emotional_logic",
+            "power_logic"
+          ],
+          "properties": {
+            "core_drive": {
+              "type": "string"
+            },
+            "interaction_logic": {
+              "type": "string"
+            },
+            "emotional_logic": {
+              "type": "string"
+            },
+            "power_logic": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "behavior_style": {
+          "type": "string"
+        },
+        "language_style": {
+          "type": "string"
+        },
+        "reaction_patterns_pool": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "stable_fields": {
       "type": "object",
       "required": [
         "identity",
         "core_directive",
         "core_logic",
-        "cognitive_filters",
         "embodiment",
-        "taboos",
-        "reference_models"
+        "taboos"
       ],
       "properties": {
         "identity": {
           "type": "object",
           "required": [
             "persona_name",
-            "subtitle",
             "premise"
           ],
           "properties": {
@@ -107,36 +189,13 @@
           },
           "additionalProperties": false
         },
-        "cognitive_filters": {
-          "type": "object",
-          "required": [
-            "noise_filtering",
-            "downward_compatibility",
-            "information_granularity"
-          ],
-          "properties": {
-            "noise_filtering": {
-              "type": "string"
-            },
-            "downward_compatibility": {
-              "type": "string"
-            },
-            "information_granularity": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
         "embodiment": {
           "type": "object",
           "required": [
             "center_of_gravity",
             "gaze_protocol",
             "breathing_protocol",
-            "hand_constraints",
-            "latency_buffer",
-            "spatial_sovereignty",
-            "negative_buffer"
+            "hand_constraints"
           ],
           "properties": {
             "center_of_gravity": {
@@ -163,28 +222,6 @@
             },
             "hand_constraints": {
               "type": "string"
-            },
-            "latency_buffer": {
-              "type": "object",
-              "required": [
-                "delay_seconds",
-                "rule"
-              ],
-              "properties": {
-                "delay_seconds": {
-                  "type": "string"
-                },
-                "rule": {
-                  "type": "string"
-                }
-              },
-              "additionalProperties": false
-            },
-            "spatial_sovereignty": {
-              "type": "string"
-            },
-            "negative_buffer": {
-              "type": "string"
             }
           },
           "additionalProperties": false
@@ -192,39 +229,7 @@
         "taboos": {
           "type": "array",
           "items": {
-            "type": "object",
-            "required": [
-              "action",
-              "rule"
-            ],
-            "properties": {
-              "action": {
-                "type": "string"
-              },
-              "rule": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          }
-        },
-        "reference_models": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "name",
-              "principle"
-            ],
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "principle": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
+            "type": "string"
           }
         }
       },
@@ -234,9 +239,7 @@
       "type": "object",
       "required": [
         "scene_behavior",
-        "interaction_matrix",
-        "response_protocols",
-        "signature_lines"
+        "interaction_matrix"
       ],
       "properties": {
         "scene_behavior": {
@@ -259,40 +262,6 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/interaction_rule"
-          }
-        },
-        "response_protocols": {
-          "type": "object",
-          "required": [
-            "negative_feedback",
-            "positive_feedback",
-            "extreme_pressure"
-          ],
-          "properties": {
-            "negative_feedback": {
-              "type": "object",
-              "minProperties": 1,
-              "additionalProperties": {
-                "$ref": "#/definitions/response_protocol"
-              }
-            },
-            "positive_feedback": {
-              "type": "object",
-              "minProperties": 1,
-              "additionalProperties": {
-                "$ref": "#/definitions/response_protocol"
-              }
-            },
-            "extreme_pressure": {
-              "$ref": "#/definitions/response_protocol"
-            }
-          },
-          "additionalProperties": false
-        },
-        "signature_lines": {
-          "type": "array",
-          "items": {
-            "type": "string"
           }
         }
       },
@@ -330,6 +299,38 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "quadrants": {
+      "type": "object",
+      "required": [
+        "E",
+        "O",
+        "R",
+        "B"
+      ],
+      "properties": {
+        "E": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "O": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "R": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "B": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
     "scene_block": {
       "type": "object",
       "required": [

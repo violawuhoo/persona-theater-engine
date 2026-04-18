@@ -13,6 +13,7 @@
     "positioning",
     "core_temperature",
     "core_traits",
+    "quadrants",
     "parameter_space",
     "core_logic",
     "behavioral_model",
@@ -109,6 +110,38 @@
       "items": {
         "type": "string"
       }
+    },
+    "quadrants": {
+      "type": "object",
+      "required": [
+        "E",
+        "O",
+        "R",
+        "B"
+      ],
+      "properties": {
+        "E": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "O": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "R": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "B": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
     },
     "parameter_space": {
       "type": "object",
@@ -213,17 +246,10 @@
       "type": "object",
       "required": [
         "must_have",
-        "must_not_have",
         "forbidden_drift"
       ],
       "properties": {
         "must_have": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "must_not_have": {
           "type": "array",
           "items": {
             "type": "string"

@@ -80,12 +80,14 @@ PERSONA_INSTANCE_SOFT_WARNING_FIELDS = (
 
 ARCHETYPE_SEED_SECTIONS: Dict[str, Tuple[str, ...]] = {
     "Identity": ("archetype_id", "name", "version"),
+    "Quadrants": ("quadrants",),
     "Core Drive": ("core_drive",),
     "Interaction Logic": ("interaction_logic",),
     "Emotional Logic": ("emotional_logic",),
     "Power Logic": ("power_logic",),
     "Forbidden Drift": ("forbidden_drift",),
     "Expression Anchors": ("voice_anchor", "behavior_anchor"),
+    "Consumer Assets": ("slogan", "signature_lines_pool", "reaction_patterns_pool"),
     "Optional": ("notes",),
 }
 
@@ -93,11 +95,15 @@ ARCHETYPE_SEED_HARD_REQUIRED_FIELDS = (
     "archetype_id",
     "name",
     "version",
+    "quadrants",
     "core_drive",
     "interaction_logic",
     "emotional_logic",
     "power_logic",
     "forbidden_drift",
+    "slogan",
+    "signature_lines_pool",
+    "reaction_patterns_pool",
 )
 
 ARCHETYPE_SEED_SOFT_WARNING_FIELDS = (
@@ -555,14 +561,47 @@ def parse_archetype_seed_contract(markdown: str) -> Dict[str, Any]:
         soft_warning_fields=ARCHETYPE_SEED_SOFT_WARNING_FIELDS,
         warning_label="seed-contract",
     )
-    for field in ("core_drive", "interaction_logic", "emotional_logic", "power_logic", "voice_anchor", "behavior_anchor", "name"):
+    for field in (
+        "core_drive",
+        "interaction_logic",
+        "emotional_logic",
+        "power_logic",
+        "voice_anchor",
+        "behavior_anchor",
+        "name",
+        "slogan",
+    ):
         if isinstance(payload.get(field), list):
             payload[field] = " ".join(payload[field]).strip()
+    payload["quadrants"] = parse_seed_quadrants(payload["quadrants"])
 
     archetype_id = payload["archetype_id"]
     if not re.match(r"^ARCHETYPE_[0-9]{2,}$", archetype_id):
         raise ValueError(f"Seed field `archetype_id` must match ^ARCHETYPE_[0-9]{{2,}}$, got `{archetype_id}`")
     return payload
+
+
+def parse_seed_quadrants(value: Any) -> Dict[str, float]:
+    text = " ".join(value) if isinstance(value, list) else str(value)
+    matches = re.findall(r"\b([EORB])\s*[:=]\s*([+-]?\d+(?:\.\d+)?)", text)
+    quadrants: Dict[str, float] = {}
+    for key, raw_value in matches:
+        parsed = round(float(raw_value), 2)
+        quadrants[key] = max(-1.0, min(1.0, parsed))
+    expected = {"E", "O", "R", "B"}
+    missing = expected - set(quadrants)
+    if missing:
+        raise ValueError(f"Seed field `quadrants` must define E/O/R/B explicitly, missing: {', '.join(sorted(missing))}")
+    return {key: quadrants[key] for key in ["E", "O", "R", "B"]}
+
+
+def normalize_string_list(value: Any) -> List[str]:
+    if isinstance(value, list):
+        return [coalesce_text(str(item)) for item in value if coalesce_text(str(item))]
+    if isinstance(value, str):
+        cleaned = coalesce_text(value)
+        return [cleaned] if cleaned else []
+    return []
 
 
 def persona_id_from_archetype_id(archetype_id: str) -> str:
@@ -694,17 +733,18 @@ def infer_symbolic_objects(sensory_profile: str) -> str:
     return "由感官标签延伸出的象征性物件"
 
 
-def parse_tagged_forbid_example(value: str) -> List[Dict[str, str]]:
+def parse_tagged_forbid_example(value: str) -> List[str]:
     cleaned = sanitize_extracted_text(value)
-    entries: List[Dict[str, str]] = []
+    entries: List[str] = []
     first = re.match(r"(禁止[^：:]+)[:：](.+)", cleaned)
     if first:
-        entries.append({"action": sanitize_extracted_text(first.group(1)), "rule": sanitize_extracted_text(first.group(2))})
+        entries.append(sanitize_extracted_text(f"{first.group(1)}：{first.group(2)}"))
     tail = re.split(r"[。；]", cleaned, maxsplit=1)[-1] if re.search(r"[。；]", cleaned) else cleaned
     for extra in re.findall(r"(禁止[^、，。；:：]+)", tail):
-        if entries and sanitize_extracted_text(extra) == entries[0]["action"]:
+        normalized_extra = sanitize_extracted_text(extra)
+        if entries and normalized_extra in entries[0]:
             continue
-        entries.append({"action": sanitize_extracted_text(extra), "rule": "绝不进入与母体定位相反的退缩或解释状态。"})
+        entries.append(normalized_extra)
     return entries
 
 
@@ -833,19 +873,13 @@ def parse_tagged_dialogues(markdown: str) -> List[str]:
     return lines
 
 
-def parse_tagged_taboos(markdown: str) -> List[Dict[str, str]]:
-    taboos = []
+def parse_tagged_taboos(markdown: str) -> List[str]:
+    taboos: List[str] = []
     for index in range(1, 6):
         value = extract_first_tag(markdown, [f"forbid_{index:02d}"])
         if not value:
             continue
-        if "：" in value:
-            action, rule = value.split("：", 1)
-        elif ":" in value:
-            action, rule = value.split(":", 1)
-        else:
-            action, rule = value, value
-        taboos.append({"action": sanitize_extracted_text(action), "rule": sanitize_extracted_text(rule)})
+        taboos.append(sanitize_extracted_text(value))
     return taboos
 
 
@@ -886,7 +920,7 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
         },
         {
             "input_signal": "对方不回应",
-            "interpretation": source["expression_rules"]["taboos"][1]["rule"] if len(source["expression_rules"]["taboos"]) > 1 else "",
+            "interpretation": source["expression_rules"]["taboos"][1] if len(source["expression_rules"]["taboos"]) > 1 else "",
             "response_adjustment": "保持静默直到对方重新进入你的秩序。",
         },
     ]
@@ -929,6 +963,27 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
             "source_classification": source_classification,
         },
         "source_markdown": str(source_path.relative_to(source_path.parents[2])),
+        "consumer_fields": {
+            "display_name": primary,
+            "quadrants": {key: payload["value"] for key, payload in realized_parameters.items()},
+            "slogan": slogan,
+            "core_essence": source["logic"]["core_motivation"],
+            "social_essence": source["logic"]["social_logic"],
+            "signature_lines_pool": signature_lines,
+            "taboos": source["expression_rules"]["taboos"],
+            "theater_logic": {
+                "core_drive": source["logic"]["core_motivation"],
+                "interaction_logic": source["logic"]["social_logic"],
+                "emotional_logic": source["logic"]["emotion_logic"],
+                "power_logic": source["logic"]["power_logic"],
+            },
+            "behavior_style": source["behavioral_model"]["physical_style"],
+            "language_style": source["behavioral_model"]["verbal_style"],
+            "reaction_patterns_pool": [
+                source["logic"]["conflict_logic"],
+                source["logic"]["repair_logic"],
+            ],
+        },
         "stable_fields": {
             "identity": {
                 "persona_name": primary,
@@ -942,11 +997,6 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
                 "self_positioning": hint_psych,
                 "power_source": source["logic"]["power_logic"],
             },
-            "cognitive_filters": {
-                "noise_filtering": source["logic"]["blind_spot"],
-                "downward_compatibility": source["logic"]["conflict_logic"],
-                "information_granularity": source["logic"]["core_motivation"],
-            },
             "embodiment": {
                 "center_of_gravity": source["behavioral_model"]["physical_style"],
                 "gaze_protocol": {
@@ -955,28 +1005,15 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
                 },
                 "breathing_protocol": "保持算法式平稳，不因社交波动而改变节律。",
                 "hand_constraints": source["behavioral_model"]["physical_style"],
-                "latency_buffer": {
-                    "delay_seconds": "算法式稳定延迟",
-                    "rule": source["behavioral_model"]["verbal_style"],
-                },
-                "spatial_sovereignty": source["spatial_algorithms"]["crowded"],
-                "negative_buffer": source["details"]["breakdown_repair"],
             },
             "taboos": source["expression_rules"]["taboos"],
-            "reference_models": source["references"],
         },
         "soft_fields": {
             "scene_behavior": scene_behavior,
             "interaction_matrix": [row for row in interaction_matrix if row["interpretation"] or row["response_adjustment"]],
-            "response_protocols": {
-                "negative_feedback": negative_feedback,
-                "positive_feedback": positive_feedback,
-                "extreme_pressure": extreme_pressure,
-            },
-            "signature_lines": signature_lines,
         },
         "realized_parameters": realized_parameters,
-        "generation_contract": make_persona_generation_contract(),
+        "generation_contract": make_persona_generation_contract(source["expression_rules"]["taboos"]),
     }
 
     if not realized_parameters:
@@ -986,9 +1023,9 @@ def parse_tagged_persona(markdown: str, source_path: Path, archetype_id: str, re
         "id",
         "archetype_id",
         "name.primary",
+        "consumer_fields.display_name",
         "stable_fields.core_directive",
         "stable_fields.core_logic.social_essence",
-        "stable_fields.cognitive_filters.noise_filtering",
         "stable_fields.embodiment.center_of_gravity",
         "soft_fields.scene_behavior.small_scale.strategy",
     ]:
@@ -1043,19 +1080,13 @@ def synthesize_seed_markdown(markdown: str, source_path: Path, template_text: st
     ]
     signature_patterns = [pattern_from_dialogue(line) for line in signature_patterns[:5]]
 
-    taboo_actions = [item["action"] for item in source["expression_rules"]["taboos"]]
+    taboo_actions = list(source["expression_rules"]["taboos"])
     must_have = core_traits[:3] + [
         "稳定的母体逻辑",
         "清晰的空间策略",
     ]
     must_not_have = taboo_actions[:3] if taboo_actions else ["失去母体边界", "失去表达风格", "失去结构稳定性"]
-    forbidden_drift = [f"不能漂移成{action.replace('禁止', '')}型人格" for action in taboo_actions[:3]]
-    if not forbidden_drift:
-        forbidden_drift = [
-            "不能漂移成与当前母体温度相反的人格",
-            "不能漂移成失去场域算法的人格",
-            "不能漂移成低辨识度的中性壳层",
-        ]
+    forbidden_drift = taboo_actions[:3]
 
     details = source["details"]
     summary = (
@@ -1319,10 +1350,11 @@ def make_generation_contract_for_archetype(seed: Dict[str, Any]) -> Dict[str, An
             {"field": "positioning", "reason": "The archetype thesis defines the operating worldview."},
             {"field": "core_temperature", "reason": "Core temperature anchors the mother-model's affective register."},
             {"field": "core_traits", "reason": "Core traits anchor recognizability across variants."},
+            {"field": "quadrants", "reason": "Quadrants must remain traceable to authored seed input."},
             {"field": "parameter_space", "reason": "Parameter ranges define the valid variation envelope."},
             {"field": "core_logic", "reason": "Motivation, power logic, and social logic cannot drift."},
             {"field": "constraints.must_have", "reason": "Must-have conditions are identity-level requirements."},
-            {"field": "constraints.must_not_have", "reason": "Must-not-have conditions protect against inversion."},
+            {"field": "constraints.forbidden_drift", "reason": "Forbidden drift must stay identical to the authored seed prohibitions."},
         ],
         "soft_fields": [
             {"field": "behavioral_model", "reason": "Behavioral style can be re-expressed while preserving the archetype logic."},
@@ -1574,17 +1606,16 @@ def parse_body_language(text: str) -> Dict[str, Any]:
     return result
 
 
-def parse_taboos(text: str) -> List[Dict[str, str]]:
-    taboos: List[Dict[str, str]] = []
+def parse_taboos(text: str) -> List[str]:
+    taboos: List[str] = []
     for raw in text.splitlines():
         stripped = strip_bullet_prefix(normalize_line(raw))
         if not stripped:
             continue
         if "Forbidden" in stripped and "拒绝人性污染" in stripped:
             continue
-        if ":" in stripped:
-            action, rule = stripped.split(":", 1)
-            taboos.append({"action": sanitize_extracted_text(action), "rule": sanitize_extracted_text(rule)})
+        if ":" in stripped or "：" in stripped:
+            taboos.append(sanitize_extracted_text(stripped))
     return taboos
 
 
@@ -1748,7 +1779,7 @@ def infer_realized_parameters(archetype: Dict[str, Any], persona_text: str) -> T
     return realized, inferred
 
 
-def make_persona_generation_contract() -> Dict[str, Any]:
+def make_persona_generation_contract(forbidden_drift: List[str]) -> Dict[str, Any]:
     return {
         "locked_fields": [
             {"field": "archetype_id", "reason": "The persona must remain anchored to a valid archetype."},
@@ -1757,26 +1788,51 @@ def make_persona_generation_contract() -> Dict[str, Any]:
             {"field": "stable_fields.core_logic", "reason": "Core logic stores the stable worldview and power model."},
             {"field": "stable_fields.embodiment", "reason": "Embodiment rules define the stable performance skeleton."},
             {"field": "stable_fields.taboos", "reason": "Taboos prevent drift into incompatible behaviors."},
+            {"field": "consumer_fields", "reason": "Frontend consumers should read the explicit consumer-facing contract."},
         ],
         "soft_fields": [
             {"field": "soft_fields.scene_behavior", "reason": "Scene tactics may elaborate differently per context."},
             {"field": "soft_fields.interaction_matrix", "reason": "Interaction mappings can be extended without changing the persona core."},
-            {"field": "soft_fields.response_protocols", "reason": "Response details can expand while preserving stable logic."},
-            {"field": "soft_fields.signature_lines", "reason": "Lines may vary in wording so long as they honor the stable contract."},
+            {"field": "runtime.theater", "reason": "Scene-specific responses remain runtime-only and are not canonical consumer data."},
         ],
         "expansion_zones": [
-            {"zone": "台词表达方式", "guidance": "Rephrase lines while preserving judgment, distance, and control."},
-            {"zone": "感官与视觉细节", "guidance": "Add visual texture that reinforces precision and distance."},
-            {"zone": "穿搭与物件", "guidance": "Props and styling may vary as status signals."},
-            {"zone": "场景行为细节", "guidance": "Scene blocking can change if sovereignty and latency remain intact."},
-            {"zone": "亲密关系表现", "guidance": "Intimacy may appear only through controlled, structured access."},
+            {"zone": "theater runtime expression", "guidance": "Generate scene-specific dialogue only from the authored stable pools and logic anchors."},
+            {"zone": "scene micro-structure", "guidance": "Runtime may vary staging without changing the consumer-facing fixed fields."},
         ],
-        "forbidden_drift": [
-            "变成热场型、讨好型或治愈型人格",
-            "依赖情绪爆发建立主导权",
-            "为了换取认可而自我解释、快速交心或主动求和",
-            "用低边界分享替代仪式、结构与控制",
-        ],
+        "forbidden_drift": list(forbidden_drift),
+    }
+
+
+def build_consumer_fields(seed: Dict[str, Any]) -> Dict[str, Any]:
+    taboos = normalize_string_list(seed["forbidden_drift"])
+    return {
+        "display_name": seed["name"],
+        "quadrants": seed["quadrants"],
+        "slogan": seed["slogan"],
+        "core_essence": seed["core_drive"],
+        "social_essence": seed["interaction_logic"],
+        "signature_lines_pool": normalize_string_list(seed["signature_lines_pool"]),
+        "taboos": taboos,
+        "theater_logic": {
+            "core_drive": seed["core_drive"],
+            "interaction_logic": seed["interaction_logic"],
+            "emotional_logic": seed["emotional_logic"],
+            "power_logic": seed["power_logic"],
+        },
+        "behavior_style": seed.get("behavior_anchor", ""),
+        "language_style": seed.get("voice_anchor", ""),
+        "reaction_patterns_pool": normalize_string_list(seed["reaction_patterns_pool"]),
+    }
+
+
+def infer_realized_parameters_from_quadrants(quadrants: Dict[str, float], evidence: str) -> Dict[str, Dict[str, Any]]:
+    return {
+        key: {
+            "value": value,
+            "confidence": 1.0,
+            "evidence": evidence,
+        }
+        for key, value in quadrants.items()
     }
 
 
@@ -1785,14 +1841,15 @@ def build_archetype_from_seed_contract(seed: Dict[str, Any], seed_path: Path, re
     persona_id = persona_id_from_archetype_id(archetype_id)
     voice_anchor = seed.get("voice_anchor", "")
     behavior_anchor = seed.get("behavior_anchor", "")
-    forbidden_drift = seed["forbidden_drift"]
-    forbidden_list = forbidden_drift if isinstance(forbidden_drift, list) else [forbidden_drift]
-    forbidden_list = [item for item in forbidden_list if item]
+    forbidden_list = normalize_string_list(seed["forbidden_drift"])
     if not forbidden_list:
         report.missing_fields.append("constraints.forbidden_drift")
         forbidden_list = ["Do not drift outside declared seed logic."]
 
-    parameter_space = deterministic_parameter_space(seed)
+    parameter_space = {
+        key: {"min": build_parameter_range(value)[0], "max": build_parameter_range(value)[1]}
+        for key, value in seed["quadrants"].items()
+    }
     report.mapping_confidence = 0.98
 
     archetype = {
@@ -1822,6 +1879,7 @@ def build_archetype_from_seed_contract(seed: Dict[str, Any], seed_path: Path, re
             seed["emotional_logic"],
             seed["power_logic"],
         ],
+        "quadrants": seed["quadrants"],
         "parameter_space": parameter_space,
         "core_logic": {
             "core_motivation": seed["core_drive"],
@@ -1834,22 +1892,18 @@ def build_archetype_from_seed_contract(seed: Dict[str, Any], seed_path: Path, re
             "repair_logic": "Return to seed-defined logic and anchors.",
         },
         "behavioral_model": {
-            "visual_style": behavior_anchor or "No explicit behavior anchor provided; maintain deterministic neutral posture.",
-            "physical_style": behavior_anchor or "No explicit behavior anchor provided; maintain deterministic neutral posture.",
-            "verbal_style": voice_anchor or "No explicit voice anchor provided; maintain concise deterministic expression.",
+            "visual_style": behavior_anchor,
+            "physical_style": behavior_anchor,
+            "verbal_style": voice_anchor,
         },
         "expression_rules": {
-            "canonical_expression_mode": voice_anchor or "Default deterministic voice anchored to seed logic.",
+            "canonical_expression_mode": voice_anchor,
             "signature_line_patterns": [
-                f"Core drive anchor: {seed['core_drive']}",
-                f"Interaction logic anchor: {seed['interaction_logic']}",
-                f"Emotional logic anchor: {seed['emotional_logic']}",
-                f"Power logic anchor: {seed['power_logic']}",
+                *normalize_string_list(seed["signature_lines_pool"]),
             ],
         },
         "constraints": {
             "must_have": [seed["core_drive"], seed["interaction_logic"], seed["emotional_logic"], seed["power_logic"]],
-            "must_not_have": forbidden_list,
             "forbidden_drift": forbidden_list,
         },
         "spatial_algorithms": {
@@ -1861,9 +1915,9 @@ def build_archetype_from_seed_contract(seed: Dict[str, Any], seed_path: Path, re
             "inner_layer": seed["emotional_logic"],
         },
         "details": {
-            "sensory_profile": voice_anchor or "Derived from seed without extra sensory annotations.",
-            "symbolic_objects": behavior_anchor or "Derived from seed without extra symbolic objects.",
-            "breakdown_repair": "Re-center on seed anchors and forbidden drift constraints.",
+            "sensory_profile": voice_anchor,
+            "symbolic_objects": behavior_anchor,
+            "breakdown_repair": "Follow the authored interaction and emotional logic without drifting from the seed prohibitions.",
         },
         "generation_freedom": {
             "allowed_to_vary": ["wording detail", "scene micro-structure"],
@@ -1874,7 +1928,6 @@ def build_archetype_from_seed_contract(seed: Dict[str, Any], seed_path: Path, re
             {
                 "constraints": {
                     "must_have": [seed["core_drive"], seed["interaction_logic"], seed["emotional_logic"], seed["power_logic"]],
-                    "must_not_have": forbidden_list,
                     "forbidden_drift": forbidden_list,
                 },
                 "generation_freedom": {
@@ -2031,7 +2084,8 @@ def build_persona_from_seed_contract(seed: Dict[str, Any], source_path: Path, ar
     policy_fields = compile_persona_policy_fields(seed, report)
     policy_fields = apply_drift_guardrails(seed, policy_fields)
     validate_persona_policy_invariants(seed, policy_fields)
-    taboos = [{"action": item, "rule": item} for item in policy_fields["forbidden_behavior"]]
+    taboos = normalize_string_list(seed["forbidden_drift"])
+    consumer_fields = build_consumer_fields(seed)
 
     persona = {
         "id": persona_id,
@@ -2046,7 +2100,6 @@ def build_persona_from_seed_contract(seed: Dict[str, Any], source_path: Path, ar
         "stable_fields": {
             "identity": {
                 "persona_name": seed["name"],
-                "subtitle": "generated persona instance",
                 "premise": seed["core_drive"],
                 "source_classification": "generated_from_strict_seed",
             },
@@ -2056,11 +2109,6 @@ def build_persona_from_seed_contract(seed: Dict[str, Any], source_path: Path, ar
                 "self_positioning": seed["core_drive"],
                 "power_source": seed["power_logic"],
             },
-            "cognitive_filters": {
-                "noise_filtering": "Reject interactions that violate forbidden drift.",
-                "downward_compatibility": policy_fields["emotional_tendency"],
-                "information_granularity": "; ".join(policy_fields["behavioral_signature"]),
-            },
             "embodiment": {
                 "center_of_gravity": policy_fields["behavioral_signature"][0],
                 "gaze_protocol": {
@@ -2069,80 +2117,49 @@ def build_persona_from_seed_contract(seed: Dict[str, Any], source_path: Path, ar
                 },
                 "breathing_protocol": policy_fields["voice"],
                 "hand_constraints": policy_fields["behavioral_signature"][-1],
-                "latency_buffer": {
-                    "delay_seconds": "1.5",
-                    "rule": "Pause briefly and respond within seed logic.",
-                },
-                "spatial_sovereignty": seed["interaction_logic"],
-                "negative_buffer": "Reset to seed logic when drift risk appears.",
             },
             "taboos": taboos,
-            "reference_models": [
-                {
-                    "name": seed["archetype_id"],
-                    "principle": "Persona is generated from the strict archetype seed only.",
-                }
-            ],
         },
         "soft_fields": {
             "scene_behavior": {
                 "small_scale": {
                     "label": "one_on_one",
-                    "strategy": policy_fields["relationship_dynamic"],
-                    "actions": "; ".join(policy_fields["behavioral_signature"]),
-                    "logic": policy_fields["emotional_tendency"],
+                    "strategy": seed["emotional_logic"],
+                    "actions": seed.get("behavior_anchor", ""),
+                    "logic": seed["power_logic"],
                 },
                 "large_scale": {
                     "label": "crowded",
                     "strategy": seed["interaction_logic"],
-                    "actions": "; ".join(policy_fields["behavioral_signature"]),
+                    "actions": seed.get("behavior_anchor", ""),
                     "logic": seed["power_logic"],
                 },
             },
             "interaction_matrix": [
                 {
                     "input_signal": "general_interaction",
-                    "interpretation": seed["interaction_logic"],
-                    "response_adjustment": policy_fields["trigger_response"][0],
+                    "interpretation": seed["emotional_logic"],
+                    "response_adjustment": normalize_string_list(seed["reaction_patterns_pool"])[0],
                 }
-            ],
-            "response_protocols": {
-                "negative_feedback": {
-                    "drift_prevention": {
-                        "label": "drift_prevention",
-                        "cognitive_filter": "detect forbidden drift",
-                        "response_actions": policy_fields["trigger_response"][1],
-                        "breaker_line": policy_fields["voice"],
-                        "logic": seed["power_logic"],
-                    }
-                },
-                "positive_feedback": {
-                    "aligned_interaction": {
-                        "label": "aligned_interaction",
-                        "cognitive_filter": policy_fields["relationship_dynamic"],
-                        "response_actions": policy_fields["trigger_response"][2],
-                        "breaker_line": policy_fields["voice"],
-                        "logic": seed["core_drive"],
-                    }
-                },
-                "extreme_pressure": {
-                    "label": "constraint_lock",
-                    "cognitive_filter": "forbidden drift enforcement",
-                    "response_actions": " ".join(policy_fields["trigger_response"]),
-                    "breaker_line": "Resetting to stable contract.",
-                    "logic": "Deterministic contract preservation.",
-                },
-            },
-            "signature_lines": [policy_fields["voice"]] + policy_fields["trigger_response"],
+            ]
         },
-        "realized_parameters": infer_realized_parameters_from_archetype(archetype),
-        "generation_contract": make_persona_generation_contract(),
+        "consumer_fields": consumer_fields,
+        "realized_parameters": infer_realized_parameters_from_quadrants(
+            seed["quadrants"],
+            "Copied directly from authored seed quadrants for compatibility; consumer_fields.quadrants is canonical.",
+        ),
+        "generation_contract": make_persona_generation_contract(taboos),
     }
     report.mapping_confidence = max(0.0, 1 - (0.02 * len(report.inferred_fields)))
     return deep_clean_strings(persona)
 
 
 def infer_realized_parameters_from_archetype(archetype: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    if isinstance(archetype.get("quadrants"), dict):
+        return infer_realized_parameters_from_quadrants(
+            archetype["quadrants"],
+            "Copied from archetype quadrants derived from authored seed quadrants.",
+        )
     realized: Dict[str, Dict[str, Any]] = {}
     for param_id, envelope in archetype.get("parameter_space", {}).items():
         minimum = envelope.get("min")
@@ -2170,11 +2187,7 @@ def build_persona_from_instance_contract(
     persona_name = contract["name"]
     role_in_interaction = contract.get("role_in_interaction", "")
 
-    forbidden = contract["forbidden_behavior"]
-    if isinstance(forbidden, list):
-        taboo_entries = [{"action": item, "rule": item} for item in forbidden if item]
-    else:
-        taboo_entries = [{"action": forbidden, "rule": forbidden}] if forbidden else []
+    taboo_entries = normalize_string_list(contract["forbidden_behavior"])
 
     sample_lines = contract.get("sample_lines", [])
     if isinstance(sample_lines, str):
@@ -2186,7 +2199,24 @@ def build_persona_from_instance_contract(
 
     core_logic = archetype.get("core_logic", {})
     behavioral = archetype.get("behavioral_model", {})
-    details = archetype.get("details", {})
+    consumer_fields = {
+        "display_name": persona_name,
+        "quadrants": archetype.get("quadrants", {}),
+        "slogan": contract["instance_premise"],
+        "core_essence": contract["instance_premise"],
+        "social_essence": core_logic.get("social_logic", ""),
+        "signature_lines_pool": sample_lines or [contract["voice"]],
+        "taboos": taboo_entries,
+        "theater_logic": {
+            "core_drive": core_logic.get("core_motivation", contract["instance_premise"]),
+            "interaction_logic": core_logic.get("social_logic", relationship_dynamic),
+            "emotional_logic": contract.get("emotional_tendency", ""),
+            "power_logic": core_logic.get("power_logic", ""),
+        },
+        "behavior_style": contract["behavioral_signature"],
+        "language_style": contract["voice"],
+        "reaction_patterns_pool": [item for item in [trigger_response, emotional_tendency] if item] or [contract["voice"]],
+    }
 
     persona = {
         "id": persona_id,
@@ -2201,7 +2231,6 @@ def build_persona_from_instance_contract(
         "stable_fields": {
             "identity": {
                 "persona_name": persona_name,
-                "subtitle": role_in_interaction,
                 "premise": contract["instance_premise"],
                 "source_classification": "persona_instance_contract_v1",
             },
@@ -2211,11 +2240,6 @@ def build_persona_from_instance_contract(
                 "self_positioning": core_logic.get("core_motivation", ""),
                 "power_source": core_logic.get("power_logic", ""),
             },
-            "cognitive_filters": {
-                "noise_filtering": core_logic.get("blind_spot", ""),
-                "downward_compatibility": core_logic.get("security_anchor", ""),
-                "information_granularity": contract["behavioral_signature"],
-            },
             "embodiment": {
                 "center_of_gravity": behavioral.get("physical_style", ""),
                 "gaze_protocol": {
@@ -2224,20 +2248,8 @@ def build_persona_from_instance_contract(
                 },
                 "breathing_protocol": contract["voice"],
                 "hand_constraints": behavioral.get("physical_style", ""),
-                "latency_buffer": {
-                    "delay_seconds": "2.0",
-                    "rule": "Respond after controlled pause to preserve persona consistency.",
-                },
-                "spatial_sovereignty": archetype.get("spatial_algorithms", {}).get("one_on_one", ""),
-                "negative_buffer": details.get("breakdown_repair", ""),
             },
             "taboos": taboo_entries,
-            "reference_models": [
-                {
-                    "name": archetype.get("name", {}).get("cn", archetype.get("id", archetype_id)),
-                    "principle": "Persona inherits archetype logic without redefining mother-model.",
-                }
-            ],
         },
         "soft_fields": {
             "scene_behavior": {
@@ -2260,38 +2272,11 @@ def build_persona_from_instance_contract(
                     "interpretation": relationship_dynamic,
                     "response_adjustment": trigger_response,
                 }
-            ],
-            "response_protocols": {
-                "negative_feedback": {
-                    "boundary_enforcement": {
-                        "label": "boundary_enforcement",
-                        "cognitive_filter": contract["forbidden_behavior"] if isinstance(contract["forbidden_behavior"], str) else "; ".join(contract["forbidden_behavior"]),
-                        "response_actions": trigger_response,
-                        "breaker_line": sample_lines[0] if sample_lines else "",
-                        "logic": contract["voice"],
-                    }
-                },
-                "positive_feedback": {
-                    "relational_growth": {
-                        "label": "relational_growth",
-                        "cognitive_filter": relationship_dynamic,
-                        "response_actions": emotional_tendency,
-                        "breaker_line": sample_lines[1] if len(sample_lines) > 1 else "",
-                        "logic": contract["instance_premise"],
-                    }
-                },
-                "extreme_pressure": {
-                    "label": "trigger_response",
-                    "cognitive_filter": contract["behavioral_signature"],
-                    "response_actions": trigger_response,
-                    "breaker_line": sample_lines[2] if len(sample_lines) > 2 else "",
-                    "logic": "Fallback response remains bounded by persona contract and archetype constraints.",
-                },
-            },
-            "signature_lines": sample_lines or [contract["voice"]],
+            ]
         },
+        "consumer_fields": consumer_fields,
         "realized_parameters": infer_realized_parameters_from_archetype(archetype),
-        "generation_contract": make_persona_generation_contract(),
+        "generation_contract": make_persona_generation_contract(taboo_entries),
     }
 
     for required_path in [
@@ -2338,6 +2323,7 @@ def build_persona(
             "archetype_id": persona["archetype_id"],
             "name": persona["name"],
             "source_markdown": persona["source_markdown"],
+            "consumer_fields": persona["consumer_fields"],
             "stable_fields": persona["stable_fields"],
             "soft_fields": persona["soft_fields"],
             "realized_parameters": persona["realized_parameters"],
@@ -2361,8 +2347,6 @@ def build_persona(
         "breaker_line": "你的音量已经超过了正常人类逻辑交流的上限。等你恢复生物平衡后，我们再继续。",
         "logic": "不在内容层面反击，而是通过结构性蔑视将对方推离文明阈值。",
     }
-    reference_models = parse_reference_models(sections.get("10", ""))
-
     persona_id = derive_persona_id(source_path, markdown)
     primary = title_meta.get("name", persona_id)
     subtitle = title_meta.get("subtitle", "") or PERSONA_TITLE_ALIASES.get(persona_id, "")
@@ -2381,6 +2365,10 @@ def build_persona(
             if payload.get("breaker_line") and payload["breaker_line"] != "无":
                 signature_lines.append(payload["breaker_line"])
     signature_lines.append(extreme_pressure["breaker_line"])
+    reaction_patterns = [payload["response_actions"] for payload in negative_feedback.values() if payload.get("response_actions")]
+    reaction_patterns.extend([payload["response_actions"] for payload in positive_feedback.values() if payload.get("response_actions")])
+    if extreme_pressure.get("response_actions"):
+        reaction_patterns.append(extreme_pressure["response_actions"])
 
     persona = {
         "id": persona_id,
@@ -2391,6 +2379,24 @@ def build_persona(
             "source_classification": source_classification,
         },
         "source_markdown": str(source_path.relative_to(source_path.parents[2])),
+        "consumer_fields": {
+            "display_name": primary,
+            "quadrants": archetype.get("quadrants", {}) if archetype else {},
+            "slogan": core_directive,
+            "core_essence": core_directive,
+            "social_essence": core_logic.get("social_essence", ""),
+            "signature_lines_pool": signature_lines,
+            "taboos": taboos,
+            "theater_logic": {
+                "core_drive": core_logic.get("self_positioning", core_directive),
+                "interaction_logic": core_logic.get("social_essence", ""),
+                "emotional_logic": cognitive_filters.get("downward_compatibility", ""),
+                "power_logic": core_logic.get("power_source", ""),
+            },
+            "behavior_style": embodiment.get("center_of_gravity", ""),
+            "language_style": core_directive,
+            "reaction_patterns_pool": reaction_patterns,
+        },
         "stable_fields": {
             "identity": {
                 "persona_name": primary,
@@ -2404,27 +2410,20 @@ def build_persona(
                 "self_positioning": core_logic.get("self_positioning", ""),
                 "power_source": core_logic.get("power_source", ""),
             },
-            "cognitive_filters": {
-                "noise_filtering": cognitive_filters.get("noise_filtering", ""),
-                "downward_compatibility": cognitive_filters.get("downward_compatibility", ""),
-                "information_granularity": cognitive_filters.get("information_granularity", ""),
+            "embodiment": {
+                "center_of_gravity": embodiment.get("center_of_gravity", ""),
+                "gaze_protocol": embodiment.get("gaze_protocol", {"focus_rule": "", "movement_rule": ""}),
+                "breathing_protocol": embodiment.get("breathing_protocol", ""),
+                "hand_constraints": embodiment.get("hand_constraints", ""),
             },
-            "embodiment": embodiment,
             "taboos": taboos,
-            "reference_models": reference_models,
         },
         "soft_fields": {
             "scene_behavior": scene_behavior,
             "interaction_matrix": interaction_matrix,
-            "response_protocols": {
-                "negative_feedback": negative_feedback,
-                "positive_feedback": positive_feedback,
-                "extreme_pressure": extreme_pressure,
-            },
-            "signature_lines": signature_lines,
         },
         "realized_parameters": realized_parameters,
-        "generation_contract": make_persona_generation_contract(),
+        "generation_contract": make_persona_generation_contract(taboos),
     }
 
     for required_path in [
@@ -2433,7 +2432,6 @@ def build_persona(
         "name.primary",
         "stable_fields.core_directive",
         "stable_fields.core_logic.social_essence",
-        "stable_fields.cognitive_filters.noise_filtering",
         "stable_fields.embodiment.center_of_gravity",
         "soft_fields.scene_behavior.small_scale.strategy",
     ]:
@@ -2448,6 +2446,7 @@ def build_persona(
         "archetype_id": persona["archetype_id"],
         "name": persona["name"],
         "source_markdown": persona["source_markdown"],
+        "consumer_fields": persona["consumer_fields"],
         "stable_fields": persona["stable_fields"],
         "soft_fields": persona["soft_fields"],
         "realized_parameters": persona["realized_parameters"],
