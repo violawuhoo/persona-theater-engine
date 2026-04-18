@@ -8,56 +8,6 @@
     "source_classification": "generated_from_strict_seed"
   },
   "source_markdown": "database/archetypes/ARCHETYPE_01_seed.md",
-  "stable_fields": {
-    "identity": {
-      "persona_name": "The CGI Cold (高冷建模脸)",
-      "premise": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
-      "source_classification": "generated_from_strict_seed"
-    },
-    "core_directive": "语气匀速、低频、无起伏",
-    "core_logic": {
-      "social_essence": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
-      "self_positioning": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
-      "power_source": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
-    },
-    "embodiment": {
-      "center_of_gravity": "稳定注视",
-      "gaze_protocol": {
-        "focus_rule": "语气匀速、低频、无起伏",
-        "movement_rule": "稳定注视"
-      },
-      "breathing_protocol": "语气匀速、低频、无起伏",
-      "hand_constraints": "关键时刻执行信息过滤：仅回应具有逻辑价值的输入"
-    },
-    "taboos": [
-      "严禁共情响应：不允许对他人的软弱表现出同情或安慰。",
-      "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。",
-      "严禁解释行为：不允许解释自身动机或为自身行为辩护。"
-    ]
-  },
-  "soft_fields": {
-    "scene_behavior": {
-      "small_scale": {
-        "label": "one_on_one",
-        "strategy": "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
-        "actions": "稳定注视、最小幅度动作。",
-        "logic": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
-      },
-      "large_scale": {
-        "label": "crowded",
-        "strategy": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
-        "actions": "稳定注视、最小幅度动作。",
-        "logic": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
-      }
-    },
-    "interaction_matrix": [
-      {
-        "input_signal": "general_interaction",
-        "interpretation": "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
-        "response_adjustment": "对方越界时，立即降温并重申边界，不提供情绪抚慰。"
-      }
-    ]
-  },
   "consumer_fields": {
     "display_name": "The CGI Cold (高冷建模脸)",
     "quadrants": {
@@ -68,7 +18,7 @@
     },
     "slogan": "我剔除干扰项，是为了看清世界的真理。",
     "core_essence": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
-    "social_essence": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
+    "social_essence": "以信息过滤：仅回应具有逻辑价值的输入定义社交距离，并通过审判尺度：以内部一致的高标准对行为进行持续评估维持位置与节奏。",
     "signature_lines_pool": [
       "开始吧，我希望接下来的时间交换具有基本的逻辑效率。",
       "该提议包含过多非理性冗余，无法兼容我的执行路径。",
@@ -79,18 +29,41 @@
       "严禁姿态崩塌：不允许使用带有温度或修饰性的情绪语言。",
       "严禁解释行为：不允许解释自身动机或为自身行为辩护。"
     ],
-    "theater_logic": {
-      "core_drive": "通过维持极端的行为克制与信息过滤，持续占据对话中的控制与评估位置。",
-      "interaction_logic": "信息过滤：仅回应具有逻辑价值的输入，无视寒暄、讨好或情绪化发散。 对话压制：使用极短句或单词回复，并制造对话停顿。 非对称性：保持观察者姿态，通过“不回馈”建立信息与权力的不对称。",
-      "emotional_logic": "情感绝缘：将所有情绪波动识别为低效信息，并以冷峻的逻辑处理。 边界防御：在被试图拉近距离时，转入公事化语气重建距离。",
-      "power_logic": "审判尺度：以内部一致的高标准对行为进行持续评估。 威望建立：拒绝解释判断逻辑，通过不确定性维持权威。"
-    },
     "behavior_style": "稳定注视、最小幅度动作。",
     "language_style": "匀速、低频、无起伏、去情绪化。",
     "reaction_patterns_pool": [
       "对方越界时，立即降温并重申边界，不提供情绪抚慰。",
       "对方施压时，维持评估姿态，只回应有逻辑价值的部分。",
       "对方示好时，接受信息但不放松距离和判断权。"
+    ]
+  },
+  "theater_support": {
+    "logic_axes": {
+      "interaction_focus": "信息过滤：仅回应具有逻辑价值的输入",
+      "emotional_guard": "情感绝缘：将所有情绪波动识别为低效信息",
+      "power_move": "审判尺度：以内部一致的高标准对行为进行持续评估"
+    },
+    "scene_tactics": {
+      "small_scale": "小场景围绕以信息过滤：仅回应具有逻辑价值的输入定义社交距离，并通过审判尺度：以内部一致的高标准对行为进行持续评估维持位置与节奏。维持距离，再用情感绝缘：将所有情绪波动识别为低效信息控制进入节奏。",
+      "large_scale": "大场景优先执行信息过滤：仅回应具有逻辑价值的输入，并用审判尺度：以内部一致的高标准对行为进行持续评估收束场域方向。"
+    },
+    "expression_modulators": {
+      "delivery_mode": "匀速 / 低频",
+      "physicality": "稳定注视 / 最小幅度动作"
+    },
+    "reaction_cues": [
+      {
+        "trigger": "对方越界",
+        "guidance": "立即降温并重申边界，不提供情绪抚慰。"
+      },
+      {
+        "trigger": "对方施压",
+        "guidance": "维持评估姿态，只回应有逻辑价值的部分。"
+      },
+      {
+        "trigger": "对方示好",
+        "guidance": "接受信息但不放松距离和判断权。"
+      }
     ]
   },
   "realized_parameters": {
@@ -122,38 +95,18 @@
         "reason": "The persona must remain anchored to a valid archetype."
       },
       {
-        "field": "stable_fields.identity",
-        "reason": "Identity and premise define the persona instance."
-      },
-      {
-        "field": "stable_fields.core_directive",
-        "reason": "The core directive is the persona's non-negotiable voice anchor."
-      },
-      {
-        "field": "stable_fields.core_logic",
-        "reason": "Core logic stores the stable worldview and power model."
-      },
-      {
-        "field": "stable_fields.embodiment",
-        "reason": "Embodiment rules define the stable performance skeleton."
-      },
-      {
-        "field": "stable_fields.taboos",
-        "reason": "Taboos prevent drift into incompatible behaviors."
-      },
-      {
         "field": "consumer_fields",
         "reason": "Frontend consumers should read the explicit consumer-facing contract."
-      }
-    ],
-    "soft_fields": [
-      {
-        "field": "soft_fields.scene_behavior",
-        "reason": "Scene tactics may elaborate differently per context."
       },
       {
-        "field": "soft_fields.interaction_matrix",
-        "reason": "Interaction mappings can be extended without changing the persona core."
+        "field": "theater_support",
+        "reason": "Theater support fields provide semi-fixed runtime guidance without replacing consumer fields."
+      }
+    ],
+    "support_fields": [
+      {
+        "field": "realized_parameters",
+        "reason": "Quadrant compatibility mirrors may remain without becoming the canonical consumer owner."
       },
       {
         "field": "runtime.theater",

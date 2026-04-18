@@ -10,8 +10,8 @@
     "name",
     "source_markdown",
     "consumer_fields",
-    "stable_fields",
-    "soft_fields",
+    "theater_support",
+    "realized_parameters",
     "generation_contract"
   ],
   "properties": {
@@ -59,7 +59,6 @@
         "social_essence",
         "signature_lines_pool",
         "taboos",
-        "theater_logic",
         "behavior_style",
         "language_style",
         "reaction_patterns_pool"
@@ -94,30 +93,6 @@
             "type": "string"
           }
         },
-        "theater_logic": {
-          "type": "object",
-          "required": [
-            "core_drive",
-            "interaction_logic",
-            "emotional_logic",
-            "power_logic"
-          ],
-          "properties": {
-            "core_drive": {
-              "type": "string"
-            },
-            "interaction_logic": {
-              "type": "string"
-            },
-            "emotional_logic": {
-              "type": "string"
-            },
-            "power_logic": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
         "behavior_style": {
           "type": "string"
         },
@@ -134,115 +109,36 @@
       },
       "additionalProperties": false
     },
-    "stable_fields": {
+    "theater_support": {
       "type": "object",
       "required": [
-        "identity",
-        "core_directive",
-        "core_logic",
-        "embodiment",
-        "taboos"
+        "logic_axes",
+        "scene_tactics",
+        "expression_modulators",
+        "reaction_cues"
       ],
       "properties": {
-        "identity": {
+        "logic_axes": {
           "type": "object",
           "required": [
-            "persona_name",
-            "premise"
+            "interaction_focus",
+            "emotional_guard",
+            "power_move"
           ],
           "properties": {
-            "persona_name": {
+            "interaction_focus": {
               "type": "string"
             },
-            "subtitle": {
+            "emotional_guard": {
               "type": "string"
             },
-            "premise": {
-              "type": "string"
-            },
-            "source_classification": {
+            "power_move": {
               "type": "string"
             }
           },
           "additionalProperties": false
         },
-        "core_directive": {
-          "type": "string"
-        },
-        "core_logic": {
-          "type": "object",
-          "required": [
-            "social_essence",
-            "self_positioning",
-            "power_source"
-          ],
-          "properties": {
-            "social_essence": {
-              "type": "string"
-            },
-            "self_positioning": {
-              "type": "string"
-            },
-            "power_source": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        "embodiment": {
-          "type": "object",
-          "required": [
-            "center_of_gravity",
-            "gaze_protocol",
-            "breathing_protocol",
-            "hand_constraints"
-          ],
-          "properties": {
-            "center_of_gravity": {
-              "type": "string"
-            },
-            "gaze_protocol": {
-              "type": "object",
-              "required": [
-                "focus_rule",
-                "movement_rule"
-              ],
-              "properties": {
-                "focus_rule": {
-                  "type": "string"
-                },
-                "movement_rule": {
-                  "type": "string"
-                }
-              },
-              "additionalProperties": false
-            },
-            "breathing_protocol": {
-              "type": "string"
-            },
-            "hand_constraints": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        "taboos": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "soft_fields": {
-      "type": "object",
-      "required": [
-        "scene_behavior",
-        "interaction_matrix"
-      ],
-      "properties": {
-        "scene_behavior": {
+        "scene_tactics": {
           "type": "object",
           "required": [
             "small_scale",
@@ -250,18 +146,35 @@
           ],
           "properties": {
             "small_scale": {
-              "$ref": "#/definitions/scene_block"
+              "type": "string"
             },
             "large_scale": {
-              "$ref": "#/definitions/scene_block"
+              "type": "string"
             }
           },
           "additionalProperties": false
         },
-        "interaction_matrix": {
+        "expression_modulators": {
+          "type": "object",
+          "required": [
+            "delivery_mode",
+            "physicality"
+          ],
+          "properties": {
+            "delivery_mode": {
+              "type": "string"
+            },
+            "physicality": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "reaction_cues": {
           "type": "array",
+          "minItems": 1,
           "items": {
-            "$ref": "#/definitions/interaction_rule"
+            "$ref": "#/definitions/reaction_cue"
           }
         }
       },
@@ -331,45 +244,17 @@
       },
       "additionalProperties": false
     },
-    "scene_block": {
+    "reaction_cue": {
       "type": "object",
       "required": [
-        "label",
-        "strategy",
-        "actions",
-        "logic"
+        "trigger",
+        "guidance"
       ],
       "properties": {
-        "label": {
+        "trigger": {
           "type": "string"
         },
-        "strategy": {
-          "type": "string"
-        },
-        "actions": {
-          "type": "string"
-        },
-        "logic": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "interaction_rule": {
-      "type": "object",
-      "required": [
-        "input_signal",
-        "interpretation",
-        "response_adjustment"
-      ],
-      "properties": {
-        "input_signal": {
-          "type": "string"
-        },
-        "interpretation": {
-          "type": "string"
-        },
-        "response_adjustment": {
+        "guidance": {
           "type": "string"
         }
       },

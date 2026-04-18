@@ -7,8 +7,9 @@ This document defines the frontend-facing persona fields that are safe to consum
 Consumer-facing fields live in:
 
 - `consumer_fields`
+- `theater_support`
 
-Frontend should prefer this section over generation-oriented groups such as `stable_fields` and `soft_fields`.
+Frontend should prefer `consumer_fields` for Browse / Detail and `theater_support` for Theater-support setup.
 
 ## Fixed fields
 
@@ -20,9 +21,21 @@ These are stable display fields and should be shown directly without semantic fa
 - `consumer_fields.core_essence`
 - `consumer_fields.social_essence`
 - `consumer_fields.taboos`
-- `consumer_fields.theater_logic`
 - `consumer_fields.behavior_style`
 - `consumer_fields.language_style`
+
+## Theater support
+
+Theater-facing semi-fixed support fields live in:
+
+- `theater_support`
+
+These fields are seed-grounded runtime support, not Browse/Detail display copy.
+
+- `theater_support.logic_axes`
+- `theater_support.scene_tactics`
+- `theater_support.expression_modulators`
+- `theater_support.reaction_cues`
 
 ## Semi-fixed pools
 
@@ -39,6 +52,7 @@ These must not be treated as fixed frontend contract:
 - runtime improvisation
 - turn-by-turn conflict handling
 - generic response protocol scaffolding
+- verbatim reuse of fixed Browse/Detail display copy as Theater support text
 
 ## Quadrants
 

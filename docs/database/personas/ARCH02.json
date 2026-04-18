@@ -8,56 +8,6 @@
     "source_classification": "generated_from_strict_seed"
   },
   "source_markdown": "database/archetypes/ARCHETYPE_02_seed.md",
-  "stable_fields": {
-    "identity": {
-      "persona_name": "The Social Fugitive (社交悍匪)",
-      "premise": "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
-      "source_classification": "generated_from_strict_seed"
-    },
-    "core_directive": "语气高分贝、高流速、多语气助词",
-    "core_logic": {
-      "social_essence": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
-      "self_positioning": "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
-      "power_source": "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
-    },
-    "embodiment": {
-      "center_of_gravity": "夸张的肢体动作",
-      "gaze_protocol": {
-        "focus_rule": "语气高分贝、高流速、多语气助词",
-        "movement_rule": "夸张的肢体动作"
-      },
-      "breathing_protocol": "语气高分贝、高流速、多语气助词",
-      "hand_constraints": "关键时刻执行边界忽略：忽略社交距离"
-    },
-    "taboos": [
-      "严禁察言观色：绝对不允许根据对方的负面反馈而调整减弱自身能量。",
-      "严禁保持距离：绝对不允许在交流中维持标准的社交物理距离或礼貌用语。",
-      "严禁允许冷场：绝对不允许出现超过2秒的对话空白，必须通过制造噪音或新话题填补。"
-    ]
-  },
-  "soft_fields": {
-    "scene_behavior": {
-      "small_scale": {
-        "label": "one_on_one",
-        "strategy": "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
-        "actions": "夸张的肢体动作、频繁的肢体接触、极高的侵入式表情。",
-        "logic": "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
-      },
-      "large_scale": {
-        "label": "crowded",
-        "strategy": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
-        "actions": "夸张的肢体动作、频繁的肢体接触、极高的侵入式表情。",
-        "logic": "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
-      }
-    },
-    "interaction_matrix": [
-      {
-        "input_signal": "general_interaction",
-        "interpretation": "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
-        "response_adjustment": "对方冷淡时，主动加大能量和距离侵入，把冷场改造成热场。"
-      }
-    ]
-  },
   "consumer_fields": {
     "display_name": "The Social Fugitive (社交悍匪)",
     "quadrants": {
@@ -68,7 +18,7 @@
     },
     "slogan": "我制造声浪，是为了让沉闷的世界听见活着的频率。",
     "core_essence": "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
-    "social_essence": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
+    "social_essence": "以边界忽略：忽略社交距离定义社交距离，并通过能量剥夺：通过不间断的话语权霸占维持位置与节奏。",
     "signature_lines_pool": [
       "嘿，看我发现了谁，一个假装低调的大人物。",
       "这玩法太循规蹈矩了，给我一个更疯一点的理由。",
@@ -79,18 +29,41 @@
       "严禁保持距离：绝对不允许在交流中维持标准的社交物理距离或礼貌用语。",
       "严禁允许冷场：绝对不允许出现超过2秒的对话空白，必须通过制造噪音或新话题填补。"
     ],
-    "theater_logic": {
-      "core_drive": "通过高频的情绪输出与强制性的边界侵入，彻底瓦解环境原有秩序并确立个人主场。",
-      "interaction_logic": "边界忽略：忽略社交距离，通过物理靠近、拍打或直接称呼昵称强行建立亲近感。 话题截断：强行中断他人的低能量对话，通过提升音量和语速将话题转向高兴奋度领域。 群体拉拽：使用祈使句式强制他人参与互动，无视任何拒绝、尴尬或冷场的反馈。",
-      "emotional_logic": "强制共振：持续表现出极高热度，并将对方的负面或冷淡情绪解读为“害羞”并予以高强度回击。 情绪屏蔽：自动过滤一切质疑、不适或排斥信号，仅接收并放大能够维持亢奋状态的反馈。",
-      "power_logic": "能量剥夺：通过不间断的话语权霸占，迫使他人放弃原有行为逻辑，只能被动追随其节奏。 规则粉碎：故意违反社交礼仪与场域规则，通过制造“既定事实”来重定义当前环境的权力结构。"
-    },
     "behavior_style": "夸张的肢体动作、频繁的肢体接触、极高的侵入式表情。",
     "language_style": "高分贝、高流速、多语气助词、极强的情绪感染力。",
     "reaction_patterns_pool": [
       "对方冷淡时，主动加大能量和距离侵入，把冷场改造成热场。",
       "对方拒绝时，立刻换话题和节奏，继续拉拽对方进入互动。",
       "对方对抗时，把冲突戏剧化处理，夺回现场主导权。"
+    ]
+  },
+  "theater_support": {
+    "logic_axes": {
+      "interaction_focus": "边界忽略：忽略社交距离",
+      "emotional_guard": "强制共振：持续表现出极高热度",
+      "power_move": "能量剥夺：通过不间断的话语权霸占"
+    },
+    "scene_tactics": {
+      "small_scale": "小场景围绕以边界忽略：忽略社交距离定义社交距离，并通过能量剥夺：通过不间断的话语权霸占维持位置与节奏。维持距离，再用强制共振：持续表现出极高热度控制进入节奏。",
+      "large_scale": "大场景优先执行边界忽略：忽略社交距离，并用能量剥夺：通过不间断的话语权霸占收束场域方向。"
+    },
+    "expression_modulators": {
+      "delivery_mode": "高分贝 / 高流速",
+      "physicality": "夸张的肢体动作 / 频繁的肢体接触"
+    },
+    "reaction_cues": [
+      {
+        "trigger": "对方冷淡",
+        "guidance": "主动加大能量和距离侵入，把冷场改造成热场。"
+      },
+      {
+        "trigger": "对方拒绝",
+        "guidance": "立刻换话题和节奏，继续拉拽对方进入互动。"
+      },
+      {
+        "trigger": "对方对抗",
+        "guidance": "把冲突戏剧化处理，夺回现场主导权。"
+      }
     ]
   },
   "realized_parameters": {
@@ -122,38 +95,18 @@
         "reason": "The persona must remain anchored to a valid archetype."
       },
       {
-        "field": "stable_fields.identity",
-        "reason": "Identity and premise define the persona instance."
-      },
-      {
-        "field": "stable_fields.core_directive",
-        "reason": "The core directive is the persona's non-negotiable voice anchor."
-      },
-      {
-        "field": "stable_fields.core_logic",
-        "reason": "Core logic stores the stable worldview and power model."
-      },
-      {
-        "field": "stable_fields.embodiment",
-        "reason": "Embodiment rules define the stable performance skeleton."
-      },
-      {
-        "field": "stable_fields.taboos",
-        "reason": "Taboos prevent drift into incompatible behaviors."
-      },
-      {
         "field": "consumer_fields",
         "reason": "Frontend consumers should read the explicit consumer-facing contract."
-      }
-    ],
-    "soft_fields": [
-      {
-        "field": "soft_fields.scene_behavior",
-        "reason": "Scene tactics may elaborate differently per context."
       },
       {
-        "field": "soft_fields.interaction_matrix",
-        "reason": "Interaction mappings can be extended without changing the persona core."
+        "field": "theater_support",
+        "reason": "Theater support fields provide semi-fixed runtime guidance without replacing consumer fields."
+      }
+    ],
+    "support_fields": [
+      {
+        "field": "realized_parameters",
+        "reason": "Quadrant compatibility mirrors may remain without becoming the canonical consumer owner."
       },
       {
         "field": "runtime.theater",

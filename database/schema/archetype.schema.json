@@ -10,19 +10,12 @@
     "name",
     "seed_source",
     "source_profile",
-    "positioning",
-    "core_temperature",
-    "core_traits",
     "quadrants",
     "parameter_space",
-    "core_logic",
-    "behavioral_model",
-    "expression_rules",
+    "model_core",
+    "style_profile",
+    "assets",
     "constraints",
-    "spatial_algorithms",
-    "social_layers",
-    "details",
-    "generation_freedom",
     "generation_contract",
     "summary"
   ],
@@ -86,30 +79,33 @@
       },
       "additionalProperties": false
     },
-    "positioning": {
+    "model_core": {
       "type": "object",
       "required": [
-        "thesis",
-        "mechanism"
+        "core_essence",
+        "social_stance",
+        "interaction_logic",
+        "emotional_logic",
+        "power_logic"
       ],
       "properties": {
-        "thesis": {
+        "core_essence": {
           "type": "string"
         },
-        "mechanism": {
+        "social_stance": {
+          "type": "string"
+        },
+        "interaction_logic": {
+          "type": "string"
+        },
+        "emotional_logic": {
+          "type": "string"
+        },
+        "power_logic": {
           "type": "string"
         }
       },
       "additionalProperties": false
-    },
-    "core_temperature": {
-      "type": "string"
-    },
-    "core_traits": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
     },
     "quadrants": {
       "type": "object",
@@ -163,77 +159,40 @@
         "additionalProperties": false
       }
     },
-    "core_logic": {
+    "style_profile": {
       "type": "object",
       "required": [
-        "core_motivation",
-        "power_logic",
-        "social_logic",
-        "emotion_logic",
-        "security_anchor",
-        "blind_spot",
-        "conflict_logic",
-        "repair_logic"
+        "behavior_style",
+        "language_style"
       ],
       "properties": {
-        "core_motivation": {
+        "behavior_style": {
           "type": "string"
         },
-        "power_logic": {
-          "type": "string"
-        },
-        "social_logic": {
-          "type": "string"
-        },
-        "emotion_logic": {
-          "type": "string"
-        },
-        "security_anchor": {
-          "type": "string"
-        },
-        "blind_spot": {
-          "type": "string"
-        },
-        "conflict_logic": {
-          "type": "string"
-        },
-        "repair_logic": {
+        "language_style": {
           "type": "string"
         }
       },
       "additionalProperties": false
     },
-    "behavioral_model": {
+    "assets": {
       "type": "object",
       "required": [
-        "visual_style",
-        "physical_style",
-        "verbal_style"
+        "slogan",
+        "signature_lines_pool",
+        "reaction_patterns_pool"
       ],
       "properties": {
-        "visual_style": {
+        "slogan": {
           "type": "string"
         },
-        "physical_style": {
-          "type": "string"
+        "signature_lines_pool": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
-        "verbal_style": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "expression_rules": {
-      "type": "object",
-      "required": [
-        "canonical_expression_mode",
-        "signature_line_patterns"
-      ],
-      "properties": {
-        "canonical_expression_mode": {
-          "type": "string"
-        },
-        "signature_line_patterns": {
+        "reaction_patterns_pool": {
           "type": "array",
           "items": {
             "type": "string"
@@ -245,97 +204,9 @@
     "constraints": {
       "type": "object",
       "required": [
-        "must_have",
         "forbidden_drift"
       ],
       "properties": {
-        "must_have": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "forbidden_drift": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "spatial_algorithms": {
-      "type": "object",
-      "required": [
-        "crowded",
-        "one_on_one"
-      ],
-      "properties": {
-        "crowded": {
-          "type": "string"
-        },
-        "one_on_one": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "social_layers": {
-      "type": "object",
-      "required": [
-        "outer_layer",
-        "inner_layer"
-      ],
-      "properties": {
-        "outer_layer": {
-          "type": "string"
-        },
-        "inner_layer": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "details": {
-      "type": "object",
-      "required": [
-        "sensory_profile",
-        "symbolic_objects",
-        "breakdown_repair"
-      ],
-      "properties": {
-        "sensory_profile": {
-          "type": "string"
-        },
-        "symbolic_objects": {
-          "type": "string"
-        },
-        "breakdown_repair": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "generation_freedom": {
-      "type": "object",
-      "required": [
-        "allowed_to_vary",
-        "must_remain_stable",
-        "forbidden_drift"
-      ],
-      "properties": {
-        "allowed_to_vary": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "must_remain_stable": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "forbidden_drift": {
           "type": "array",
           "items": {

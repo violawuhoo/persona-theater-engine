@@ -1,5 +1,7 @@
 // ============================================================
 // PERSONA THEATER SYSTEM — script.js
+// Data contract: consumer_fields (Browse/Detail) + theater_support (Theater)
+// Old fields (stable_fields, soft_fields, root_logic_core, etc.) are REMOVED.
 // ============================================================
 
 // ── CONFIGURATION ─────────────────────────────────────────────
@@ -198,40 +200,29 @@ const TARGET_OVERLAYS = {
   '陌生人/潜在资源': '对方在前30秒内完成初步分类。你的任务是被分入「值得继续了解」的类别，而非「已经完全了解」的类别。给出足够多让他们感兴趣，但永远保留一个未解的层次。'
 };
 
-// ── SCHEMA DEFAULTS ───────────────────────────────────────────
-// Safe fallback values for every field the system reads.
+// ── SCHEMA DEFAULTS (new contract) ───────────────────────────
+// Minimum-viable defaults for the two canonical layers.
+// These are used ONLY when a field is absent — never as fabricated substitutes.
 const SCHEMA_DEFAULTS = {
-  id:             'UNKNOWN',
-  name:           '未知人格',
-  subtitle:       'Unknown Persona',
-  archetype:      '未分类原型',
-  core_directive: '[核心指令缺失]',
-  root_logic_core: {
-    social_essence:  '[社交本质数据缺失]',
-    self_positioning:'[自我定位数据缺失]',
-    power_source:    '[权力来源数据缺失]'
+  id: 'UNKNOWN',
+  consumer_fields: {
+    display_name:          '未知人格',
+    quadrants:             {},
+    slogan:                '[核心指令缺失]',
+    core_essence:          '[核心本质缺失]',
+    social_essence:        '[社交本质缺失]',
+    signature_lines_pool:  [],
+    taboos:                ['[禁忌数据缺失]'],
+    behavior_style:        '',
+    language_style:        '',
+    reaction_patterns_pool: []
   },
-  cognitive_filtering_algorithm: {
-    noise_processing: '[认知过滤数据缺失]'
-  },
-  physical_execution_constraints: {
-    center_of_gravity:  '[重心规则缺失]',
-    gaze_protocol: {
-      focus_point: '[视线焦点缺失]',
-      rule:        '[视线规则缺失]'
-    },
-    breathing_protocol: '[呼吸协议缺失]',
-    hand_constraints:   '[手部约束缺失]',
-    latency_buffer: {
-      delay_seconds: '[延迟时间缺失]',
-      purpose:       '[延迟说明缺失]'
-    },
-    spatial_sovereignty: ''
-  },
-  universal_forbidden_actions: [
-    { action: '数据缺失', rule: '该人格的禁忌列表未加载。' }
-  ],
-  dynamic_response_protocols: {}
+  theater_support: {
+    logic_axes:            { interaction_focus: '[缺失]', emotional_guard: '[缺失]', power_move: '[缺失]' },
+    scene_tactics:         { small_scale: '[缺失]', large_scale: '[缺失]' },
+    expression_modulators: { delivery_mode: '[缺失]', physicality: '[缺失]' },
+    reaction_cues:         []
+  }
 };
 
 // ── UTILITIES ─────────────────────────────────────────────────
@@ -306,182 +297,53 @@ function showConfirm(message, { title = '确认操作', color = '#e74c3c' } = {}
   return showModal(message, { title, color, type: 'confirm' });
 }
 
-// ── COMPILED JSON REMAPPER ────────────────────────────────────
-// Detects compiled persona JSON (stable_fields present) and remaps
-// it into the flat runtime schema the rest of the frontend expects.
-// Returns a plain object with the same top-level keys as the old format.
-function remapCompiledPersona(raw) {
-  const sf   = raw.stable_fields  || {};
-  const sofF = raw.soft_fields    || {};
-  const id   = sf.identity        || {};
-  const emb  = sf.embodiment      || {};
-
-  // ── name: prefer stable_fields.identity.persona_name ────────
-  const name = safeStr(
-    id.persona_name ||
-    (raw.name && typeof raw.name === 'object' ? raw.name.primary : raw.name),
-    SCHEMA_DEFAULTS.name
-  );
-
-  // ── gaze_protocol: rename focus_rule→focus_point, movement_rule→rule ──
-  const rawGaze = emb.gaze_protocol || {};
-  const gaze_protocol = {
-    focus_point: safeStr(rawGaze.focus_rule   || rawGaze.focus_point,
-                         SCHEMA_DEFAULTS.physical_execution_constraints.gaze_protocol.focus_point),
-    rule:        safeStr(rawGaze.movement_rule || rawGaze.rule,
-                         SCHEMA_DEFAULTS.physical_execution_constraints.gaze_protocol.rule)
-  };
-
-  // ── latency_buffer: rename rule→purpose ─────────────────────
-  const rawLbuf = emb.latency_buffer || {};
-  const latency_buffer = {
-    delay_seconds: safeStr(rawLbuf.delay_seconds,
-                           SCHEMA_DEFAULTS.physical_execution_constraints.latency_buffer.delay_seconds),
-    purpose:       safeStr(rawLbuf.purpose || rawLbuf.rule,
-                           SCHEMA_DEFAULTS.physical_execution_constraints.latency_buffer.purpose)
-  };
-
-  // ── physical_execution_constraints ← embodiment ─────────────
-  const physical_execution_constraints = {
-    ...SCHEMA_DEFAULTS.physical_execution_constraints,
-    center_of_gravity:  safeStr(emb.center_of_gravity),
-    breathing_protocol: safeStr(emb.breathing_protocol),
-    hand_constraints:   safeStr(emb.hand_constraints),
-    spatial_sovereignty: safeStr(emb.spatial_sovereignty, ''),
-    gaze_protocol,
-    latency_buffer
-  };
-
-  // ── response_protocols → dynamic_response_protocols ─────────
-  // new keys: negative_feedback.drift_prevention, positive_feedback.aligned_interaction,
-  //           extreme_pressure  →  mapped to runtime keys: attack, validation_received, logical_trap
-  // sub-field remap: breaker_line → verbal_output, response_actions → signal/physical_output
-  const rawProto = sofF.response_protocols || {};
-  const dynamic_response_protocols = {};
-
-  function mapProto(p) {
-    if (!p || typeof p !== 'object') return null;
-    return {
-      signal:          safeStr(p.response_actions || p.signal),
-      verbal_output:   safeStr(p.breaker_line     || p.verbal_output),
-      physical_output: safeStr(p.response_actions || p.physical_output),
-      logic:           safeStr(p.logic)
-    };
+// ── SCHEMA VALIDATOR ──────────────────────────────────────────
+// Validates that raw persona JSON conforms to the new contract.
+// Throws an Error if the data is invalid or uses the old format.
+// Returns the raw JSON unchanged — no remapping, no fallback fabrication.
+function normalizePersonaSchema(raw) {
+  if (!raw || typeof raw !== 'object') {
+    console.error('[Schema] Raw data is null or not an object.');
+    throw new Error('Persona data is null or not an object');
   }
 
-  const negDrift = rawProto.negative_feedback && rawProto.negative_feedback.drift_prevention;
-  if (negDrift) dynamic_response_protocols.attack = mapProto(negDrift);
+  // Reject old format — stable_fields is not supported
+  if (raw.stable_fields) {
+    console.error(`[Schema] ✗ Old persona format detected in "${safeStr(raw.id)}" (stable_fields present). This format is no longer supported.`);
+    throw new Error(`Persona "${safeStr(raw.id)}" uses old format (stable_fields). Please regenerate from the new compiler.`);
+  }
 
-  const posAligned = rawProto.positive_feedback && rawProto.positive_feedback.aligned_interaction;
-  if (posAligned) dynamic_response_protocols.validation_received = mapProto(posAligned);
+  const cf = raw.consumer_fields;
+  const ts = raw.theater_support;
 
-  if (rawProto.extreme_pressure)
-    dynamic_response_protocols.logical_trap = mapProto(rawProto.extreme_pressure);
+  // consumer_fields must exist and be an object
+  if (!cf || typeof cf !== 'object') {
+    console.error(`[Schema] ✗ consumer_fields missing in "${safeStr(raw.id)}"`);
+    throw new Error(`Persona "${safeStr(raw.id)}" is missing consumer_fields`);
+  }
 
-  // Pull any signature_lines as extra verbal references
-  (sofF.signature_lines || []).forEach((line, i) => {
-    if (typeof line === 'string' && line.length > 3) {
-      dynamic_response_protocols[`signature_${i}`] = {
-        signal: line, verbal_output: line, physical_output: '', logic: ''
-      };
+  // theater_support must exist and be an object
+  if (!ts || typeof ts !== 'object') {
+    console.error(`[Schema] ✗ theater_support missing in "${safeStr(raw.id)}"`);
+    throw new Error(`Persona "${safeStr(raw.id)}" is missing theater_support`);
+  }
+
+  // Warn on missing consumer_fields sub-keys (do not fabricate)
+  ['display_name', 'quadrants', 'slogan', 'core_essence', 'social_essence', 'signature_lines_pool', 'taboos'].forEach(key => {
+    if (cf[key] === undefined || cf[key] === null) {
+      console.warn(`[Schema] ⚠ consumer_fields.${key} missing in "${safeStr(raw.id)}" — field will render as missing marker`);
     }
   });
 
-  // ── taboos → universal_forbidden_actions ────────────────────
-  const universal_forbidden_actions = Array.isArray(sf.taboos) && sf.taboos.length > 0
-    ? sf.taboos.map(t => ({
-        action: safeStr(t.action, '未知禁忌'),
-        rule:   safeStr(t.rule,   '[规则内容缺失]')
-      }))
-    : SCHEMA_DEFAULTS.universal_forbidden_actions;
-
-  return {
-    id:             safeStr(raw.id, SCHEMA_DEFAULTS.id),
-    name,
-    subtitle:       safeStr(id.subtitle,     SCHEMA_DEFAULTS.subtitle),
-    archetype:      safeStr(raw.archetype_id, SCHEMA_DEFAULTS.archetype),
-    core_directive: safeStr(sf.core_directive, SCHEMA_DEFAULTS.core_directive),
-    // core_essence: self-anchoring premise line (Detail 核心本质)
-    core_essence:   safeStr(id.premise || sf.core_directive, SCHEMA_DEFAULTS.core_directive),
-    // realized_parameters: E/O/R/B numeric indicators (Browse quadrant block)
-    realized_parameters: (raw.realized_parameters && typeof raw.realized_parameters === 'object')
-      ? raw.realized_parameters : null,
-    root_logic_core: {
-      ...SCHEMA_DEFAULTS.root_logic_core,
-      ...(sf.core_logic || {})
-    },
-    cognitive_filtering_algorithm: {
-      ...SCHEMA_DEFAULTS.cognitive_filtering_algorithm,
-      ...(sf.cognitive_filters || {})
-    },
-    physical_execution_constraints,
-    universal_forbidden_actions,
-    dynamic_response_protocols
-  };
-}
-
-// ── SCHEMA NORMALIZER ─────────────────────────────────────────
-// Merge loaded JSON with SCHEMA_DEFAULTS so every field always exists.
-function normalizePersonaSchema(raw) {
-  if (!raw || typeof raw !== 'object') {
-    console.warn('[Schema] Raw data is null or not an object — using full defaults.');
-    return { ...SCHEMA_DEFAULTS };
-  }
-
-  // Detect compiled format (stable_fields present) and remap before normalization
-  const isCompiled = raw.stable_fields && typeof raw.stable_fields === 'object';
-  const source = isCompiled ? remapCompiledPersona(raw) : raw;
-
-  if (isCompiled) {
-    console.log(`[Schema] Compiled format detected — remapped ${safeStr(raw.id)}.`);
-  }
-
-  const norm = { ...SCHEMA_DEFAULTS, ...source };
-
-  // Deep-merge each nested module
-  norm.root_logic_core = {
-    ...SCHEMA_DEFAULTS.root_logic_core,
-    ...(source.root_logic_core || {})
-  };
-
-  norm.cognitive_filtering_algorithm = {
-    ...SCHEMA_DEFAULTS.cognitive_filtering_algorithm,
-    ...(source.cognitive_filtering_algorithm || {})
-  };
-
-  // Physical constraints — gaze_protocol and latency_buffer are nested
-  const rawPhys = source.physical_execution_constraints || {};
-  norm.physical_execution_constraints = {
-    ...SCHEMA_DEFAULTS.physical_execution_constraints,
-    ...rawPhys,
-    gaze_protocol: {
-      ...SCHEMA_DEFAULTS.physical_execution_constraints.gaze_protocol,
-      ...(rawPhys.gaze_protocol || {})
-    },
-    latency_buffer: {
-      ...SCHEMA_DEFAULTS.physical_execution_constraints.latency_buffer,
-      ...(rawPhys.latency_buffer || {})
+  // Warn on missing theater_support sub-keys (do not fabricate)
+  ['logic_axes', 'scene_tactics', 'expression_modulators', 'reaction_cues'].forEach(key => {
+    if (ts[key] === undefined || ts[key] === null) {
+      console.warn(`[Schema] ⚠ theater_support.${key} missing in "${safeStr(raw.id)}" — theater output will be degraded`);
     }
-  };
+  });
 
-  norm.universal_forbidden_actions = Array.isArray(source.universal_forbidden_actions)
-    && source.universal_forbidden_actions.length > 0
-      ? source.universal_forbidden_actions
-      : SCHEMA_DEFAULTS.universal_forbidden_actions;
-
-  norm.dynamic_response_protocols =
-    (source.dynamic_response_protocols && typeof source.dynamic_response_protocols === 'object')
-      ? source.dynamic_response_protocols
-      : SCHEMA_DEFAULTS.dynamic_response_protocols;
-
-  // Validate each forbidden action has required string fields
-  norm.universal_forbidden_actions = norm.universal_forbidden_actions.map(f => ({
-    action: safeStr(f.action, '未知禁忌'),
-    rule:   safeStr(f.rule,   '[规则内容缺失]')
-  }));
-
-  console.log(`[Schema] Normalized: ${norm.id} — ${norm.name}`);
-  return norm;
+  console.log(`[Schema] ✓ Contract validated: ${safeStr(raw.id)} — ${safeStr(cf.display_name)}`);
+  return raw;  // Pass-through: no remapping
 }
 
 // ── DYNAMIC LOADER ────────────────────────────────────────────
@@ -526,27 +388,20 @@ async function loadPersona(personaId) {
     throw new Error(`JSON parse error: ${parseErr.message}`);
   }
 
-  // Schema validation & normalization
-  const missingModules = [];
-  ['root_logic_core', 'cognitive_filtering_algorithm', 'physical_execution_constraints',
-   'universal_forbidden_actions', 'dynamic_response_protocols'].forEach(key => {
-    if (!raw[key]) missingModules.push(key);
-  });
-  if (missingModules.length > 0) {
-    console.warn(`[Schema] ⚠ Missing modules in ${cleanId}:`, missingModules.join(', '));
-    console.warn('[Schema] Applying fallback values for missing modules.');
-  }
-
+  // Validate new contract — throws if invalid or old format
   currentPersonaData = normalizePersonaSchema(raw);
+
   if (safeStr(currentPersonaData.id).toUpperCase() !== cleanId) {
     console.warn(`[DataManager] ⚠ ID mismatch: selected ${cleanId}, loaded ${currentPersonaData.id}`);
   }
-  console.log(`[DataManager] ✓ Persona ready: ${currentPersonaData.name} (${cleanId})`);
+  console.log(`[DataManager] ✓ Persona ready: ${safeStr(currentPersonaData.consumer_fields.display_name)} (${cleanId})`);
   return currentPersonaData;
 }
 
 // ── INDEX INITIALIZATION ──────────────────────────────────────
-// Fetches all registered JSONs to extract card metadata.
+// Fetches all registered JSONs; each persona JSON is stored directly
+// in the index (plus a color property) so extract functions can read
+// consumer_fields directly from the index item.
 async function loadPersonaIndex() {
   let registry;
   try {
@@ -571,29 +426,26 @@ async function loadPersonaIndex() {
   results.forEach((result, i) => {
     const entry = registry[i];
     if (result.status === 'fulfilled') {
-      const norm = normalizePersonaSchema(result.value.data);
-      index.push({
-        id:                  norm.id,
-        name:                norm.name,
-        subtitle:            norm.subtitle,
-        archetype:           norm.archetype,
-        core_directive:      norm.core_directive,
-        core_essence:        norm.core_essence  || norm.core_directive,
-        realized_parameters: norm.realized_parameters || null,
-        color:               result.value.color
-      });
+      let persona;
+      try {
+        persona = normalizePersonaSchema(result.value.data);
+      } catch (e) {
+        console.warn(`[Index] ✗ Schema validation failed for ${entry.id}:`, e.message);
+        index.push({
+          id:     entry.id,
+          color:  entry.color,
+          failed: true
+        });
+        return;
+      }
+      // Merge color into the raw persona object for carousel use
+      index.push({ ...persona, color: result.value.color });
     } else {
       console.warn(`[Index] ✗ Failed to load ${entry.id}:`, result.reason.message);
       index.push({
-        id:                  entry.id,
-        name:                entry.id,
-        subtitle:            'Protocol Unavailable',
-        archetype:           '数据加载失败',
-        core_directive:      '该人格协议文件无法加载，请检查文件是否存在。',
-        core_essence:        null,
-        realized_parameters: null,
-        color:               entry.color,
-        failed:              true
+        id:     entry.id,
+        color:  entry.color,
+        failed: true
       });
     }
   });
@@ -602,11 +454,13 @@ async function loadPersonaIndex() {
 }
 
 // ── CONTENT EXTRACTION LAYER ─────────────────────────────────
-// Implements the stable / selectable / dynamic model at runtime.
 // All Browse, Detail, and Theater rendering must go through these functions.
 // Direct inline field access on persona data is not permitted in render paths.
+// Single data-source rule:
+//   Browse / Detail → consumer_fields only
+//   Theater        → theater_support only
 
-// Sentinel returned for any missing stable field — never fabricate a replacement.
+// Sentinel returned for any missing field — never fabricate a replacement.
 const MISSING = '[数据缺失]';
 
 // Stable read: returns value verbatim; MISSING if absent or empty.
@@ -631,63 +485,49 @@ function selectableLines(candidates, max) {
 }
 
 // ── extractBrowseContent ──────────────────────────────────────
-// Browse: name (stable) + quadrant metrics (stable) + slogan (stable).
-// Dynamic content must NOT appear here.
+// Browse: display_name (stable) + quadrants (stable) + slogan (stable).
+// Source: consumer_fields only. No other layer may be read here.
 function extractBrowseContent(persona) {
+  const cf = (persona && persona.consumer_fields) || {};
   return {
-    name:     stableField(persona.name),
-    quadrant: (persona.realized_parameters && typeof persona.realized_parameters === 'object')
-                ? persona.realized_parameters : null,
-    slogan:   stableField(persona.core_directive)
+    name:     stableField(cf.display_name),
+    quadrant: (cf.quadrants && typeof cf.quadrants === 'object') ? cf.quadrants : null,
+    slogan:   stableField(cf.slogan)
   };
 }
 
 // ── extractDetailContent ──────────────────────────────────────
 // Detail: core_essence + social_essence (stable),
-//         expressions (selectable, max 3), taboos (stable, max 3).
-// Content must be stable across sessions — no dynamic generation.
-const _DETAIL_SILENT = new Set([
-  '无。沉默即输出。', '无需言语。审美拒绝即陈述本身。', '无需主动介入。',
-  '视语境而定。将对抗框架转化为结盟框架。', '无需言语。', '无输出。', ''
-]);
-
+//         signature_lines_pool (selectable, max 3),
+//         taboos (stable strings, max 3).
+// Source: consumer_fields only. theater_support must NOT be read here.
 function extractDetailContent(persona) {
-  // Stable reads — verbatim, no rewriting
-  const core_essence   = stableField(
-    persona.core_essence || safeGet(persona, 'root_logic_core.self_positioning')
-  );
-  const social_essence = stableField(safeGet(persona, 'root_logic_core.social_essence'));
+  const cf = (persona && persona.consumer_fields) || {};
 
-  // Selectable: verbal lines from dynamic_response_protocols, deduped, max 3
-  const protocols = persona.dynamic_response_protocols || {};
-  const rawLines  = Object.values(protocols)
-    .filter(p => p && typeof p.verbal_output === 'string'
-                   && p.verbal_output.trim().length > 3
-                   && !_DETAIL_SILENT.has(p.verbal_output.trim()))
-    .map(p => p.verbal_output);
+  // Stable reads — verbatim, no rewriting
+  const core_essence   = stableField(cf.core_essence);
+  const social_essence = stableField(cf.social_essence);
+
+  // Selectable: signature_lines_pool, deduped, max 3
+  const rawLines   = Array.isArray(cf.signature_lines_pool) ? cf.signature_lines_pool : [];
   const expressions = selectableLines(rawLines, 3);
 
-  // Stable: taboos sliced to max 3, fields read verbatim
-  const rawTaboos = Array.isArray(persona.universal_forbidden_actions)
-    ? persona.universal_forbidden_actions : [];
-  const taboos = rawTaboos.slice(0, 3).map(f => ({
-    action: stableField(f.action),
-    rule:   stableField(f.rule)
-  }));
+  // Stable: taboos as strings, sliced to max 3
+  const rawTaboos = Array.isArray(cf.taboos) ? cf.taboos : [];
+  const taboos    = rawTaboos.slice(0, 3).map(t => stableField(t));
 
   return { core_essence, social_essence, expressions, taboos };
 }
 
 // ── BROWSE QUADRANT BLOCK ─────────────────────────────────────
-// Builds a compact 2×2 E/O/R/B indicator grid from realized_parameters.
-// Values are scaled from [-1,1] to integer percentages with sign.
+// Builds a compact 2×2 E/O/R/B indicator grid from consumer_fields.quadrants.
+// Values are plain numbers in [-1, 1]; scaled to integer percentages with sign.
 function buildQuadrantBlock(params) {
   if (!params || typeof params !== 'object') return '';
   const dims  = ['E', 'O', 'R', 'B'];
   const cells = dims.map(k => {
-    const entry = params[k];
-    if (!entry || typeof entry.value !== 'number') return '';
-    const v   = entry.value;
+    const v = params[k];
+    if (typeof v !== 'number') return '';
     const pct = (v >= 0 ? '+' : '') + Math.round(v * 100);
     const col = v >= 0 ? '#00f2ff' : '#e05a20';
     return `<div style="display:flex;justify-content:space-between;align-items:center;` +
@@ -723,7 +563,7 @@ async function initCarousel() {
     const btnDisable  = p.failed ? 'disabled'  : '';
     const onclickAttr = p.failed ? ''           : `onclick="openPersonaDetail('${p.id}')"`;
 
-    // Browse card: rendered via extractBrowseContent (stable fields only)
+    // Browse card: rendered via extractBrowseContent (consumer_fields only)
     const browse       = p.failed ? null : extractBrowseContent(p);
     const quadrantHtml = browse ? buildQuadrantBlock(browse.quadrant) : '';
     const cardName     = browse ? browse.name   : p.id;
@@ -789,21 +629,21 @@ async function openPersonaDetail(personaId) {
   if (btn) { btn.textContent = '加载中...'; btn.disabled = true; }
 
   try {
-    // loadPersona fetches + normalises full data → stores in currentPersonaData
+    // loadPersona fetches + validates full data → stores in currentPersonaData
     // selectedPersona is NOT set here; that only happens in activateFromDetail()
     await loadPersona(cleanId);
 
     const data = currentPersonaData;
 
     // ── Populate fields via extraction layer ──────────────────
-    // Stable fields go through stableField(); selectable through extractDetailContent().
+    // All reads go through consumer_fields via extractDetailContent().
 
-    // Header: name (stable)
+    // Header: display_name (stable) — from consumer_fields
     const nameEl = document.getElementById('detail-persona-name');
-    nameEl.innerText   = stableField(data.name);
+    nameEl.innerText   = stableField(data.consumer_fields.display_name);
     nameEl.style.color = color;
 
-    // All Detail content extracted through extractDetailContent
+    // All Detail content extracted through extractDetailContent (consumer_fields only)
     const detail = extractDetailContent(data);
 
     // 核心本质 (stable)
@@ -818,9 +658,9 @@ async function openPersonaDetail(personaId) {
       ? detail.expressions.map(e => `<div class="detail-expr-line">↳ ${e}</div>`).join('')
       : `<div class="detail-expr-line">${MISSING}</div>`;
 
-    // 人物禁忌 (stable, max 3)
+    // 人物禁忌 (stable strings, max 3 — no action/rule splitting)
     document.getElementById('detail-forbidden').innerText = detail.taboos.length > 0
-      ? detail.taboos.map(f => `${f.action.split(/——|—|-/)[0].trim()}：${f.rule}`).join('\n\n')
+      ? detail.taboos.join('\n\n')
       : MISSING;
 
     // Style activate button with persona colour
@@ -841,7 +681,7 @@ async function openPersonaDetail(personaId) {
     setTimeout(() => panel.classList.remove('detail-entering'), 260);
     window.scrollTo(0, 0);
 
-    console.log(`[Detail] ✓ Showing detail for: ${data.name} (index ${currentCarouselIndex})`);
+    console.log(`[Detail] ✓ Showing detail for: ${safeStr(data.consumer_fields.display_name)} (index ${currentCarouselIndex})`);
   } catch (e) {
     console.error('[Detail] ✗ Load failed:', e.message);
     showError(`人格协议加载失败\n\n原因：${e.message}\n\n请检查网络或刷新重试。`);
@@ -901,7 +741,7 @@ function activateFromDetail() {
   // Set activation state before transition so Config is ready
   selectedPersona = cleanId;
   const display = document.getElementById('active-persona-display');
-  display.innerText   = currentPersonaData.name;
+  display.innerText   = safeStr(currentPersonaData.consumer_fields.display_name);
   display.style.color = color;
 
   // Fade out Detail, then show Config
@@ -912,144 +752,101 @@ function activateFromDetail() {
     panel.classList.remove('detail-leaving');
     document.getElementById('config-panel').classList.remove('hidden');
     window.scrollTo(0, 0);
-    console.log(`[Detail] ✓ Activated: ${currentPersonaData.name} → Config`);
+    console.log(`[Detail] ✓ Activated: ${safeStr(currentPersonaData.consumer_fields.display_name)} → Config`);
   }, 150);
 }
 
 // ── THEATER CONTENT EXTRACTOR ────────────────────────────────
-// Produces the 4 Theater display blocks from mapped runtime persona data.
+// Produces the 4 Theater display blocks from theater_support fields.
+// Source: theater_support only. consumer_fields text must NOT appear here.
 // Extraction model:
-//   [0] 底层逻辑  — stable (root_logic_core, cognitive_filtering_algorithm) + dynamic (sceneOverlay)
-//   [1] 行为特征  — stable (physical_execution_constraints) + dynamic (sceneOverlay)
-//   [2] 语言风格  — selectable (dynamic_response_protocols verbal_output) + dynamic (sceneOverlay)
-//   [3] 反应机制  — stable (universal_forbidden_actions) + dynamic (sceneOverlay, attack protocol)
-// Dynamic AI response (callAIWithPersonaProtocol) may overlay these blocks at runtime —
-// it is kept entirely separate from stable/selectable extraction above.
-function extractTheaterContent(data, scene = '', target = '') {
+//   [0] 底层逻辑  — theater_support.logic_axes + scene overlay mind
+//   [1] 行为特征  — theater_support.expression_modulators + scene_tactics + scene overlay body
+//   [2] 语言风格  — theater_support.expression_modulators + reaction_cues + scene overlay speech
+//   [3] 反应机制  — theater_support.reaction_cues + scene overlay reaction
+// Dynamic AI response may overlay these blocks at runtime.
+function extractTheaterContent(data, scene = '', target = '', scale = '') {
   const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
   const targetProfile = TARGET_OVERLAYS[target]   || null;
-  const protocols     = data.dynamic_response_protocols;
 
-  // ── [0] 底层逻辑: persona core logic + scene-specific mindset ───
-  const rlc = data.root_logic_core;
-  const cfa = data.cognitive_filtering_algorithm;
+  const ts             = (data && data.theater_support) || {};
+  const logicAxes      = ts.logic_axes            || {};
+  const sceneTactics   = ts.scene_tactics         || {};
+  const expressionMods = ts.expression_modulators || {};
+  const reactionCues   = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
 
+  // Determine scene scale tactic (small vs large based on selector value)
+  const isLargeScale   = scale && (scale.includes('5-8') || scale.includes('>8'));
+  const scaleTactic    = isLargeScale
+    ? safeStr(sceneTactics.large_scale, safeStr(sceneTactics.small_scale, MISSING))
+    : safeStr(sceneTactics.small_scale, safeStr(sceneTactics.large_scale, MISSING));
+
+  const personaName = safeStr(data.consumer_fields && data.consumer_fields.display_name, '');
+
+  // ── [0] 底层逻辑: theater_support.logic_axes + scene overlay ───
   let mind;
   if (sceneOverlay) {
-    // Lead with scene-specific tactical mindset, then append persona's core logic
-    const noiseKey = Object.keys(cfa).find(k => k.includes('noise') || k.includes('processing'));
-    const noiseFilter = (noiseKey && cfa[noiseKey])
-      ? `\n\n【人格噪音过滤】\n${safeStr(cfa[noiseKey])}` : '';
     mind = `【场域特殊规则】\n${sceneOverlay.dynamics}`
          + `\n\n${sceneOverlay.tactical_focus.mind}`
-         + `\n\n【人格底色·${safeStr(data.name)}】\n${safeStr(rlc.self_positioning, '[数据缺失]')}`
-         + noiseFilter;
+         + `\n\n【人格底色${personaName ? `·${personaName}` : ''}】`
+         + `\n【互动焦点】${safeStr(logicAxes.interaction_focus, MISSING)}`
+         + `\n【情感防护】${safeStr(logicAxes.emotional_guard,   MISSING)}`
+         + `\n【权力动作】${safeStr(logicAxes.power_move,        MISSING)}`;
   } else {
-    const mindLines = [
-      `【社交本质】\n${safeStr(rlc.social_essence,  '[数据缺失]')}`,
-      `【自我定位】\n${safeStr(rlc.self_positioning, '[数据缺失]')}`,
-      `【权力来源】\n${safeStr(rlc.power_source,     '[数据缺失]')}`
-    ];
-    const noiseKey = Object.keys(cfa).find(k => k.includes('noise') || k.includes('processing'));
-    if (noiseKey && cfa[noiseKey]) mindLines.push(`【噪音过滤】\n${safeStr(cfa[noiseKey])}`);
-    mind = mindLines.join('\n\n');
+    mind = `【互动焦点】\n${safeStr(logicAxes.interaction_focus, MISSING)}`
+         + `\n\n【情感防护】\n${safeStr(logicAxes.emotional_guard, MISSING)}`
+         + `\n\n【权力动作】\n${safeStr(logicAxes.power_move,      MISSING)}`;
   }
-
-  // ── [1] 行为特征: persona physical rules + scene body layer ─────
-  const phys = data.physical_execution_constraints;
-  const gaze = phys.gaze_protocol  || {};
-  const lbuf = phys.latency_buffer || {};
-
-  const baseBodyLines = [
-    phys.center_of_gravity  ? `【重心·人格基准】\n${safeStr(phys.center_of_gravity)}`  : '',
-    gaze.rule               ? `【视线·人格基准】\n${safeStr(gaze.rule)}`               : '',
-    phys.breathing_protocol ? `【呼吸·人格基准】\n${safeStr(phys.breathing_protocol)}` : '',
-    phys.hand_constraints   ? `【手部·人格基准】\n${safeStr(phys.hand_constraints)}`   : '',
-    (lbuf.delay_seconds || lbuf.purpose)
-      ? `【延迟缓冲】${safeStr(lbuf.delay_seconds)} — ${safeStr(lbuf.purpose)}` : ''
-  ].filter(Boolean);
-
-  const body = sceneOverlay
-    ? sceneOverlay.tactical_focus.body + '\n\n' + baseBodyLines.join('\n\n')
-    : baseBodyLines.join('\n\n') || MISSING;
-
-  // ── [2] 语言风格: prioritise scene-relevant protocols ────────────
-  const SILENT = new Set([
-    '无。沉默即输出。', '无需言语。审美拒绝即陈述本身。', '无需主动介入。',
-    '视语境而定。将对抗框架转化为结盟框架。', '无需言语。', '无输出。', ''
-  ]);
-
-  let speech;
-  if (sceneOverlay) {
-    // Use the scene's pre-written speech tactics as primary content
-    speech = sceneOverlay.tactical_focus.speech;
-
-    // Append up to 2 matching persona protocols as bonus reference
-    const priorityKeys = new Set(sceneOverlay.priority_protocols);
-    const bonusEntries = Object.entries(protocols)
-      .filter(([key, p]) => {
-        if (!priorityKeys.has(key)) return false;
-        if (!p || typeof p !== 'object') return false;
-        const vo = safeStr(p.verbal_output);
-        return vo.length > 3 && !SILENT.has(vo);
-      })
-      .slice(0, 2)
-      .map(([key, p]) => {
-        const label = (p.signal && typeof p.signal === 'string')
-          ? p.signal.replace(/\n/g, '').slice(0, 40) : key;
-        return `【人格话术·${label}】\n↳ ${safeStr(p.verbal_output)}`;
-      });
-
-    if (bonusEntries.length > 0) {
-      speech += '\n\n' + bonusEntries.join('\n\n');
-    }
-  } else {
-    const verbalEntries = Object.entries(protocols)
-      .filter(([, p]) => {
-        if (!p || typeof p !== 'object') return false;
-        const vo = safeStr(p.verbal_output);
-        return vo.length > 3 && !SILENT.has(vo);
-      })
-      .slice(0, 4)
-      .map(([key, p]) => {
-        const label = (p.signal && typeof p.signal === 'string')
-          ? p.signal.replace(/\n/g, '').slice(0, 40) : key;
-        return `【${label}】\n↳ ${safeStr(p.verbal_output)}`;
-      });
-    speech = verbalEntries.length > 0
-      ? verbalEntries.join('\n\n')
-      : MISSING;
-  }
-
-  // ── [3] 反应机制: scene reaction layer + persona forbidden list ─
-  const forbidden = data.universal_forbidden_actions;
-  const forbiddenLines = forbidden.slice(0, 3).map(f => {
-    const raw   = safeStr(f.action, '未知禁忌');
-    const label = raw.split(/——|—|-/)[0].trim();
-    return `【禁忌·${label}】\n${safeStr(f.rule, '[规则内容缺失]')}`;
-  });
-
-  let reaction;
-  if (sceneOverlay) {
-    reaction = sceneOverlay.tactical_focus.reaction
-             + '\n\n' + forbiddenLines.join('\n\n');
-  } else {
-    let attackBlock = '';
-    if (protocols.attack && typeof protocols.attack === 'object') {
-      const atk       = protocols.attack;
-      const physOut   = safeStr(atk.physical_output);
-      const verbalOut = safeStr(atk.verbal_output) || safeStr(atk.logic);
-      attackBlock = `\n\n【攻击响应协议】\n${physOut}\n↳ ${verbalOut}`;
-    }
-    reaction = forbiddenLines.join('\n\n') + attackBlock || MISSING;
-  }
-
-  // Append target profile as a footer to the mind quadrant
   if (targetProfile) {
     mind += `\n\n【目标档案·${target}】\n${targetProfile}`;
   }
 
-  console.log(`[Extractor] ✓ Theater content extracted — Scene: ${scene || 'generic'}, Target: ${target || 'generic'}`);
+  // ── [1] 行为特征: expression_modulators + scene_tactics + scene overlay ─
+  const baseBodyLines = [
+    expressionMods.delivery_mode ? `【语言输出模式】${safeStr(expressionMods.delivery_mode)}` : '',
+    expressionMods.physicality   ? `【肢体语言基准】${safeStr(expressionMods.physicality)}`   : ''
+  ].filter(Boolean);
+  const baseBodyText = baseBodyLines.join('\n') || MISSING;
+
+  let body;
+  if (sceneOverlay) {
+    body = sceneOverlay.tactical_focus.body
+         + `\n\n【人格行为基准】\n${baseBodyText}`;
+  } else {
+    body = baseBodyText
+         + (scaleTactic !== MISSING ? `\n\n【场景战术】\n${scaleTactic}` : '');
+  }
+
+  // ── [2] 语言风格: scene overlay speech + reaction_cues as reference ──
+  let speech;
+  if (sceneOverlay) {
+    speech = sceneOverlay.tactical_focus.speech;
+    // Append up to 2 reaction_cues as persona-specific reference lines
+    const cueBonus = reactionCues.slice(0, 2).map(c =>
+      `【人格话术·${safeStr(c.trigger)}】\n↳ ${safeStr(c.guidance)}`
+    );
+    if (cueBonus.length > 0) speech += '\n\n' + cueBonus.join('\n\n');
+  } else {
+    const cueLines = reactionCues.map(c =>
+      `【${safeStr(c.trigger)}】\n↳ ${safeStr(c.guidance)}`
+    );
+    speech = `【输出风格】\n语言：${safeStr(expressionMods.delivery_mode, MISSING)}\n肢体：${safeStr(expressionMods.physicality, MISSING)}`
+           + (cueLines.length > 0 ? '\n\n' + cueLines.join('\n\n') : '');
+  }
+
+  // ── [3] 反应机制: theater_support.reaction_cues + scene overlay ───
+  const reactionLines = reactionCues.map(c =>
+    `【${safeStr(c.trigger)}】\n${safeStr(c.guidance)}`
+  );
+  let reaction;
+  if (sceneOverlay) {
+    reaction = sceneOverlay.tactical_focus.reaction
+             + (reactionLines.length > 0 ? '\n\n' + reactionLines.join('\n\n') : '');
+  } else {
+    reaction = reactionLines.join('\n\n') || MISSING;
+  }
+
+  console.log(`[Extractor] ✓ Theater content extracted — Scene: ${scene || 'generic'}, Target: ${target || 'generic'}, Scale: ${scale || 'default'}`);
   return { mind, body, speech, reaction };
 }
 
@@ -1073,12 +870,13 @@ async function startTheater() {
     return;
   }
 
+  const personaDisplayName = safeStr(currentPersonaData.consumer_fields.display_name);
   console.log(`[Theater] Starting — Persona: ${currentPersonaData.id}, Scene: ${scene}, Target: ${target}`);
 
   // ── Phase 1: Show calibration overlay immediately ────────
   const syncOverlay     = document.getElementById('sync-overlay');
   const syncPersonaName = document.getElementById('sync-persona-name');
-  syncPersonaName.innerText = currentPersonaData.name;
+  syncPersonaName.innerText = personaDisplayName;
 
   const personaColor = getPersonaColor();
 
@@ -1104,7 +902,7 @@ async function startTheater() {
   if (syncStatus) {
     syncStatus.innerHTML = `
       <span class="status-label">PERSONA_ID:</span>
-        <span class="status-value">${currentPersonaData.id} — ${currentPersonaData.archetype}</span><br>
+        <span class="status-value">${currentPersonaData.id} — ${safeStr(currentPersonaData.archetype_id)}</span><br>
       <span class="status-label">ENV_SCAN:</span>
         <span class="status-value">${scene}</span><br>
       <span class="status-label">TARGET_LOCK:</span>
@@ -1116,8 +914,8 @@ async function startTheater() {
     `;
   }
 
-  // ── Phase 2: Extract local content immediately ───────────
-  const localContent = extractTheaterContent(currentPersonaData, scene, target);
+  // ── Phase 2: Extract local content immediately (theater_support) ─
+  const localContent = extractTheaterContent(currentPersonaData, scene, target, scale);
   contentData[0].text = localContent.mind;
   contentData[1].text = localContent.body;
   contentData[2].text = localContent.speech;
@@ -1140,7 +938,7 @@ async function startTheater() {
     console.log('[Theater] ✓ AI enhancement applied.');
   } catch (e) {
     const reason = e.message === 'AI_TIMEOUT' ? 'timed out' : e.message;
-    console.warn(`[Theater] AI ${reason} — running on local protocol data.`);
+    console.warn(`[Theater] AI ${reason} — running on local theater_support data.`);
   }
 
   // ── Phase 4: Transition at SYNC_DURATION_MS ──────────────
@@ -1153,62 +951,70 @@ async function startTheater() {
     startGachaSystem();
     updateGuidance(0);
 
-    console.log(`[Theater] ✓ ${currentPersonaData.name} — 面具激活完成。`);
+    console.log(`[Theater] ✓ ${personaDisplayName} — 面具激活完成。`);
   }, CONFIG.SYNC_DURATION_MS);
 }
 
 // ── AI PROTOCOL GENERATOR ─────────────────────────────────────
+// Builds a prompt using ONLY consumer_fields and theater_support.
+// No old-schema fields (core_directive, root_logic_core, etc.) are read here.
 async function callAIWithPersonaProtocol(personaData, scene, target, scale, intention) {
   const url = 'https://api.moonshot.cn/v1/chat/completions';
 
-  const forbiddenList = (personaData.universal_forbidden_actions || [])
-    .map(f => `- ${safeStr(f.action)}：${safeStr(f.rule)}`)
-    .join('\n') || '[禁忌列表缺失]';
+  const cf = personaData.consumer_fields || {};
+  const ts = personaData.theater_support || {};
 
-  const phys = personaData.physical_execution_constraints || {};
-  const gaze = phys.gaze_protocol  || {};
-  const lbuf = phys.latency_buffer || {};
-  const physSummary = [
-    `重心：${safeStr(phys.center_of_gravity)}`,
-    `视线规则：${safeStr(gaze.rule)}`,
-    `延迟缓冲：${safeStr(lbuf.delay_seconds)}`,
-    `呼吸：${safeStr(phys.breathing_protocol)}`
-  ].join('\n');
+  // consumer_fields — display layer
+  const displayName  = safeStr(cf.display_name,  MISSING);
+  const slogan       = safeStr(cf.slogan,         MISSING);
+  const taboosList   = Array.isArray(cf.taboos) && cf.taboos.length > 0
+    ? cf.taboos.map(t => `- ${safeStr(t)}`).join('\n')
+    : '[禁忌列表缺失]';
 
-  const cfa = personaData.cognitive_filtering_algorithm || {};
-  const cfaSummary = Object.entries(cfa)
-    .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
-    .join('\n') || '[认知过滤算法缺失]';
+  // theater_support — runtime layer
+  const logicAxes      = ts.logic_axes            || {};
+  const sceneTactics   = ts.scene_tactics         || {};
+  const expressionMods = ts.expression_modulators || {};
+  const reactionCues   = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
 
-  const rlc = personaData.root_logic_core || {};
+  const isLargeScale = scale && (scale.includes('5-8') || scale.includes('>8'));
+  const scaleTactic  = isLargeScale
+    ? safeStr(sceneTactics.large_scale, safeStr(sceneTactics.small_scale))
+    : safeStr(sceneTactics.small_scale, safeStr(sceneTactics.large_scale));
+
+  const reactionCueSummary = reactionCues.map(c =>
+    `${safeStr(c.trigger)}: ${safeStr(c.guidance)}`
+  ).join('\n') || '[反应线索缺失]';
 
   // Pull scenario + target overlays for prompt injection
   const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
   const targetProfile = TARGET_OVERLAYS[target]   || null;
-  const priorityProtocolList = sceneOverlay
-    ? sceneOverlay.priority_protocols.join('、') : '全协议均衡应用';
 
   const systemPrompt = `你是 Persona Draft 的核心战术逻辑引擎。
 严格依据以下【人格系统协议】进行深度行为对齐，不得混入其他人格特征。
 
 ━━ 人格协议 ━━
-ID: ${safeStr(personaData.id)} | 名称: ${safeStr(personaData.name)} (${safeStr(personaData.subtitle)})
-原型: ${safeStr(personaData.archetype)}
-核心指令: ${safeStr(personaData.core_directive)}
+ID: ${safeStr(personaData.id)} | 名称: ${displayName}
+原型: ${safeStr(personaData.archetype_id)}
+核心口号: ${slogan}
 
-━━ 底层逻辑核心 ━━
-社交本质: ${safeStr(rlc.social_essence)}
-自我定位: ${safeStr(rlc.self_positioning)}
-权力来源: ${safeStr(rlc.power_source)}
+━━ 战术逻辑轴 (theater_support.logic_axes) ━━
+互动焦点: ${safeStr(logicAxes.interaction_focus)}
+情感防护: ${safeStr(logicAxes.emotional_guard)}
+权力动作: ${safeStr(logicAxes.power_move)}
 
-━━ 认知过滤算法 ━━
-${cfaSummary}
+━━ 输出风格模块 (theater_support.expression_modulators) ━━
+语言模式: ${safeStr(expressionMods.delivery_mode)}
+肢体基准: ${safeStr(expressionMods.physicality)}
 
-━━ 物理执行约束 ━━
-${physSummary}
+━━ 反应线索 (theater_support.reaction_cues) ━━
+${reactionCueSummary}
 
-━━ 绝对禁忌 ━━
-${forbiddenList}
+━━ 场景战术 (theater_support.scene_tactics) ━━
+${scaleTactic || '[场景战术缺失]'}
+
+━━ 绝对禁忌 (consumer_fields.taboos) ━━
+${taboosList}
 
 ━━ 实验场域配置 ━━
 场景: ${scene}
@@ -1219,12 +1025,12 @@ ${forbiddenList}
 ━━ 战场特殊规则（本场域专属，优先级高于通用协议）━━
 ${sceneOverlay ? `场域动力学: ${sceneOverlay.dynamics}` : '无特殊场域规则。'}
 ${targetProfile ? `目标档案: ${targetProfile}` : ''}
-本场域优先激活的人格协议: ${priorityProtocolList}
 
 ━━ 生成任务 ━━
 基于以上完整协议与场域参数，生成四维实战指令。
 每个维度必须体现【本场域的特殊动力学】与【人格协议的融合】，而非通用人格描述。
 不同场景的输出必须有显著差异——「商务谈判」和「私人相亲」的指令风格应截然不同。
+禁止将 consumer_fields 的展示文本（口号、核心本质等）原样复读进输出。
 
 必须只输出纯 JSON，不带任何解释或 markdown 标记：
 {"mind":"...","body":"...","speech":"...","reaction":"..."}
@@ -1345,27 +1151,27 @@ async function triggerGacha() {
 
   let personaTips = [];
 
-  // Forbidden action reminders from loaded JSON
-  if (currentPersonaData && Array.isArray(currentPersonaData.universal_forbidden_actions)) {
-    personaTips = currentPersonaData.universal_forbidden_actions.map(f => {
-      const raw   = safeStr(f.action, '未知禁忌');
-      const label = raw.split(/——|—|-/)[0].trim();
-      return `【禁忌提醒·${label}】${safeStr(f.rule)}`;
-    });
-  }
+  if (currentPersonaData) {
+    const cf = currentPersonaData.consumer_fields || {};
+    const ts = currentPersonaData.theater_support || {};
 
-  // One random verbal output from dynamic protocols
-  if (currentPersonaData && currentPersonaData.dynamic_response_protocols) {
-    const SILENT = new Set(['无。沉默即输出。', '视语境而定。将对抗框架转化为结盟框架。', '']);
-    const available = Object.values(currentPersonaData.dynamic_response_protocols).filter(p =>
-      p && typeof p === 'object' &&
-      typeof p.verbal_output === 'string' &&
-      p.verbal_output.length > 5 &&
-      !SILENT.has(p.verbal_output)
-    );
-    if (available.length > 0) {
-      const pick = available[Math.floor(Math.random() * available.length)];
-      personaTips.push(`【破局语言·参考】"${safeStr(pick.verbal_output)}"`);
+    // Taboo reminders from consumer_fields.taboos (strings)
+    if (Array.isArray(cf.taboos)) {
+      personaTips = cf.taboos.map(t => `【禁忌提醒】${safeStr(t)}`);
+    }
+
+    // One random reaction cue from theater_support.reaction_cues
+    const cues = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
+    if (cues.length > 0) {
+      const pick = cues[Math.floor(Math.random() * cues.length)];
+      personaTips.push(`【应激提醒·${safeStr(pick.trigger)}】${safeStr(pick.guidance)}`);
+    }
+
+    // One random signature line from consumer_fields.signature_lines_pool
+    const sigLines = Array.isArray(cf.signature_lines_pool) ? cf.signature_lines_pool : [];
+    if (sigLines.length > 0) {
+      const pick = sigLines[Math.floor(Math.random() * sigLines.length)];
+      personaTips.push(`【破局语言·参考】"${safeStr(pick)}"`);
     }
   }
 
