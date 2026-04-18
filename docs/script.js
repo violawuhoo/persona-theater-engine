@@ -401,6 +401,11 @@ function remapCompiledPersona(raw) {
     subtitle:       safeStr(id.subtitle,     SCHEMA_DEFAULTS.subtitle),
     archetype:      safeStr(raw.archetype_id, SCHEMA_DEFAULTS.archetype),
     core_directive: safeStr(sf.core_directive, SCHEMA_DEFAULTS.core_directive),
+    // core_essence: self-anchoring premise line (Detail 核心本质)
+    core_essence:   safeStr(id.premise || sf.core_directive, SCHEMA_DEFAULTS.core_directive),
+    // realized_parameters: E/O/R/B numeric indicators (Browse quadrant block)
+    realized_parameters: (raw.realized_parameters && typeof raw.realized_parameters === 'object')
+      ? raw.realized_parameters : null,
     root_logic_core: {
       ...SCHEMA_DEFAULTS.root_logic_core,
       ...(sf.core_logic || {})
@@ -568,28 +573,130 @@ async function loadPersonaIndex() {
     if (result.status === 'fulfilled') {
       const norm = normalizePersonaSchema(result.value.data);
       index.push({
-        id:             norm.id,
-        name:           norm.name,
-        subtitle:       norm.subtitle,
-        archetype:      norm.archetype,
-        core_directive: norm.core_directive,
-        color:          result.value.color
+        id:                  norm.id,
+        name:                norm.name,
+        subtitle:            norm.subtitle,
+        archetype:           norm.archetype,
+        core_directive:      norm.core_directive,
+        core_essence:        norm.core_essence  || norm.core_directive,
+        realized_parameters: norm.realized_parameters || null,
+        color:               result.value.color
       });
     } else {
       console.warn(`[Index] ✗ Failed to load ${entry.id}:`, result.reason.message);
       index.push({
-        id:             entry.id,
-        name:           entry.id,
-        subtitle:       'Protocol Unavailable',
-        archetype:      '数据加载失败',
-        core_directive: '该人格协议文件无法加载，请检查文件是否存在。',
-        color:          entry.color,
-        failed:         true
+        id:                  entry.id,
+        name:                entry.id,
+        subtitle:            'Protocol Unavailable',
+        archetype:           '数据加载失败',
+        core_directive:      '该人格协议文件无法加载，请检查文件是否存在。',
+        core_essence:        null,
+        realized_parameters: null,
+        color:               entry.color,
+        failed:              true
       });
     }
   });
 
   return index;
+}
+
+// ── CONTENT EXTRACTION LAYER ─────────────────────────────────
+// Implements the stable / selectable / dynamic model at runtime.
+// All Browse, Detail, and Theater rendering must go through these functions.
+// Direct inline field access on persona data is not permitted in render paths.
+
+// Sentinel returned for any missing stable field — never fabricate a replacement.
+const MISSING = '[数据缺失]';
+
+// Stable read: returns value verbatim; MISSING if absent or empty.
+function stableField(value) {
+  const s = safeStr(value);
+  return s.length > 0 ? s : MISSING;
+}
+
+// Selectable extraction: deduplicate + truncate only — no rewriting allowed.
+function selectableLines(candidates, max) {
+  const seen   = new Set();
+  const result = [];
+  for (const raw of candidates) {
+    const line = safeStr(raw).split('\n')[0].replace(/^↳\s*/, '').trim();
+    if (line.length > 3 && !seen.has(line)) {
+      seen.add(line);
+      result.push(line);
+      if (result.length >= max) break;
+    }
+  }
+  return result;
+}
+
+// ── extractBrowseContent ──────────────────────────────────────
+// Browse: name (stable) + quadrant metrics (stable) + slogan (stable).
+// Dynamic content must NOT appear here.
+function extractBrowseContent(persona) {
+  return {
+    name:     stableField(persona.name),
+    quadrant: (persona.realized_parameters && typeof persona.realized_parameters === 'object')
+                ? persona.realized_parameters : null,
+    slogan:   stableField(persona.core_directive)
+  };
+}
+
+// ── extractDetailContent ──────────────────────────────────────
+// Detail: core_essence + social_essence (stable),
+//         expressions (selectable, max 3), taboos (stable, max 3).
+// Content must be stable across sessions — no dynamic generation.
+const _DETAIL_SILENT = new Set([
+  '无。沉默即输出。', '无需言语。审美拒绝即陈述本身。', '无需主动介入。',
+  '视语境而定。将对抗框架转化为结盟框架。', '无需言语。', '无输出。', ''
+]);
+
+function extractDetailContent(persona) {
+  // Stable reads — verbatim, no rewriting
+  const core_essence   = stableField(
+    persona.core_essence || safeGet(persona, 'root_logic_core.self_positioning')
+  );
+  const social_essence = stableField(safeGet(persona, 'root_logic_core.social_essence'));
+
+  // Selectable: verbal lines from dynamic_response_protocols, deduped, max 3
+  const protocols = persona.dynamic_response_protocols || {};
+  const rawLines  = Object.values(protocols)
+    .filter(p => p && typeof p.verbal_output === 'string'
+                   && p.verbal_output.trim().length > 3
+                   && !_DETAIL_SILENT.has(p.verbal_output.trim()))
+    .map(p => p.verbal_output);
+  const expressions = selectableLines(rawLines, 3);
+
+  // Stable: taboos sliced to max 3, fields read verbatim
+  const rawTaboos = Array.isArray(persona.universal_forbidden_actions)
+    ? persona.universal_forbidden_actions : [];
+  const taboos = rawTaboos.slice(0, 3).map(f => ({
+    action: stableField(f.action),
+    rule:   stableField(f.rule)
+  }));
+
+  return { core_essence, social_essence, expressions, taboos };
+}
+
+// ── BROWSE QUADRANT BLOCK ─────────────────────────────────────
+// Builds a compact 2×2 E/O/R/B indicator grid from realized_parameters.
+// Values are scaled from [-1,1] to integer percentages with sign.
+function buildQuadrantBlock(params) {
+  if (!params || typeof params !== 'object') return '';
+  const dims  = ['E', 'O', 'R', 'B'];
+  const cells = dims.map(k => {
+    const entry = params[k];
+    if (!entry || typeof entry.value !== 'number') return '';
+    const v   = entry.value;
+    const pct = (v >= 0 ? '+' : '') + Math.round(v * 100);
+    const col = v >= 0 ? '#00f2ff' : '#e05a20';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;` +
+           `padding:3px 6px;background:rgba(255,255,255,0.04);border-radius:4px;">` +
+           `<span style="font-size:9px;opacity:0.45;letter-spacing:.08em">${k}</span>` +
+           `<span style="font-size:11px;font-weight:600;color:${col}">${pct}</span></div>`;
+  }).filter(Boolean);
+  if (cells.length === 0) return '';
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:8px 0;">${cells.join('')}</div>`;
 }
 
 // ── CAROUSEL UI ───────────────────────────────────────────────
@@ -616,11 +723,16 @@ async function initCarousel() {
     const btnDisable  = p.failed ? 'disabled'  : '';
     const onclickAttr = p.failed ? ''           : `onclick="openPersonaDetail('${p.id}')"`;
 
-    // Browse card: name + core_directive only — secondary info lives in Detail
+    // Browse card: rendered via extractBrowseContent (stable fields only)
+    const browse       = p.failed ? null : extractBrowseContent(p);
+    const quadrantHtml = browse ? buildQuadrantBlock(browse.quadrant) : '';
+    const cardName     = browse ? browse.name   : p.id;
+    const cardSlogan   = browse ? browse.slogan : MISSING;
     wrapper.innerHTML = `
       <div class="card ${p.failed ? 'card--failed' : ''}">
-        <div class="title">${p.name}</div>
-        <div class="desc">${p.failed ? '该人格协议加载失败' : `"${p.core_directive}"`}</div>
+        <div class="title">${cardName}</div>
+        ${quadrantHtml}
+        <div class="desc">${p.failed ? '该人格协议加载失败' : `"${cardSlogan}"`}</div>
         <button class="btn" style="background:${p.color};box-shadow:0 0 18px ${p.color}44;"
                 ${onclickAttr} ${btnDisable}>${btnLabel}</button>
       </div>
@@ -683,45 +795,33 @@ async function openPersonaDetail(personaId) {
 
     const data = currentPersonaData;
 
-    // ── Populate fields (all from runtime data, no hardcoding) ─
+    // ── Populate fields via extraction layer ──────────────────
+    // Stable fields go through stableField(); selectable through extractDetailContent().
 
-    // Header: name only, tinted with persona colour
+    // Header: name (stable)
     const nameEl = document.getElementById('detail-persona-name');
-    nameEl.innerText   = data.name;
+    nameEl.innerText   = stableField(data.name);
     nameEl.style.color = color;
 
-    // Core directive
-    document.getElementById('detail-core-directive').innerText =
-      safeStr(data.core_directive, '[核心指令缺失]');
+    // All Detail content extracted through extractDetailContent
+    const detail = extractDetailContent(data);
 
-    // 社交本质
-    document.getElementById('detail-social-essence').innerText =
-      safeStr(safeGet(data, 'root_logic_core.social_essence'), '[社交本质缺失]');
+    // 核心本质 (stable)
+    document.getElementById('detail-core-essence').innerText   = detail.core_essence;
 
-    // 典型表达: 2–3 non-silent verbal outputs from dynamic_response_protocols (first line each)
-    const EXPR_SILENT = new Set([
-      '无。沉默即输出。', '无需言语。审美拒绝即陈述本身。', '无需主动介入。',
-      '视语境而定。将对抗框架转化为结盟框架。', '无需言语。', '无输出。', ''
-    ]);
-    const protocols   = data.dynamic_response_protocols || {};
-    const expressions = Object.values(protocols)
-      .filter(p => p && typeof p.verbal_output === 'string'
-                     && p.verbal_output.length > 5
-                     && !EXPR_SILENT.has(p.verbal_output.trim()))
-      .slice(0, 3)
-      .map(p => safeStr(p.verbal_output).split('\n')[0].replace(/^↳\s*/, '').trim());
+    // 社交本质 (stable)
+    document.getElementById('detail-social-essence').innerText = detail.social_essence;
+
+    // 典型表达 (selectable, max 3, deduped)
     const exprEl = document.getElementById('detail-expressions');
-    exprEl.innerHTML = expressions.length > 0
-      ? expressions.map(e => `<div class="detail-expr-line">↳ ${e}</div>`).join('')
-      : '<div class="detail-expr-line">暂无典型表达数据</div>';
+    exprEl.innerHTML = detail.expressions.length > 0
+      ? detail.expressions.map(e => `<div class="detail-expr-line">↳ ${e}</div>`).join('')
+      : `<div class="detail-expr-line">${MISSING}</div>`;
 
-    // 禁忌: 1–2 forbidden actions, short label + rule
-    const forbidden = data.universal_forbidden_actions || [];
-    document.getElementById('detail-forbidden').innerText = forbidden.length > 0
-      ? forbidden.slice(0, 2)
-          .map(f => `${safeStr(f.action).split(/——|—|-/)[0].trim()}：${safeStr(f.rule)}`)
-          .join('\n\n')
-      : '[禁忌数据缺失]';
+    // 人物禁忌 (stable, max 3)
+    document.getElementById('detail-forbidden').innerText = detail.taboos.length > 0
+      ? detail.taboos.map(f => `${f.action.split(/——|—|-/)[0].trim()}：${f.rule}`).join('\n\n')
+      : MISSING;
 
     // Style activate button with persona colour
     const activateBtn = document.getElementById('detail-activate-btn');
@@ -816,14 +916,21 @@ function activateFromDetail() {
   }, 150);
 }
 
-// ── SCHEMA-SAFE THEATER CONTENT EXTRACTOR ────────────────────
-// Now scene/target-aware: blends persona data with scenario overlays.
+// ── THEATER CONTENT EXTRACTOR ────────────────────────────────
+// Produces the 4 Theater display blocks from mapped runtime persona data.
+// Extraction model:
+//   [0] 底层逻辑  — stable (root_logic_core, cognitive_filtering_algorithm) + dynamic (sceneOverlay)
+//   [1] 行为特征  — stable (physical_execution_constraints) + dynamic (sceneOverlay)
+//   [2] 语言风格  — selectable (dynamic_response_protocols verbal_output) + dynamic (sceneOverlay)
+//   [3] 反应机制  — stable (universal_forbidden_actions) + dynamic (sceneOverlay, attack protocol)
+// Dynamic AI response (callAIWithPersonaProtocol) may overlay these blocks at runtime —
+// it is kept entirely separate from stable/selectable extraction above.
 function extractTheaterContent(data, scene = '', target = '') {
   const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
   const targetProfile = TARGET_OVERLAYS[target]   || null;
   const protocols     = data.dynamic_response_protocols;
 
-  // ── [0] 心法: persona core logic + scene-specific mindset ───
+  // ── [0] 底层逻辑: persona core logic + scene-specific mindset ───
   const rlc = data.root_logic_core;
   const cfa = data.cognitive_filtering_algorithm;
 
@@ -848,7 +955,7 @@ function extractTheaterContent(data, scene = '', target = '') {
     mind = mindLines.join('\n\n');
   }
 
-  // ── [1] 姿态: persona physical rules + scene body layer ─────
+  // ── [1] 行为特征: persona physical rules + scene body layer ─────
   const phys = data.physical_execution_constraints;
   const gaze = phys.gaze_protocol  || {};
   const lbuf = phys.latency_buffer || {};
@@ -864,9 +971,9 @@ function extractTheaterContent(data, scene = '', target = '') {
 
   const body = sceneOverlay
     ? sceneOverlay.tactical_focus.body + '\n\n' + baseBodyLines.join('\n\n')
-    : baseBodyLines.join('\n\n') || '[物理约束数据缺失]';
+    : baseBodyLines.join('\n\n') || MISSING;
 
-  // ── [2] 语言: prioritise scene-relevant protocols ────────────
+  // ── [2] 语言风格: prioritise scene-relevant protocols ────────────
   const SILENT = new Set([
     '无。沉默即输出。', '无需言语。审美拒绝即陈述本身。', '无需主动介入。',
     '视语境而定。将对抗框架转化为结盟框架。', '无需言语。', '无输出。', ''
@@ -911,10 +1018,10 @@ function extractTheaterContent(data, scene = '', target = '') {
       });
     speech = verbalEntries.length > 0
       ? verbalEntries.join('\n\n')
-      : '维持沉默。沉默是最锐利的话术武器。';
+      : MISSING;
   }
 
-  // ── [3] 反应: scene reaction layer + persona forbidden list ─
+  // ── [3] 反应机制: scene reaction layer + persona forbidden list ─
   const forbidden = data.universal_forbidden_actions;
   const forbiddenLines = forbidden.slice(0, 3).map(f => {
     const raw   = safeStr(f.action, '未知禁忌');
@@ -934,7 +1041,7 @@ function extractTheaterContent(data, scene = '', target = '') {
       const verbalOut = safeStr(atk.verbal_output) || safeStr(atk.logic);
       attackBlock = `\n\n【攻击响应协议】\n${physOut}\n↳ ${verbalOut}`;
     }
-    reaction = forbiddenLines.join('\n\n') + attackBlock || '[反应机制数据缺失]';
+    reaction = forbiddenLines.join('\n\n') + attackBlock || MISSING;
   }
 
   // Append target profile as a footer to the mind quadrant
@@ -1163,8 +1270,8 @@ ${targetProfile ? `目标档案: ${targetProfile}` : ''}
 
 // ── WHEEL + CONTENT DISPLAY ───────────────────────────────────
 const contentData = [
-  { title: '底层心法', text: '正在同步人格底色...请稍后。' },
-  { title: '物理姿态', text: '正在校准肢体语言...请稍后。' },
+  { title: '底层逻辑', text: '正在同步人格底色...请稍后。' },
+  { title: '行为特征', text: '正在校准肢体语言...请稍后。' },
   { title: '语言风格', text: '正在加载话术补丁...请稍后。' },
   { title: '反应机制', text: '正在预设应激方案...请稍后。' }
 ];
