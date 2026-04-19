@@ -206,9 +206,11 @@
     
   </div>
 
-  <!-- Load order: constants → utils → state → main script -->
+  <!-- Load order: constants → utils → extractors → gacha → state → main script -->
   <script src="constants.js"></script>
   <script src="utils.js"></script>
+  <script src="data/content-extractors.js"></script>
+  <script src="domain/gacha-engine.js"></script>
   <script src="state/app-state.js"></script>
   <script src="script.js"></script>
 </body>
