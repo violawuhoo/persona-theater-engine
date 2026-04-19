@@ -15,28 +15,7 @@
 // PERSONA_MANIFEST_PATH, LEGACY_PERSONA_COLORS → docs/constants.js
 // runtimePersonaRegistry, runtimeManifestMeta   → docs/state/app-state.js
 
-function normalizeManifestPath(pathValue) {
-  const raw = safeStr(pathValue).trim();
-  if (!raw) return '';
-  if (raw.startsWith('./')) return raw;
-  if (raw.startsWith('/')) return `.${raw}`;
-  return `./${raw}`;
-}
-
-function deterministicColorFromId(id) {
-  const seed = safeStr(id, 'UNKNOWN');
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 72% 55%)`;
-}
-
-function getColorForPersonaId(id) {
-  const cleanId = safeStr(id).trim().toUpperCase();
-  return LEGACY_PERSONA_COLORS[cleanId] || deterministicColorFromId(cleanId);
-}
+// normalizeManifestPath, deterministicColorFromId, getColorForPersonaId → docs/utils.js
 
 async function loadPersonaManifest() {
   console.log(`[Manifest] → Fetching: ${PERSONA_MANIFEST_PATH}`);
@@ -107,21 +86,7 @@ async function ensureRuntimeRegistry() {
 // Moved to docs/constants.js
 
 // ── UTILITIES ─────────────────────────────────────────────────
-
-// Safe string getter — returns fallback if val is not a usable string.
-function safeStr(val, fallback = '') {
-  if (val === null || val === undefined) return fallback;
-  if (typeof val !== 'string') return String(val);
-  return val.trim() || fallback;
-}
-
-// Safe deep-get — safeGet(obj, 'a.b.c', default)
-function safeGet(obj, path, fallback = '') {
-  return path.split('.').reduce((acc, key) => {
-    if (acc === null || acc === undefined) return fallback;
-    return acc[key] !== undefined ? acc[key] : fallback;
-  }, obj);
-}
+// safeStr, safeGet → docs/utils.js
 
 // Returns the colour for the currently selected persona.
 function getPersonaColor() {
@@ -341,28 +306,8 @@ async function loadPersonaIndex() {
 //   Browse / Detail → consumer_fields only
 //   Theater        → theater_support only
 
-// MISSING sentinel → docs/constants.js
-
-// Stable read: returns value verbatim; MISSING if absent or empty.
-function stableField(value) {
-  const s = safeStr(value);
-  return s.length > 0 ? s : MISSING;
-}
-
-// Selectable extraction: deduplicate + truncate only — no rewriting allowed.
-function selectableLines(candidates, max) {
-  const seen   = new Set();
-  const result = [];
-  for (const raw of candidates) {
-    const line = safeStr(raw).split('\n')[0].replace(/^↳\s*/, '').trim();
-    if (line.length > 3 && !seen.has(line)) {
-      seen.add(line);
-      result.push(line);
-      if (result.length >= max) break;
-    }
-  }
-  return result;
-}
+// MISSING sentinel    → docs/constants.js
+// stableField, selectableLines → docs/utils.js
 
 // ── extractBrowseContent ──────────────────────────────────────
 // Browse: display_name (stable) + quadrants (stable) + slogan (stable).
