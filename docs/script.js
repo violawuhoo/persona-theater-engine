@@ -658,6 +658,22 @@ async function startTheater() {
   }, CONFIG.SYNC_DURATION_MS);
 }
 
+// ── INTENTION CLASSIFIER ──────────────────────────────────────
+// Maps raw intention text to one of 7 direction buckets.
+// Used to drive behaviorally distinct Theater outputs.
+function classifyIntentionBucket(rawIntention) {
+  if (!rawIntention) return 'advance';
+  const t = rawIntention;
+  if (/试探|摸清|观察|测试|了解底|看看对方|探一探|探清/.test(t))         return 'test';
+  if (/拖延|暂缓|先不|缓一缓|避免承诺|不表态|拖时间/.test(t))            return 'delay';
+  if (/打破|干扰|搅局|制造分歧|逆转|反转|破局|打乱/.test(t))             return 'disrupt';
+  if (/建立关系|拉近|破冰|信任|交朋友|亲近|融入|获得好感/.test(t))       return 'bond';
+  if (/掌控|主导|控场|把控节奏|拿主动权|主动权|框架|定调/.test(t))       return 'control';
+  if (/退出|离开|脱身|结束|撤退|收场|优雅退出/.test(t))                  return 'exit';
+  // default: advance — push toward agreement / outcome
+  return 'advance';
+}
+
 // ── AI PROTOCOL GENERATOR ─────────────────────────────────────
 // Builds a prompt using ONLY consumer_fields and theater_support.
 // No old-schema fields (core_directive, root_logic_core, etc.) are read here.
@@ -693,52 +709,141 @@ async function callAIWithPersonaProtocol(personaData, scene, target, scale, inte
   const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
   const targetProfile = TARGET_OVERLAYS[target]   || null;
 
-  const systemPrompt = `你是 Persona Draft 的核心战术逻辑引擎。
-严格依据以下【人格系统协议】进行深度行为对齐，不得混入其他人格特征。
+  // Classify intention into direction bucket
+  const intentionBucket = classifyIntentionBucket(intention);
+  console.log(`[AI] Intention bucket: ${intentionBucket} ← "${intention}"`);
 
-━━ 人格协议 ━━
-ID: ${safeStr(personaData.id)} | 名称: ${displayName}
-原型: ${safeStr(personaData.archetype_id)}
-核心口号: ${slogan}
+  // ── Build structured prompt sections ──────────────────────
 
-━━ 战术逻辑轴 (theater_support.logic_axes) ━━
-互动焦点: ${safeStr(logicAxes.interaction_focus)}
-情感防护: ${safeStr(logicAxes.emotional_guard)}
-权力动作: ${safeStr(logicAxes.power_move)}
+  // persona_description: who this persona is (identity + tone)
+  const personaDescription = [
+    `名称: ${displayName}`,
+    `原型: ${safeStr(personaData.archetype_id)}`,
+    `核心口号: ${slogan}`,
+  ].join('\n');
 
-━━ 输出风格模块 (theater_support.expression_modulators) ━━
-语言模式: ${safeStr(expressionMods.delivery_mode)}
-肢体基准: ${safeStr(expressionMods.physicality)}
+  // persona_behavior: how this persona operates (tactics + style + constraints)
+  const behaviorLines = [];
+  if (safeStr(logicAxes.interaction_focus) !== MISSING) behaviorLines.push(`互动焦点: ${safeStr(logicAxes.interaction_focus)}`);
+  if (safeStr(logicAxes.emotional_guard)   !== MISSING) behaviorLines.push(`情感防护: ${safeStr(logicAxes.emotional_guard)}`);
+  if (safeStr(logicAxes.power_move)        !== MISSING) behaviorLines.push(`权力动作: ${safeStr(logicAxes.power_move)}`);
+  if (safeStr(expressionMods.delivery_mode) !== MISSING) behaviorLines.push(`语言模式: ${safeStr(expressionMods.delivery_mode)}`);
+  if (safeStr(expressionMods.physicality)   !== MISSING) behaviorLines.push(`肢体基准: ${safeStr(expressionMods.physicality)}`);
+  if (scaleTactic) behaviorLines.push(`场景战术: ${scaleTactic}`);
+  if (reactionCueSummary !== '[反应线索缺失]') behaviorLines.push(`反应线索:\n${reactionCueSummary}`);
+  behaviorLines.push(`绝对禁忌:\n${taboosList}`);
+  const personaBehavior = behaviorLines.join('\n');
 
-━━ 反应线索 (theater_support.reaction_cues) ━━
-${reactionCueSummary}
+  // scene / target lines — inline overlays where available
+  const sceneLine  = sceneOverlay
+    ? `${scene}\n场域规则: ${sceneOverlay.dynamics}`
+    : scene;
+  const targetLine = targetProfile
+    ? `${target}\n目标档案: ${targetProfile}`
+    : target;
 
-━━ 场景战术 (theater_support.scene_tactics) ━━
-${scaleTactic || '[场景战术缺失]'}
+  const systemPrompt = `你是在生成一个互动场景中的实时行动指令。
 
-━━ 绝对禁忌 (consumer_fields.taboos) ━━
-${taboosList}
+## INPUT
+Persona Description:
+${personaDescription}
 
-━━ 实验场域配置 ━━
-场景: ${scene}
-核心对手: ${target}
-场域规模: ${scale}
-核心目的: ${intention}
+Persona Behavior Rules:
+${personaBehavior}
 
-━━ 战场特殊规则（本场域专属，优先级高于通用协议）━━
-${sceneOverlay ? `场域动力学: ${sceneOverlay.dynamics}` : '无特殊场域规则。'}
-${targetProfile ? `目标档案: ${targetProfile}` : ''}
+Intention Direction (PRIMARY DRIVER):
+${intentionBucket}
 
-━━ 生成任务 ━━
-基于以上完整协议与场域参数，生成四维实战指令。
-每个维度必须体现【本场域的特殊动力学】与【人格协议的融合】，而非通用人格描述。
-不同场景的输出必须有显著差异——「商务谈判」和「私人相亲」的指令风格应截然不同。
-禁止将 consumer_fields 的展示文本（口号、核心本质等）原样复读进输出。
+User Intention Detail:
+${intention}
 
-必须只输出纯 JSON，不带任何解释或 markdown 标记：
-{"mind":"...","body":"...","speech":"...","reaction":"..."}
+Scene:
+${sceneLine}
 
-规则：去人类化，保持指令冷峻、精准、逻辑优先。严禁废话。场域感知优先。`;
+Target:
+${targetLine}
+
+Scale:
+${scale}
+
+---
+## CORE TASK
+Generate 4 outputs:
+- mind (internal strategy awareness)
+- body (observable physical behavior)
+- speech (what is said)
+- reaction (how to respond dynamically)
+
+---
+## CRITICAL DECISION LOGIC (MANDATORY)
+1. Intention determines the direction of behavior:
+- advance → move toward agreement
+- disrupt → introduce friction / break flow
+- delay → avoid commitment / slow things down
+- test → probe and observe
+- bond → build trust
+- control → dominate pacing and frame
+- exit → disengage cleanly
+2. Persona determines HOW the action is executed:
+- pacing
+- tone
+- control style
+- response structure
+3. Scene constrains plausibility:
+- behavior must fit the real-world interaction context
+
+---
+## OUTPUT REQUIREMENTS
+- All output MUST be in Chinese
+- Each field MUST be concise and concrete
+- No explanations, no meta language
+
+---
+## STYLE: ACTION-FIRST (VERY IMPORTANT)
+You are NOT writing dialogue suggestions.
+You are describing:
+→ what this persona DOES to handle the situation
+
+Bad:
+"你可以试着缓和气氛"
+Good:
+"先停顿一秒，不接他的话，直接换一个角度提问"
+
+---
+## SPEECH RULE
+Speech must be:
+- short
+- strategic
+- usable in real conversation
+- NOT generic advice
+
+---
+## STRICTLY FORBIDDEN
+- "你可以…"
+- "建议你…"
+- "你应该…"
+- "可以考虑…"
+- generic emotional comfort
+- repeating the user's input
+- explaining reasoning
+- long paragraphs
+
+---
+## PERSONA AMPLIFICATION
+Slightly amplify persona traits, but keep realistic.
+Do NOT become theatrical or exaggerated.
+
+---
+## DIFFERENTIATION REQUIREMENT
+The output MUST clearly reflect the intention direction.
+For the SAME persona:
+- advance vs disrupt MUST produce fundamentally different behavior
+If outputs look similar → you FAILED.
+
+---
+## OUTPUT FORMAT
+Return STRICT JSON with no markdown or explanation:
+{"mind":"...","body":"...","speech":"...","reaction":"..."}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -749,8 +854,7 @@ ${targetProfile ? `目标档案: ${targetProfile}` : ''}
     body: JSON.stringify({
       model: 'moonshot-v1-8k',
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: '立即同步人格参数，输出四维实战指令。' }
+        { role: 'user', content: systemPrompt }
       ],
       temperature: 0.65
     })
@@ -1020,10 +1124,9 @@ async function requestSceneHelp(userInput) {
   // Persona core essence / tone — prefer slogan, fall back to display_name
   const personaEssence = safeStr(cf.slogan || cf.display_name, '[人格特征缺失]');
 
-  const prompt = `You are generating a real-time action suggestion inside an interactive scenario.
+  const prompt = `你是在生成一个互动场景中的实时行动指令。
 
-CONTEXT
-
+## CONTEXT
 Persona:
 ${personaEssence}
 
@@ -1042,28 +1145,44 @@ Current Theater Content:
 - Speech: ${content[2] ? content[2].text : ''}
 - Reaction: ${content[3] ? content[3].text : ''}
 
-TASK
+---
+## TASK
+Generate ONE actionable instruction in Chinese describing what to do NEXT.
 
-Generate ONE actionable instruction for what to do NEXT.
+---
+## CORE REQUIREMENTS (ALL MUST BE MET)
+1. Output ONLY one sentence (maximum two short sentences).
+2. The output MUST be in Chinese.
+3. The instruction MUST be immediately actionable (something the user can say or do right now).
+4. It MUST reflect how THIS persona would handle THIS situation in THIS scene.
+5. The persona traits should be moderately amplified (clear personality style, but not exaggerated or theatrical).
+6. Tone must be calm, controlled, and slightly persona-flavored.
+7. The instruction MUST introduce a NEW action (do NOT repeat or paraphrase existing theater content).
 
-RULES (STRICT)
-1. Output ONLY ONE suggestion.
-2. Maximum 1–2 sentences.
-3. Must be immediately executable.
-4. Must reflect how THIS persona would act in THIS scene.
-5. MUST NOT repeat or paraphrase the existing theater content.
-6. MUST NOT explain reasoning.
-7. MUST NOT give multiple options.
-8. MUST NOT restate the user's situation.
+---
+## STRICTLY FORBIDDEN
+- Do NOT use phrases like: "你可以", "建议", "应该", "可以考虑"
+- Do NOT explain reasoning
+- Do NOT analyze the situation
+- Do NOT restate the user's input
+- Do NOT provide multiple options
+- Do NOT produce dramatic or roleplay-style dialogue
 
-STYLE
-- Action-first (use verbs like: "say", "pause", "ask", "shift", "respond")
-- Calm, controlled tone
-- Light persona flavor (not exaggerated)
+---
+## STYLE GUIDELINES (VERY IMPORTANT)
+- Action-first (focus on verbs like: pause, say, redirect, ask, shift)
+- Strategy-oriented (control the situation, not emotions)
+- Feels like how the persona would actually act, not like generic advice
 
-OUTPUT
+---
+## GOOD EXAMPLES (STYLE REFERENCE, DO NOT COPY)
+- 先停一秒，不接他的节奏，只给一句短答把场子稳住。
+- 把问题轻轻往回拨一句，先问清他真正关心的点。
+- 不要解释太多，先给结论，再看对方反应。
 
-Return ONLY the suggestion text. No labels. No explanation.`;
+---
+## OUTPUT
+Return ONLY the final Chinese instruction. No labels. No explanation.`;
 
   const url      = 'https://api.moonshot.cn/v1/chat/completions';
   const response = await fetch(url, {
