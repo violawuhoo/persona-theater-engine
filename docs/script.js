@@ -16,14 +16,8 @@ const CONFIG = {
 };
 
 // ── GLOBAL STATE ─────────────────────────────────────────────
-let gachaTimer          = null;
-let isTheaterModeActive = false;
-let selectedPersona     = null;
-let currentPersonaData  = null;
-let currentRotation     = 0;
-let currentCarouselIndex = 0;   // preserved across Browse ↔ Detail transitions
-let currentSceneContext = { scene: '', scale: '' };  // bound during Theater activation
-let usedGachaTips       = new Set();                 // dedup within current session
+// Moved to docs/state/app-state.js as AppState.*
+// All mutable session variables are now on the AppState namespace object.
 
 // ── PERSONA REGISTRY (MANIFEST-DRIVEN) ───────────────────────
 const PERSONA_MANIFEST_PATH = './database/manifests/personas.manifest.json';
@@ -33,8 +27,7 @@ const LEGACY_PERSONA_COLORS = {
   ARCH03: '#6a6a6a',
   ARCH04: '#e05a20'
 };
-let runtimePersonaRegistry = [];
-let runtimeManifestMeta    = null;
+// runtimePersonaRegistry and runtimeManifestMeta → AppState.*
 
 function normalizeManifestPath(pathValue) {
   const raw = safeStr(pathValue).trim();
@@ -73,11 +66,11 @@ async function loadPersonaManifest() {
     throw new Error('Manifest malformed: missing personas[]');
   }
 
-  runtimeManifestMeta = {
+  AppState.runtimeManifestMeta = {
     schema_version: safeStr(manifest.schema_version, 'unknown'),
     total_personas: Number(manifest.total_personas) || manifest.personas.length
   };
-  console.log(`[Manifest] ✓ Loaded ${manifest.personas.length} entries (schema ${runtimeManifestMeta.schema_version}).`);
+  console.log(`[Manifest] ✓ Loaded ${manifest.personas.length} entries (schema ${AppState.runtimeManifestMeta.schema_version}).`);
   return manifest;
 }
 
@@ -113,13 +106,13 @@ function buildRuntimePersonaRegistry(manifest) {
     return true;
   });
 
-  runtimePersonaRegistry = list;
-  console.log(`[Manifest] ✓ Runtime registry built: ${runtimePersonaRegistry.length} personas.`);
-  return runtimePersonaRegistry;
+  AppState.runtimePersonaRegistry = list;
+  console.log(`[Manifest] ✓ Runtime registry built: ${AppState.runtimePersonaRegistry.length} personas.`);
+  return AppState.runtimePersonaRegistry;
 }
 
 async function ensureRuntimeRegistry() {
-  if (runtimePersonaRegistry.length > 0) return runtimePersonaRegistry;
+  if (AppState.runtimePersonaRegistry.length > 0) return AppState.runtimePersonaRegistry;
   const manifest = await loadPersonaManifest();
   return buildRuntimePersonaRegistry(manifest);
 }
@@ -246,8 +239,8 @@ function safeGet(obj, path, fallback = '') {
 
 // Returns the colour for the currently selected persona.
 function getPersonaColor() {
-  if (!selectedPersona) return '#00f2ff';
-  const entry = runtimePersonaRegistry.find(p => p.id === selectedPersona);
+  if (!AppState.selectedPersona) return '#00f2ff';
+  const entry = AppState.runtimePersonaRegistry.find(p => p.id === AppState.selectedPersona);
   return entry ? entry.color : '#00f2ff';
 }
 
@@ -357,11 +350,11 @@ async function loadPersona(personaId) {
     throw new Error(`Manifest registry init failed: ${e.message}`);
   }
   const cleanId = safeStr(personaId).trim().toUpperCase();
-  const entry   = runtimePersonaRegistry.find(p => p.id.toUpperCase() === cleanId);
+  const entry   = AppState.runtimePersonaRegistry.find(p => p.id.toUpperCase() === cleanId);
 
   if (!entry) {
     console.error(`[DataManager] ✗ Persona "${cleanId}" not found in runtime registry.`);
-    console.log('[DataManager] Available IDs:', runtimePersonaRegistry.map(p => p.id).join(', '));
+    console.log('[DataManager] Available IDs:', AppState.runtimePersonaRegistry.map(p => p.id).join(', '));
     throw new Error(`Persona "${cleanId}" not in registry.`);
   }
 
@@ -391,13 +384,13 @@ async function loadPersona(personaId) {
   }
 
   // Validate new contract — throws if invalid or old format
-  currentPersonaData = normalizePersonaSchema(raw);
+  AppState.currentPersonaData = normalizePersonaSchema(raw);
 
-  if (safeStr(currentPersonaData.id).toUpperCase() !== cleanId) {
-    console.warn(`[DataManager] ⚠ ID mismatch: selected ${cleanId}, loaded ${currentPersonaData.id}`);
+  if (safeStr(AppState.currentPersonaData.id).toUpperCase() !== cleanId) {
+    console.warn(`[DataManager] ⚠ ID mismatch: selected ${cleanId}, loaded ${AppState.currentPersonaData.id}`);
   }
-  console.log(`[DataManager] ✓ Persona ready: ${safeStr(currentPersonaData.consumer_fields.display_name)} (${cleanId})`);
-  return currentPersonaData;
+  console.log(`[DataManager] ✓ Persona ready: ${safeStr(AppState.currentPersonaData.consumer_fields.display_name)} (${cleanId})`);
+  return AppState.currentPersonaData;
 }
 
 // ── INDEX INITIALIZATION ──────────────────────────────────────
@@ -589,7 +582,7 @@ async function initCarousel() {
 
   carousel.addEventListener('scroll', () => {
     const idx = Math.round(carousel.scrollLeft / window.innerWidth);
-    currentCarouselIndex = idx;   // keep in sync so Detail can restore position
+    AppState.currentCarouselIndex = idx;   // keep in sync so Detail can restore position
     document.querySelectorAll('.dot').forEach((d, i) => {
       const color = personaIndex[i] ? personaIndex[i].color : '#fff';
       d.classList.toggle('active', i === idx);
@@ -614,7 +607,7 @@ async function openPersonaDetail(personaId) {
 
   // Snapshot carousel position before leaving Browse
   const carousel = document.getElementById('carousel');
-  currentCarouselIndex = Math.round(carousel.scrollLeft / window.innerWidth);
+  AppState.currentCarouselIndex = Math.round(carousel.scrollLeft / window.innerWidth);
 
   try {
     await ensureRuntimeRegistry();
@@ -623,7 +616,7 @@ async function openPersonaDetail(personaId) {
     return;
   }
 
-  const entry = runtimePersonaRegistry.find(p => p.id === cleanId);
+  const entry = AppState.runtimePersonaRegistry.find(p => p.id === cleanId);
   const color = entry ? entry.color : '#00f2ff';
 
   // Show transient loading state on the card button
@@ -635,7 +628,7 @@ async function openPersonaDetail(personaId) {
     // selectedPersona is NOT set here; that only happens in activateFromDetail()
     await loadPersona(cleanId);
 
-    const data = currentPersonaData;
+    const data = AppState.currentPersonaData;
 
     // ── Populate fields via extraction layer ──────────────────
     // All reads go through consumer_fields via extractDetailContent().
@@ -683,12 +676,12 @@ async function openPersonaDetail(personaId) {
     setTimeout(() => panel.classList.remove('detail-entering'), 260);
     window.scrollTo(0, 0);
 
-    console.log(`[Detail] ✓ Showing detail for: ${safeStr(data.consumer_fields.display_name)} (index ${currentCarouselIndex})`);
+    console.log(`[Detail] ✓ Showing detail for: ${safeStr(data.consumer_fields.display_name)} (index ${AppState.currentCarouselIndex})`);
   } catch (e) {
     console.error('[Detail] ✗ Load failed:', e.message);
     showError(`人格协议加载失败\n\n原因：${e.message}\n\n请检查网络或刷新重试。`);
     if (btn) { btn.textContent = '了解更多'; btn.disabled = false; }
-    currentPersonaData = null;
+    AppState.currentPersonaData = null;
   }
 }
 
@@ -713,27 +706,27 @@ function closePersonaDetail() {
 
     // Restore carousel scroll position
     const carousel = document.getElementById('carousel');
-    carousel.scrollLeft = currentCarouselIndex * window.innerWidth;
+    carousel.scrollLeft = AppState.currentCarouselIndex * window.innerWidth;
 
     // Clear transient persona load — not activated
-    currentPersonaData = null;
+    AppState.currentPersonaData = null;
     resetCarouselButtons();
 
     window.scrollTo(0, 0);
-    console.log(`[Detail] ← Returned to Browse at carousel index ${currentCarouselIndex}`);
+    console.log(`[Detail] ← Returned to Browse at carousel index ${AppState.currentCarouselIndex}`);
   }, 150);
 }
 
 // Called ONLY from Detail's 激活面具 button.
 // This is the single authorised activation point.
 function activateFromDetail() {
-  if (!currentPersonaData) {
+  if (!AppState.currentPersonaData) {
     showError('人格数据未加载，请重新选择。');
     return;
   }
 
-  const cleanId = safeStr(currentPersonaData.id).toUpperCase();
-  const entry   = runtimePersonaRegistry.find(p => p.id === cleanId);
+  const cleanId = safeStr(AppState.currentPersonaData.id).toUpperCase();
+  const entry   = AppState.runtimePersonaRegistry.find(p => p.id === cleanId);
   const color   = entry ? entry.color : '#00f2ff';
 
   // Fix 2: disable button immediately to block double-tap during 150ms transition
@@ -741,9 +734,9 @@ function activateFromDetail() {
   if (activateBtn) activateBtn.disabled = true;
 
   // Set activation state before transition so Config is ready
-  selectedPersona = cleanId;
+  AppState.selectedPersona = cleanId;
   const display = document.getElementById('active-persona-display');
-  display.innerText   = safeStr(currentPersonaData.consumer_fields.display_name);
+  display.innerText   = safeStr(AppState.currentPersonaData.consumer_fields.display_name);
   display.style.color = color;
 
   // Fade out Detail, then show Config
@@ -754,7 +747,7 @@ function activateFromDetail() {
     panel.classList.remove('detail-leaving');
     document.getElementById('config-panel').classList.remove('hidden');
     window.scrollTo(0, 0);
-    console.log(`[Detail] ✓ Activated: ${safeStr(currentPersonaData.consumer_fields.display_name)} → Config`);
+    console.log(`[Detail] ✓ Activated: ${safeStr(AppState.currentPersonaData.consumer_fields.display_name)} → Config`);
   }, 150);
 }
 
@@ -867,15 +860,15 @@ async function startTheater() {
     await showAlert('请先输入你的戏纲', { title: '配置不完整' });
     return;
   }
-  if (!currentPersonaData) {
+  if (!AppState.currentPersonaData) {
     await showAlert('人格数据未加载，请重新选择面具。', { title: '数据错误', color: '#e74c3c' });
     return;
   }
 
-  const personaDisplayName = safeStr(currentPersonaData.consumer_fields.display_name);
-  currentSceneContext = { scene, scale };
-  usedGachaTips.clear();
-  console.log(`[Theater] Starting — Persona: ${currentPersonaData.id}, Scene: ${scene}, Target: ${target}`);
+  const personaDisplayName = safeStr(AppState.currentPersonaData.consumer_fields.display_name);
+  AppState.currentSceneContext = { scene, scale };
+  AppState.usedGachaTips.clear();
+  console.log(`[Theater] Starting — Persona: ${AppState.currentPersonaData.id}, Scene: ${scene}, Target: ${target}`);
 
   // ── Phase 1: Show calibration overlay immediately ────────
   const syncOverlay     = document.getElementById('sync-overlay');
@@ -906,7 +899,7 @@ async function startTheater() {
   if (syncStatus) {
     syncStatus.innerHTML = `
       <span class="status-label">PERSONA_ID:</span>
-        <span class="status-value">${currentPersonaData.id} — ${safeStr(currentPersonaData.archetype_id)}</span><br>
+        <span class="status-value">${AppState.currentPersonaData.id} — ${safeStr(AppState.currentPersonaData.archetype_id)}</span><br>
       <span class="status-label">ENV_SCAN:</span>
         <span class="status-value">${scene}</span><br>
       <span class="status-label">TARGET_LOCK:</span>
@@ -919,11 +912,11 @@ async function startTheater() {
   }
 
   // ── Phase 2: Extract local content immediately (theater_support) ─
-  const localContent = extractTheaterContent(currentPersonaData, scene, target, scale);
-  contentData[0].text = localContent.mind;
-  contentData[1].text = localContent.body;
-  contentData[2].text = localContent.speech;
-  contentData[3].text = localContent.reaction;
+  const localContent = extractTheaterContent(AppState.currentPersonaData, scene, target, scale);
+  AppState.contentData[0].text = localContent.mind;
+  AppState.contentData[1].text = localContent.body;
+  AppState.contentData[2].text = localContent.speech;
+  AppState.contentData[3].text = localContent.reaction;
 
   // ── Phase 3: Race AI call against timeout ────────────────
   const aiTimeout = new Promise((_, reject) =>
@@ -932,13 +925,13 @@ async function startTheater() {
 
   try {
     const aiContent = await Promise.race([
-      callAIWithPersonaProtocol(currentPersonaData, scene, target, scale, intention),
+      callAIWithPersonaProtocol(AppState.currentPersonaData, scene, target, scale, intention),
       aiTimeout
     ]);
-    if (aiContent.mind)     contentData[0].text = aiContent.mind;
-    if (aiContent.body)     contentData[1].text = aiContent.body;
-    if (aiContent.speech)   contentData[2].text = aiContent.speech;
-    if (aiContent.reaction) contentData[3].text = aiContent.reaction;
+    if (aiContent.mind)     AppState.contentData[0].text = aiContent.mind;
+    if (aiContent.body)     AppState.contentData[1].text = aiContent.body;
+    if (aiContent.speech)   AppState.contentData[2].text = aiContent.speech;
+    if (aiContent.reaction) AppState.contentData[3].text = aiContent.reaction;
     console.log('[Theater] ✓ AI enhancement applied.');
   } catch (e) {
     const reason = e.message === 'AI_TIMEOUT' ? 'timed out' : e.message;
@@ -951,7 +944,7 @@ async function startTheater() {
     document.getElementById('config-panel').classList.add('hidden');
     document.getElementById('theater-screen').classList.remove('hidden');
 
-    isTheaterModeActive = true;
+    AppState.isTheaterModeActive = true;
     startGachaSystem();
     updateGuidance(0);
 
@@ -1079,23 +1072,18 @@ ${targetProfile ? `目标档案: ${targetProfile}` : ''}
 }
 
 // ── WHEEL + CONTENT DISPLAY ───────────────────────────────────
-const contentData = [
-  { title: '底层逻辑', text: '正在同步人格底色...请稍后。' },
-  { title: '行为特征', text: '正在校准肢体语言...请稍后。' },
-  { title: '语言风格', text: '正在加载话术补丁...请稍后。' },
-  { title: '反应机制', text: '正在预设应激方案...请稍后。' }
-];
+// contentData moved to AppState.contentData (see docs/state/app-state.js)
 
 function updateGuidance(index) {
-  const d = contentData[index] || contentData[0];
+  const d = AppState.contentData[index] || AppState.contentData[0];
   document.getElementById('guidance-title').innerText   = d.title;
   document.getElementById('guidance-content').innerText = d.text;
 }
 
 function rotateWheel(delta) {
-  currentRotation += delta;
-  document.getElementById('main-wheel').style.transform = `rotate(${currentRotation}deg)`;
-  const quadrant = (Math.abs(currentRotation / 90)) % 4;
+  AppState.currentRotation += delta;
+  document.getElementById('main-wheel').style.transform = `rotate(${AppState.currentRotation}deg)`;
+  const quadrant = (Math.abs(AppState.currentRotation / 90)) % 4;
   updateGuidance(quadrant);
   if (navigator.vibrate) navigator.vibrate(10);
 }
@@ -1135,10 +1123,10 @@ function rotateWheel(delta) {
 
 // ── GACHA SYSTEM ──────────────────────────────────────────────
 function startGachaSystem() {
-  if (gachaTimer) clearInterval(gachaTimer);
+  if (AppState.gachaTimer) clearInterval(AppState.gachaTimer);
   console.log('[Gacha] 场景锦囊已激活。');
-  gachaTimer = setInterval(() => {
-    if (isTheaterModeActive) triggerGacha();
+  AppState.gachaTimer = setInterval(() => {
+    if (AppState.isTheaterModeActive) triggerGacha();
   }, CONFIG.GACHA_INTERVAL_MS);
 }
 
@@ -1178,7 +1166,7 @@ function generateSceneTip(persona, sceneContext, theaterContent) {
   const weighted = [...p1, ...p1, ...p1, ...p2, ...p3];
 
   // ── Filter 1: not in usedGachaTips AND not exact substring of theaterContent ──
-  const fresh = weighted.filter(s => !usedGachaTips.has(s) && !theaterContent.includes(s));
+  const fresh = weighted.filter(s => !AppState.usedGachaTips.has(s) && !theaterContent.includes(s));
 
   // ── Filter 2: fallback — at least avoid exact theater match (allow re-use) ──
   const noOverlap = weighted.filter(s => !theaterContent.includes(s));
@@ -1187,7 +1175,7 @@ function generateSceneTip(persona, sceneContext, theaterContent) {
   if (pool.length === 0) return '[数据缺失]';
 
   const pick = pool[Math.floor(Math.random() * pool.length)];
-  usedGachaTips.add(pick);
+  AppState.usedGachaTips.add(pick);
   return pick;
 }
 
@@ -1240,17 +1228,17 @@ function hasSemanticOverlap(tip, theaterContent, minLen = 8) {
 async function triggerGacha() {
   // Don't stack modals if one is already open
   if (!document.getElementById('modal-overlay').classList.contains('hidden')) return;
-  if (!currentPersonaData) return;
+  if (!AppState.currentPersonaData) return;
 
   // Collect all visible theater text to check for overlap
-  const theaterText = contentData.map(d => d.text || '').join('\n');
+  const theaterText = AppState.contentData.map(d => d.text || '').join('\n');
 
   // Generate scene-bound tip from persona data
-  let tip = generateSceneTip(currentPersonaData, currentSceneContext, theaterText);
+  let tip = generateSceneTip(AppState.currentPersonaData, AppState.currentSceneContext, theaterText);
 
   // If semantic overlap detected → rewrite to action form via AI
   if (tip !== '[数据缺失]' && hasSemanticOverlap(tip, theaterText)) {
-    tip = await rewriteTipImperative(tip, currentSceneContext.scene);
+    tip = await rewriteTipImperative(tip, AppState.currentSceneContext.scene);
   }
 
   if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -1265,19 +1253,19 @@ async function exitTheater() {
   });
   if (!confirmed) return;
 
-  isTheaterModeActive = false;
-  if (gachaTimer) clearInterval(gachaTimer);
-  usedGachaTips.clear();
-  currentSceneContext = { scene: '', scale: '' };
+  AppState.isTheaterModeActive = false;
+  if (AppState.gachaTimer) clearInterval(AppState.gachaTimer);
+  AppState.usedGachaTips.clear();
+  AppState.currentSceneContext = { scene: '', scale: '' };
 
   document.getElementById('theater-screen').classList.add('hidden');
   document.getElementById('carousel').classList.remove('hidden');
   document.getElementById('dots').classList.remove('hidden');
   document.getElementById('intention-input').value = '';
 
-  currentPersonaData  = null;
-  selectedPersona     = null;
-  currentRotation     = 0;
+  AppState.currentPersonaData  = null;
+  AppState.selectedPersona     = null;
+  AppState.currentRotation     = 0;
   document.getElementById('main-wheel').style.transform = 'rotate(0deg)';
 
   // Bug 2 fix: restore all carousel CTAs so the user can re-enter Detail
