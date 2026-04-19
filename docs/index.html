@@ -206,7 +206,8 @@
     
   </div>
 
-  <!-- State module: must load before script.js -->
+  <!-- Load order: constants → state → main script -->
+  <script src="constants.js"></script>
   <script src="state/app-state.js"></script>
   <script src="script.js"></script>
 </body>
