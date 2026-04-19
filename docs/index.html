@@ -3,188 +3,385 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Persona Draft</title>
+  <title>PERSONA THEATER</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    /* ── DETAIL PANEL ─────────────────────────────────────────── */
-    /* position:fixed escapes body/html overflow:hidden + #app height:100vh clipping */
+    /* ── DETAIL PANEL ─────────────────────────────────────────────
+       position:fixed escapes body overflow:hidden clipping.
+       All detail-* styles are here to coexist with the inline
+       animation keyframes that also live in this block.        ── */
     #detail-panel {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      background: #000;
+      background: var(--bg-primary);
       z-index: 500;
-      padding: 28px 22px 72px;
+      padding: 0 0 72px;
       box-sizing: border-box;
       max-width: 480px;
       margin: 0 auto;
     }
+
     /* ── Transitions ── */
     @keyframes detail-in  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
     @keyframes detail-out { from { opacity:1 } to { opacity:0 } }
     #detail-panel.detail-entering { animation: detail-in  0.22s ease-out forwards; }
     #detail-panel.detail-leaving  { animation: detail-out 0.14s ease-in  forwards; }
-    /* ── Header ── */
-    .detail-header { padding: 12px 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 22px; }
-    .detail-name   { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
-    /* ── Sections ── */
+
+    /* ── Detail hero area ── */
+    .detail-hero {
+      padding: 56px 22px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    /* Back button — top-left of hero */
+    .detail-back-chip {
+      position: absolute;
+      top: 16px; left: 16px;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    /* Avatar placeholder */
+    .detail-avatar {
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      color: var(--text-muted);
+    }
+
+    /* Persona name */
+    .detail-name {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-align: center;
+    }
+
+    /* ── Detail sections ── */
     .detail-section {
-      margin: 14px 0;
-      padding: 13px 15px;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
+      margin: 8px 16px;
+      padding: 15px 16px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border-subtle);
     }
-    .detail-section--core     { background: rgba(0,242,255,0.04); border-color: rgba(0,242,255,0.2); }
+    .detail-section--core     { background: rgba(0,212,255,0.04); border-color: rgba(0,212,255,0.2); }
     .detail-section--forbidden{ background: rgba(224,90,32,0.04); border-color: rgba(224,90,32,0.2); }
+
     .detail-section-label {
-      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-      opacity: 0.5; margin-bottom: 8px;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 9px;
     }
-    .detail-section--core      .detail-section-label { color: #00f2ff; opacity: 0.7; }
+    .detail-section--core      .detail-section-label { color: var(--accent-cyan); opacity: 0.7; }
     .detail-section--forbidden .detail-section-label { color: #e05a20; opacity: 0.7; }
-    .detail-core-text    { font-size: 14px; line-height: 1.7; color: #e8f4f8; }
-    .detail-section-value{ font-size: 13.5px; line-height: 1.65; color: #c0d4de; white-space: pre-wrap; }
+
+    .detail-core-text    { font-size: 14px; line-height: 1.75; color: var(--text-primary); }
+    .detail-section-value{ font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); white-space: pre-wrap; }
+
     /* ── Typical expressions ── */
     .detail-expressions { display: flex; flex-direction: column; gap: 7px; }
     .detail-expr-line {
-      padding: 7px 10px;
-      border-left: 2px solid rgba(255,255,255,0.15);
-      font-size: 13px; color: #b0c8d8; line-height: 1.5;
-      /* Fix 1: truncate long verbal_output lines to one visible line */
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      padding: 8px 12px;
+      border-left: 2px solid rgba(0,212,255,0.28);
+      background: rgba(0,212,255,0.03);
+      border-radius: 0 6px 6px 0;
+      font-size: 13px; color: var(--text-secondary); line-height: 1.55;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    /* ── Actions ── */
-    .detail-actions { display: flex; gap: 12px; margin-top: 28px; }
+
+    /* ── Actions row ── */
+    .detail-actions {
+      display: flex; gap: 12px;
+      margin: 22px 16px;
+    }
     .detail-actions .btn { flex: 1; }
+
     .detail-btn-back {
       background: transparent !important;
-      border: 1px solid rgba(255,255,255,0.18) !important;
-      color: #888 !important; box-shadow: none !important;
+      border: 1px solid var(--border-subtle) !important;
+      color: var(--text-secondary) !important;
+      box-shadow: none !important;
+      font-size: 14px !important;
     }
   </style>
 </head>
 <body>
- 
-  <!-- Custom Modal — replaces browser alert() / confirm() -->
+
+  <!-- ── CUSTOM MODAL (replaces browser alert / confirm) ────────── -->
   <div id="modal-overlay" class="hidden">
     <div id="modal-box">
       <div id="modal-title"></div>
       <div id="modal-message"></div>
       <div id="modal-actions">
-        <button id="modal-cancel" class="modal-btn modal-btn--cancel hidden">取消</button>
+        <button id="modal-cancel"  class="modal-btn modal-btn--cancel hidden">取消</button>
         <button id="modal-confirm" class="modal-btn modal-btn--confirm">确认</button>
       </div>
     </div>
   </div>
 
+  <!-- ── SYNC / CALIBRATION OVERLAY ────────────────────────────── -->
   <div id="sync-overlay" class="hidden">
     <div class="scan-line"></div>
     <div class="sync-box">
       <div class="sync-title">PERSONA PROTOCOL SYNCING</div>
       <div class="sync-persona-name" id="sync-persona-name">Load...</div>
       <div class="sync-status">
-        <span class="status-label">BIOMETRIC:</span> <span class="status-value">STABLE</span><br>
-        <span class="status-label">EMOTION:</span> <span class="status-valueSuppress">SUPPRESSED</span><br>
-        <span class="status-label">LOGIC_CORE:</span> <span class="status-value">ONLINE</span>
+        <span class="status-label">BIOMETRIC:</span>
+        <span class="status-value">STABLE</span><br>
+        <span class="status-label">EMOTION:</span>
+        <span class="status-valueSuppress">SUPPRESSED</span><br>
+        <span class="status-label">LOGIC_CORE:</span>
+        <span class="status-value">ONLINE</span>
       </div>
       <div class="sync-progress-bar">
         <div class="sync-progress-fill"></div>
       </div>
     </div>
   </div>
-  
+
+  <!-- ── APP ROOT ───────────────────────────────────────────────── -->
   <div id="app">
-      <header>Persona Draft</header>
 
-      <div class="carousel" id="carousel">...</div>
-      <div class="dots" id="dots"></div>
+    <!-- ══════════════════════════════════════════════════════════
+         BROWSE PAGE
+         ══════════════════════════════════════════════════════════ -->
+    <header>
+      <span class="header-brand">PERSONA</span><span class="header-brand-sub"> THEATER</span>
+    </header>
 
-    <!-- ── DETAIL VIEW (Browse → Detail → Config) ─────────────── -->
+    <div class="carousel" id="carousel">...</div>
+    <div class="dots"     id="dots"></div>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         DETAIL PANEL  (Browse → Detail → Config)
+         ══════════════════════════════════════════════════════════ -->
     <div id="detail-panel" class="hidden">
-      <div class="detail-header">
+
+      <!-- Hero area -->
+      <div class="detail-hero">
+        <button class="detail-back-chip" onclick="closePersonaDetail()">← 返回</button>
+        <div class="detail-avatar">◈</div>
         <div id="detail-persona-name" class="detail-name"></div>
       </div>
 
+      <!-- Core essence -->
       <div class="detail-section detail-section--core">
         <div class="detail-section-label">核心本质</div>
         <div id="detail-core-essence" class="detail-core-text"></div>
       </div>
 
+      <!-- Social essence -->
       <div class="detail-section">
         <div class="detail-section-label">社交本质</div>
         <div id="detail-social-essence" class="detail-section-value"></div>
       </div>
 
+      <!-- Typical expressions -->
       <div class="detail-section">
         <div class="detail-section-label">典型表达</div>
         <div id="detail-expressions" class="detail-expressions"></div>
       </div>
 
+      <!-- Taboos -->
       <div class="detail-section detail-section--forbidden">
         <div class="detail-section-label">禁忌</div>
         <div id="detail-forbidden" class="detail-section-value"></div>
       </div>
 
+      <!-- Actions -->
       <div class="detail-actions">
         <button class="btn detail-btn-back" onclick="closePersonaDetail()">← 返回筛选</button>
         <button class="btn" id="detail-activate-btn" onclick="activateFromDetail()">激活面具</button>
       </div>
     </div>
 
-      <!-- 确保这个面板在最外层 -->
+
+    <!-- ══════════════════════════════════════════════════════════
+         CONFIG PANEL  — "Set your scenario"
+         ══════════════════════════════════════════════════════════ -->
     <div id="config-panel" class="hidden">
-      <div class="panel-header">配置实验：<span id="active-persona-display"></span></div>
 
-      <div class="input-group">
-        <label>环境场景</label>
-        <select id="scene-select">
-          <option value="商务谈判/签约">商务谈判/签约</option>
-          <option value="半正式晚宴/酒局">半正式晚宴/酒局</option>
-          <option value="部门会议/述职">部门会议/述职</option>
-          <option value="面试/潜在合伙人面谈">面试/潜在合伙人面谈</option>
-          <option value="私人社交/相亲">私人社交/相亲</option>
-          <option value="偶然遭遇战">偶然遭遇战</option>
-        </select>
+      <!-- Sticky header -->
+      <div class="panel-header">
+        设置场景：<span id="active-persona-display"></span>
       </div>
 
-      <div class="input-group">
-        <label>核心对手</label>
-        <select id="target-select">
-          <option value="甲方/决策者">甲方/决策者</option>
-          <option value="竞争对手/同行">竞争对手/同行</option>
-          <option value="下属/执行层">下属/执行层</option>
-          <option value="朋友/熟人">朋友/熟人</option>
-          <option value="陌生人/潜在资源">陌生人/潜在资源</option>
-        </select>
+      <!-- ── Hidden functional <select> elements ────────────────
+           JS reads .value from these; card clicks keep them in sync. -->
+      <select id="scene-select"  class="hidden-select">
+        <option value="商务谈判/签约">商务谈判/签约</option>
+        <option value="半正式晚宴/酒局">半正式晚宴/酒局</option>
+        <option value="部门会议/述职">部门会议/述职</option>
+        <option value="面试/潜在合伙人面谈">面试/潜在合伙人面谈</option>
+        <option value="私人社交/相亲">私人社交/相亲</option>
+        <option value="偶然遭遇战">偶然遭遇战</option>
+      </select>
+
+      <select id="target-select" class="hidden-select">
+        <option value="甲方/决策者">甲方/决策者</option>
+        <option value="竞争对手/同行">竞争对手/同行</option>
+        <option value="下属/执行层">下属/执行层</option>
+        <option value="朋友/熟人">朋友/熟人</option>
+        <option value="陌生人/潜在资源">陌生人/潜在资源</option>
+      </select>
+
+      <select id="scale-select"  class="hidden-select">
+        <option value="1-3人 (深度对谈)">1-3人 (深度对谈)</option>
+        <option value="3-5人 (小组博弈)">3-5人 (小组博弈)</option>
+        <option value="5-8人 (多变量社交)">5-8人 (多变量社交)</option>
+        <option value=">8人 (群体观察)">>8人 (群体观察)</option>
+      </select>
+
+      <!-- ── SCENE card grid ────────────────────────────────── -->
+      <div class="config-section">
+        <div class="config-section-label">环境场景</div>
+        <div class="config-cards" id="scene-cards">
+          <button class="config-card config-card--active"
+                  data-select="scene-select" data-value="商务谈判/签约">
+            <span class="config-card-title">商务谈判</span>
+            <span class="config-card-sub">签约 · 博弈</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="半正式晚宴/酒局">
+            <span class="config-card-title">晚宴酒局</span>
+            <span class="config-card-sub">社交 · 放松</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="部门会议/述职">
+            <span class="config-card-title">会议述职</span>
+            <span class="config-card-sub">汇报 · 博弈</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="面试/潜在合伙人面谈">
+            <span class="config-card-title">面试洽谈</span>
+            <span class="config-card-sub">评估 · 筛选</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="私人社交/相亲">
+            <span class="config-card-title">私人社交</span>
+            <span class="config-card-sub">信任 · 吸引</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="偶然遭遇战">
+            <span class="config-card-title">偶然遭遇</span>
+            <span class="config-card-sub">即兴 · 印象</span>
+          </button>
+        </div>
       </div>
 
-      <div class="input-group">
-        <label>场域规模</label>
-        <select id="scale-select">
-          <option value="1-3人 (深度对谈)">1-3人 (深度对谈)</option>
-          <option value="3-5人 (小组博弈)">3-5人 (小组博弈)</option>
-          <option value="5-8人 (多变量社交)">5-8人 (多变量社交)</option>
-          <option value=">8人 (群体观察)">>8人 (群体观察)</option>
-        </select>
+      <!-- ── TARGET card grid ───────────────────────────────── -->
+      <div class="config-section">
+        <div class="config-section-label">核心对手</div>
+        <div class="config-cards" id="target-cards">
+          <button class="config-card config-card--active"
+                  data-select="target-select" data-value="甲方/决策者">
+            <span class="config-card-title">决策者</span>
+            <span class="config-card-sub">甲方 · 权力</span>
+          </button>
+          <button class="config-card"
+                  data-select="target-select" data-value="竞争对手/同行">
+            <span class="config-card-title">竞争对手</span>
+            <span class="config-card-sub">同行 · 博弈</span>
+          </button>
+          <button class="config-card"
+                  data-select="target-select" data-value="下属/执行层">
+            <span class="config-card-title">下属</span>
+            <span class="config-card-sub">执行 · 指令</span>
+          </button>
+          <button class="config-card"
+                  data-select="target-select" data-value="朋友/熟人">
+            <span class="config-card-title">朋友熟人</span>
+            <span class="config-card-sub">信任 · 熟悉</span>
+          </button>
+          <button class="config-card"
+                  data-select="target-select" data-value="陌生人/潜在资源">
+            <span class="config-card-title">陌生人</span>
+            <span class="config-card-sub">资源 · 机会</span>
+          </button>
+        </div>
       </div>
 
-      <div class="input-group">
-        <label>核心目的 (你的社交戏纲)</label>
-        <textarea id="intention-input" placeholder="例如：在不暴露底价的情况下，试探对方的合作诚意。"></textarea>
+      <!-- ── SCALE card grid ────────────────────────────────── -->
+      <div class="config-section">
+        <div class="config-section-label">场域规模</div>
+        <div class="config-cards config-cards--scale" id="scale-cards">
+          <button class="config-card config-card--active"
+                  data-select="scale-select" data-value="1-3人 (深度对谈)">
+            <span class="config-card-title">1–3 人</span>
+            <span class="config-card-sub">深度对谈</span>
+          </button>
+          <button class="config-card"
+                  data-select="scale-select" data-value="3-5人 (小组博弈)">
+            <span class="config-card-title">3–5 人</span>
+            <span class="config-card-sub">小组博弈</span>
+          </button>
+          <button class="config-card"
+                  data-select="scale-select" data-value="5-8人 (多变量社交)">
+            <span class="config-card-title">5–8 人</span>
+            <span class="config-card-sub">多变量社交</span>
+          </button>
+          <button class="config-card"
+                  data-select="scale-select" data-value=">8人 (群体观察)">
+            <span class="config-card-title">8人＋</span>
+            <span class="config-card-sub">群体观察</span>
+          </button>
+        </div>
       </div>
 
-      <button class="btn start-btn" onclick="startTheater()">启动剧场模式</button>
-    </div>
+      <!-- ── INTENTION textarea ─────────────────────────────── -->
+      <div class="config-section">
+        <div class="config-section-label">核心戏纲</div>
+        <textarea id="intention-input"
+                  placeholder="描述你在这个场景中的核心意图…&#10;例如：在不暴露底价的情况下，试探对方的合作诚意。"></textarea>
+      </div>
 
-    <!-- 在 <div id="app"> 内部，config-panel 之后添加 -->
+      <button class="btn start-btn" onclick="startTheater()">启动剧场</button>
+
+    </div><!-- /#config-panel -->
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         THEATER SCREEN
+         ══════════════════════════════════════════════════════════ -->
     <div id="theater-screen" class="hidden">
+
+      <!-- Top info bar: persona name + scene · target -->
+      <div class="theater-topbar">
+        <div class="theater-topbar-name" id="theater-display-name">—</div>
+        <div class="theater-topbar-meta">
+          <span id="theater-display-scene">—</span>
+          <span class="theater-meta-sep">·</span>
+          <span id="theater-display-target">—</span>
+        </div>
+      </div>
+
+      <!-- Legacy theater-header (hidden via CSS, kept for safety) -->
       <div class="theater-header">剧场模式：运行中</div>
 
-      <!-- 核心轮轴区域 -->
+      <!-- Navigation wheel (tap / swipe to cycle quadrants) -->
       <div class="wheel-container">
         <div id="main-wheel" class="wheel">
           <div class="sector" style="--i:0"><span>逻辑</span></div>
@@ -195,39 +392,47 @@
         <div class="pointer"></div>
       </div>
 
-      <!-- 内容展示区域 -->
+      <!-- Content panel -->
       <div class="guidance-box">
         <h3 id="guidance-title">底层心法</h3>
-        <p id="guidance-content">正在加载同步人格参数...</p>
+        <p  id="guidance-content">正在加载同步人格参数...</p>
       </div>
 
+      <!-- Actions -->
       <div class="theater-actions">
-        <button class="btn help-btn" onclick="handleHelpClick()">求助</button>
-        <button class="btn exit-btn" onclick="exitTheater()">卸载面具 (退出)</button>
-      </div>
-    </div>
-
-  <!-- ── Help Modal (求助) — INPUT and RESULT states ──────── -->
-  <div id="help-modal-overlay" class="hidden">
-    <div id="help-modal-box">
-      <div id="help-modal-title">实时求助</div>
-
-      <!-- INPUT STATE -->
-      <div id="help-input-section">
-        <textarea id="helpInput" placeholder="描述你现在发生的情况…"></textarea>
-        <div id="help-input-error" class="help-error hidden"></div>
-        <button id="help-submit-btn" class="modal-btn help-modal-btn--action" onclick="onSubmitHelp()">获取建议</button>
+        <button class="btn help-btn"  onclick="handleHelpClick()">求助</button>
+        <button class="btn exit-btn"  onclick="exitTheater()">卸载面具</button>
       </div>
 
-      <!-- RESULT STATE -->
-      <div id="help-result-section" class="hidden">
-        <p id="help-result-text"></p>
-        <button class="modal-btn help-modal-btn--action" onclick="onConfirmHelp()">Got it</button>
+    </div><!-- /#theater-screen -->
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         HELP MODAL  (求助)
+         ══════════════════════════════════════════════════════════ -->
+    <div id="help-modal-overlay" class="hidden">
+      <div id="help-modal-box">
+        <div id="help-modal-title">实时求助</div>
+
+        <!-- INPUT state -->
+        <div id="help-input-section">
+          <textarea id="helpInput" placeholder="描述你现在发生的情况…"></textarea>
+          <div id="help-input-error" class="help-error hidden"></div>
+          <button id="help-submit-btn"
+                  class="modal-btn help-modal-btn--action"
+                  onclick="onSubmitHelp()">获取建议</button>
+        </div>
+
+        <!-- RESULT state -->
+        <div id="help-result-section" class="hidden">
+          <p id="help-result-text"></p>
+          <button class="modal-btn help-modal-btn--action"
+                  onclick="onConfirmHelp()">明白了</button>
+        </div>
       </div>
-    </div>
-  </div>
-    
-  </div>
+    </div><!-- /#help-modal-overlay -->
+
+  </div><!-- /#app -->
 
   <!-- Load order: constants → utils → extractors → gacha → state → main script -->
   <script src="constants.js"></script>
@@ -236,5 +441,54 @@
   <script src="domain/gacha-engine.js"></script>
   <script src="state/app-state.js"></script>
   <script src="script.js"></script>
+
+  <script>
+    /* ================================================================
+       UI PATCHES (purely presentational — no business logic changes)
+       ================================================================ */
+
+    /* ── CONFIG CARD SELECTION ──────────────────────────────────────
+       Syncs card UI active state to the hidden <select> values that
+       startTheater() reads. Each card group operates independently. */
+    document.querySelectorAll('.config-card').forEach(function(card) {
+      card.addEventListener('click', function() {
+        var selectId = card.dataset.select;
+        var value    = card.dataset.value;
+        // Update the hidden <select> value
+        document.getElementById(selectId).value = value;
+        // Toggle active class within this card group only
+        document.querySelectorAll('[data-select="' + selectId + '"]').forEach(function(c) {
+          c.classList.remove('config-card--active');
+        });
+        card.classList.add('config-card--active');
+      });
+    });
+
+    /* ── THEATER TOP BAR POPULATION ─────────────────────────────────
+       Reads AppState (set by startTheater / activateFromDetail) and
+       fills the theater top bar when the theater-screen becomes visible.
+       Uses MutationObserver — no changes to any business logic. */
+    (function() {
+      var screen = document.getElementById('theater-screen');
+      var obs = new MutationObserver(function() {
+        if (screen.classList.contains('hidden')) return;
+        var nameEl   = document.getElementById('theater-display-name');
+        var sceneEl  = document.getElementById('theater-display-scene');
+        var targetEl = document.getElementById('theater-display-target');
+        if (typeof AppState !== 'undefined') {
+          if (AppState.currentPersonaData) {
+            var cf   = AppState.currentPersonaData.consumer_fields || {};
+            nameEl.innerText = cf.display_name || '—';
+          }
+          if (AppState.currentSceneContext) {
+            sceneEl.innerText  = AppState.currentSceneContext.scene  || '—';
+            targetEl.innerText = AppState.currentSceneContext.target || '—';
+          }
+        }
+      });
+      obs.observe(screen, { attributes: true, attributeFilter: ['class'] });
+    })();
+  </script>
+
 </body>
 </html>
