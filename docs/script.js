@@ -572,7 +572,7 @@ async function startTheater() {
   }
 
   const personaDisplayName = safeStr(AppState.currentPersonaData.consumer_fields.display_name);
-  AppState.currentSceneContext = { scene, scale };
+  AppState.currentSceneContext = { scene, target, scale };
   AppState.usedGachaTips.clear();
   console.log(`[Theater] Starting — Persona: ${AppState.currentPersonaData.id}, Scene: ${scene}, Target: ${target}`);
 
@@ -954,7 +954,7 @@ async function exitTheater() {
   AppState.isTheaterModeActive = false;
   if (AppState.gachaTimer) clearInterval(AppState.gachaTimer);
   AppState.usedGachaTips.clear();
-  AppState.currentSceneContext = { scene: '', scale: '' };
+  AppState.currentSceneContext = { scene: '', target: '', scale: '' };
 
   document.getElementById('theater-screen').classList.add('hidden');
   document.getElementById('carousel').classList.remove('hidden');
@@ -976,6 +976,181 @@ async function exitTheater() {
 function showError(msg) {
   console.error('[UI Error]', msg);
   showAlert(msg, { title: '错误', color: '#e74c3c' });
+}
+
+// ── THEATER REAL-TIME HELP (求助) ─────────────────────────────
+
+/**
+ * handleHelpClick — opens help modal in INPUT state.
+ * Called by the 求助 button in theater-screen.
+ */
+function handleHelpClick() {
+  const inputEl       = document.getElementById('helpInput');
+  const errorEl       = document.getElementById('help-input-error');
+  const inputSection  = document.getElementById('help-input-section');
+  const resultSection = document.getElementById('help-result-section');
+  const submitBtn     = document.getElementById('help-submit-btn');
+
+  // Reset to INPUT state
+  inputEl.value = '';
+  errorEl.innerText = '';
+  errorEl.classList.add('hidden');
+  inputSection.classList.remove('hidden');
+  resultSection.classList.add('hidden');
+  submitBtn.disabled = false;
+  submitBtn.innerText = '获取建议';
+
+  document.getElementById('help-modal-overlay').classList.remove('hidden');
+}
+
+/**
+ * requestSceneHelp — builds context-aware prompt and calls AI.
+ * Returns a suggestion string.
+ */
+async function requestSceneHelp(userInput) {
+  const persona = AppState.currentPersonaData;
+  const scene   = AppState.currentSceneContext.scene;
+  const target  = AppState.currentSceneContext.target;
+  const scale   = AppState.currentSceneContext.scale;
+  const content = AppState.contentData;
+
+  const cf = (persona && persona.consumer_fields) || {};
+  const ts = (persona && persona.theater_support)  || {};
+
+  // Persona core essence / tone — prefer slogan, fall back to display_name
+  const personaEssence = safeStr(cf.slogan || cf.display_name, '[人格特征缺失]');
+
+  const prompt = `You are generating a real-time action suggestion inside an interactive scenario.
+
+CONTEXT
+
+Persona:
+${personaEssence}
+
+Scene:
+${scene}
+
+Target:
+${target}
+
+Current Situation:
+${userInput}
+
+Current Theater Content:
+- Mind: ${content[0] ? content[0].text : ''}
+- Body: ${content[1] ? content[1].text : ''}
+- Speech: ${content[2] ? content[2].text : ''}
+- Reaction: ${content[3] ? content[3].text : ''}
+
+TASK
+
+Generate ONE actionable instruction for what to do NEXT.
+
+RULES (STRICT)
+1. Output ONLY ONE suggestion.
+2. Maximum 1–2 sentences.
+3. Must be immediately executable.
+4. Must reflect how THIS persona would act in THIS scene.
+5. MUST NOT repeat or paraphrase the existing theater content.
+6. MUST NOT explain reasoning.
+7. MUST NOT give multiple options.
+8. MUST NOT restate the user's situation.
+
+STYLE
+- Action-first (use verbs like: "say", "pause", "ask", "shift", "respond")
+- Calm, controlled tone
+- Light persona flavor (not exaggerated)
+
+OUTPUT
+
+Return ONLY the suggestion text. No labels. No explanation.`;
+
+  const url      = 'https://api.moonshot.cn/v1/chat/completions';
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${CONFIG.KIMI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'moonshot-v1-8k',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.65
+    })
+  });
+
+  if (!response.ok) throw new Error(`API HTTP ${response.status}`);
+  const data = await response.json();
+  const raw  = data?.choices?.[0]?.message?.content;
+  if (!raw) throw new Error('AI returned empty content');
+  return raw.trim();
+}
+
+/**
+ * _isHelpResponseInvalid — checks failure conditions defined in spec.
+ */
+function _isHelpResponseInvalid(text) {
+  if (!text || text.trim() === '') return true;
+  // Count sentence-ending punctuation; >2 means too long
+  const sentenceCount = (text.match(/[.!?。！？]/g) || []).length;
+  if (sentenceCount > 2) return true;
+  if (text.includes('你可以')) return true;
+  if (text.includes('建议'))   return true;
+  if (text.includes('应该'))   return true;
+  return false;
+}
+
+/**
+ * onSubmitHelp — validates input, calls AI, switches modal to RESULT state.
+ */
+async function onSubmitHelp() {
+  const inputEl       = document.getElementById('helpInput');
+  const errorEl       = document.getElementById('help-input-error');
+  const submitBtn     = document.getElementById('help-submit-btn');
+  const inputSection  = document.getElementById('help-input-section');
+  const resultSection = document.getElementById('help-result-section');
+  const userInput     = inputEl.value.trim();
+
+  // Validate — empty input
+  if (!userInput) {
+    errorEl.innerText = '请描述你当前的情况后再获取建议。';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  errorEl.classList.add('hidden');
+
+  // Loading state
+  submitBtn.disabled  = true;
+  submitBtn.innerText = '生成中…';
+
+  let suggestion = '';
+  try {
+    suggestion = await requestSceneHelp(userInput);
+  } catch (e) {
+    console.error('[Help] AI call failed:', e.message);
+    suggestion = '';
+  }
+
+  // Restore button before state switch
+  submitBtn.disabled  = false;
+  submitBtn.innerText = '获取建议';
+
+  // Failure handling per spec
+  if (_isHelpResponseInvalid(suggestion)) {
+    suggestion = '现在没抓到合适提示，再试一句更具体的情况。';
+  }
+
+  // Switch to RESULT state — same modal, no new overlay
+  document.getElementById('help-result-text').innerText = suggestion;
+  inputSection.classList.add('hidden');
+  resultSection.classList.remove('hidden');
+}
+
+/**
+ * onConfirmHelp — closes help modal, returns user to Theater.
+ */
+function onConfirmHelp() {
+  document.getElementById('help-modal-overlay').classList.add('hidden');
 }
 
 // ── INIT ──────────────────────────────────────────────────────

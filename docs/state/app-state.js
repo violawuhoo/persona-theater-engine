@@ -22,7 +22,7 @@ const AppState = {
   currentCarouselIndex: 0,    // preserved across Browse ↔ Detail transitions
 
   // ── Theater session ────────────────────────────────────────
-  currentSceneContext: { scene: '', scale: '' },  // bound during Theater activation
+  currentSceneContext: { scene: '', target: '', scale: '' },  // bound during Theater activation
   usedGachaTips:       new Set(),                 // dedup within current session
 
   // ── Data registry ──────────────────────────────────────────

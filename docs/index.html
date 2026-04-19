@@ -201,8 +201,31 @@
         <p id="guidance-content">正在加载同步人格参数...</p>
       </div>
 
-      <button class="btn exit-btn" onclick="exitTheater()">卸载面具 (退出)</button>
+      <div class="theater-actions">
+        <button class="btn help-btn" onclick="handleHelpClick()">求助</button>
+        <button class="btn exit-btn" onclick="exitTheater()">卸载面具 (退出)</button>
+      </div>
     </div>
+
+  <!-- ── Help Modal (求助) — INPUT and RESULT states ──────── -->
+  <div id="help-modal-overlay" class="hidden">
+    <div id="help-modal-box">
+      <div id="help-modal-title">实时求助</div>
+
+      <!-- INPUT STATE -->
+      <div id="help-input-section">
+        <textarea id="helpInput" placeholder="描述你现在发生的情况…"></textarea>
+        <div id="help-input-error" class="help-error hidden"></div>
+        <button id="help-submit-btn" class="modal-btn help-modal-btn--action" onclick="onSubmitHelp()">获取建议</button>
+      </div>
+
+      <!-- RESULT STATE -->
+      <div id="help-result-section" class="hidden">
+        <p id="help-result-text"></p>
+        <button class="modal-btn help-modal-btn--action" onclick="onConfirmHelp()">Got it</button>
+      </div>
+    </div>
+  </div>
     
   </div>
 
