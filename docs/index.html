@@ -6,7 +6,7 @@
   <title>PERSONA THEATER</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    /* Detail panel visual redesign (logic unchanged) */
+    /* Detail reading page layout (presentation only) */
     #detail-panel {
       position: fixed;
       inset: 0;
@@ -17,10 +17,8 @@
         radial-gradient(circle at 10% 15%, rgba(113, 91, 255, 0.12), transparent 30%),
         var(--bg-primary);
       z-index: 500;
-      padding: 0 0 90px;
+      padding: 0 0 120px;
       box-sizing: border-box;
-      max-width: 1280px;
-      margin: 0 auto;
     }
 
     @keyframes detail-in  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
@@ -29,152 +27,176 @@
     #detail-panel.detail-leaving  { animation: detail-out 0.14s ease-in  forwards; }
 
     .detail-shell {
-      width: min(1080px, calc(100% - 32px));
+      width: min(920px, calc(100% - 28px));
       margin: 0 auto;
-      padding-top: 26px;
+      padding: 20px 0 0;
     }
 
     .detail-hero {
-      padding: 66px 28px 28px;
-      display: grid;
-      grid-template-columns: 220px 1fr;
-      gap: 24px;
+      margin-top: 34px;
+      min-height: 210px;
+      border-radius: 16px;
       border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      margin-bottom: 18px;
+      background:
+        linear-gradient(170deg, rgba(14, 28, 44, 0.88), rgba(8, 14, 24, 0.95)),
+        radial-gradient(circle at 72% 0%, rgba(0, 212, 255, 0.2), transparent 40%);
+      overflow: hidden;
       position: relative;
-      background: linear-gradient(145deg, rgba(18, 31, 48, 0.96), rgba(9, 15, 24, 0.96));
-      box-shadow: var(--glow-card);
+      display: grid;
+      grid-template-columns: 34% 1fr;
+      gap: 18px;
+      padding: 24px;
     }
 
     .detail-back-chip {
       position: absolute;
-      top: 16px; left: 16px;
-      background: rgba(7, 12, 19, 0.75);
+      top: 12px;
+      left: 12px;
+      background: rgba(7, 12, 20, 0.65);
       border: 1px solid var(--border-mid);
       color: var(--text-secondary);
-      font-family: inherit;
-      font-size: 12px;
-      padding: 8px 14px;
       border-radius: 999px;
+      padding: 8px 14px;
+      letter-spacing: 0.06em;
+      font-size: 12px;
       cursor: pointer;
-      letter-spacing: 0.08em;
-      transition: border-color 0.15s, color 0.15s;
     }
 
-    .detail-back-chip:hover { border-color: var(--accent-cyan); color: var(--text-primary); }
-
     .detail-hero-visual {
-      min-height: 300px;
-      border-radius: 16px;
+      border-radius: 14px;
       border: 1px solid var(--border-subtle);
       background:
-        radial-gradient(circle at 50% 18%, rgba(0, 212, 255, 0.28), transparent 45%),
-        radial-gradient(circle at 50% 100%, rgba(145, 113, 255, 0.22), transparent 60%),
-        linear-gradient(180deg, rgba(16, 27, 43, 0.96), rgba(7, 10, 16, 0.95));
+        radial-gradient(circle at 50% 20%, rgba(0,212,255,0.36), transparent 45%),
+        linear-gradient(180deg, rgba(13, 23, 37, 0.9), rgba(4, 9, 17, 0.98));
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .detail-avatar {
-      width: 116px; height: 116px;
-      border-radius: 28px;
-      background: rgba(6, 12, 20, 0.68);
-      border: 1px solid rgba(0, 212, 255, 0.36);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 34px;
+      width: 92px;
+      height: 92px;
+      border-radius: 24px;
+      border: 1px solid rgba(0,212,255,0.35);
+      display: grid;
+      place-items: center;
       color: var(--accent-cyan);
-      box-shadow: 0 18px 38px rgba(0, 212, 255, 0.22);
+      font-size: 30px;
+      box-shadow: 0 16px 35px rgba(0,212,255,0.2);
     }
 
     .detail-name {
-      font-size: clamp(2rem, 4.4vw, 3rem);
-      font-weight: 800;
-      letter-spacing: 0.07em;
-      margin-bottom: 10px;
+      margin: 14px 0 8px;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      line-height: 1.1;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
     .detail-slogan {
-      font-size: 18px;
+      font-size: 16px;
       color: var(--text-secondary);
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       line-height: 1.6;
       font-style: italic;
     }
 
     .detail-intro {
-      font-size: 15px;
-      line-height: 1.8;
-      color: var(--text-primary);
-      max-width: 720px;
       margin: 0;
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text-primary);
+      opacity: 0.94;
       white-space: pre-wrap;
     }
 
-    .detail-doc-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+    .detail-doc {
+      margin-top: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(10, 16, 27, 0.88);
+      padding: 18px 16px 8px;
     }
 
     .detail-section {
-      margin: 0;
-      padding: 18px 18px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border-subtle);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+      padding: 0 2px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 18px;
     }
-    .detail-section--core     { background: rgba(0,212,255,0.05); border-color: rgba(0,212,255,0.25); }
-    .detail-section--forbidden{ background: rgba(146,61,113,0.07); border-color: rgba(217,85,155,0.26); }
+
+    .detail-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
 
     .detail-section-label {
-      font-size: 11px;
-      letter-spacing: 0.18em;
+      margin-bottom: 8px;
+      color: var(--accent-cyan);
+      letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 10px;
+      font-size: 11px;
       font-weight: 700;
     }
-    .detail-section--core .detail-section-label { color: var(--accent-cyan); }
-    .detail-section--forbidden .detail-section-label { color: #e595d0; }
 
     .detail-core-text,
     .detail-section-value {
+      margin: 0;
       font-size: 14px;
-      line-height: 1.78;
+      line-height: 1.85;
       color: var(--text-primary);
       white-space: pre-wrap;
-      margin: 0;
     }
 
-    .detail-expressions { display: flex; flex-direction: column; gap: 8px; }
+    .detail-expressions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .detail-expr-line {
       padding: 10px 12px;
-      border-left: 2px solid rgba(0,212,255,0.34);
-      background: rgba(0,212,255,0.05);
+      border-left: 2px solid rgba(0,212,255,0.3);
+      background: rgba(0,212,255,0.06);
       border-radius: 0 8px 8px 0;
-      font-size: 13px; color: var(--text-secondary); line-height: 1.6;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .detail-actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 510;
+      background: linear-gradient(180deg, rgba(5,10,18,0), rgba(5,10,18,0.98) 30%);
+      padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 18px 0 0;
+      gap: 10px;
+      max-width: 920px;
+      margin: 0 auto;
     }
-
-    .detail-actions .btn { width: 100%; }
 
     .detail-btn-back {
       background: transparent !important;
       border: 1px solid var(--border-mid) !important;
       color: var(--text-secondary) !important;
       box-shadow: none !important;
-      font-size: 14px !important;
+    }
+
+    @media (max-width: 760px) {
+      .detail-hero {
+        grid-template-columns: 1fr;
+        padding: 58px 16px 16px;
+      }
+      .detail-hero-visual {
+        min-height: 148px;
+      }
     }
 
     @media (max-width: 920px) {
@@ -228,24 +250,23 @@
          BROWSE PAGE
          ══════════════════════════════════════════════════════════ -->
     <div id="browse-hub">
-      <header>
-        <span class="header-brand">PERSONA</span><span class="header-brand-sub"> THEATER</span>
-      </header>
-
-      <section class="browse-hero" id="browse-hero">
-        <div class="browse-hero-content">
-          <p class="browse-kicker">Featured Protocol</p>
-          <h1 class="browse-hero-name" id="hero-persona-name">SELECT PERSONA</h1>
-          <p class="browse-hero-slogan" id="hero-persona-slogan">选择角色，开启你的现场策略剧场。</p>
-          <button class="btn browse-hero-btn" id="hero-enter-btn">进入人格详情</button>
-        </div>
-        <div class="browse-hero-visual" aria-hidden="true">
-          <div class="hero-orb"></div>
-        </div>
-      </section>
-
       <div class="carousel" id="carousel">...</div>
       <div class="dots" id="dots"></div>
+
+      <section class="browse-overlay" id="browse-hero">
+        <header>
+          <span class="header-brand">PERSONA</span><span class="header-brand-sub"> THEATER</span>
+        </header>
+
+        <div class="browse-overlay-content">
+          <p class="browse-kicker">Persona Selection</p>
+          <h1 class="browse-hero-name" id="hero-persona-name">SELECT PERSONA</h1>
+          <p class="browse-hero-slogan" id="hero-persona-slogan">选择角色，开启你的现场策略剧场。</p>
+          <p class="browse-hero-quad" id="hero-persona-quadrants">Dominant · Strategic · Controlled · Assertive</p>
+          <button class="btn browse-hero-btn" id="hero-enter-btn">Persona Detail</button>
+          <p class="browse-swipe-hint">左右滑动切换人格</p>
+        </div>
+      </section>
     </div>
 
 
@@ -256,42 +277,47 @@
       <div class="detail-shell">
         <div class="detail-hero">
           <button class="detail-back-chip" onclick="closePersonaDetail()">← 返回</button>
-          <div class="detail-hero-visual">
+          <div class="detail-hero-visual" aria-hidden="true">
             <div class="detail-avatar">◈</div>
           </div>
           <div class="detail-hero-copy">
             <div id="detail-persona-name" class="detail-name"></div>
-            <div class="detail-slogan" id="detail-social-essence"></div>
-            <p id="detail-core-essence" class="detail-intro"></p>
+            <p id="detail-hero-slogan" class="detail-slogan">人格正在同步...</p>
+            <p id="detail-hero-intro" class="detail-intro">加载人格叙述中...</p>
           </div>
         </div>
 
-        <div class="detail-doc-grid">
-          <div class="detail-section detail-section--core">
+        <div class="detail-doc">
+          <section class="detail-section">
             <div class="detail-section-label">Core Essence</div>
-            <div id="detail-core-essence-dup" class="detail-core-text">以顶部介绍为主。</div>
-          </div>
+            <p id="detail-core-essence" class="detail-core-text"></p>
+          </section>
 
-          <div class="detail-section">
+          <section class="detail-section">
+            <div class="detail-section-label">Social Logic</div>
+            <p id="detail-social-essence" class="detail-section-value"></p>
+          </section>
+
+          <section class="detail-section">
             <div class="detail-section-label">Behavior Pattern</div>
-            <div id="detail-behavior-pattern" class="detail-section-value">社交模式已在上方展示。</div>
-          </div>
+            <p id="detail-behavior-pattern" class="detail-section-value">该人格会根据社交本质动态调整行动路径，优先执行高收益策略。</p>
+          </section>
 
-          <div class="detail-section">
-            <div class="detail-section-label">Typical Expressions</div>
+          <section class="detail-section">
+            <div class="detail-section-label">Signature Expressions</div>
             <div id="detail-expressions" class="detail-expressions"></div>
-          </div>
+          </section>
 
-          <div class="detail-section detail-section--forbidden">
-            <div class="detail-section-label">Risks / Taboos</div>
-            <div id="detail-forbidden" class="detail-section-value"></div>
-          </div>
+          <section class="detail-section">
+            <div class="detail-section-label">Taboos</div>
+            <p id="detail-forbidden" class="detail-section-value"></p>
+          </section>
         </div>
+      </div>
 
-        <div class="detail-actions">
-          <button class="btn detail-btn-back" onclick="closePersonaDetail()">← 返回筛选</button>
-          <button class="btn" id="detail-activate-btn" onclick="activateFromDetail()">激活面具</button>
-        </div>
+      <div class="detail-actions">
+        <button class="btn detail-btn-back" onclick="closePersonaDetail()">Back</button>
+        <button class="btn" id="detail-activate-btn" onclick="activateFromDetail()">Enter Persona</button>
       </div>
     </div>
 
@@ -444,8 +470,6 @@
          THEATER SCREEN
          ══════════════════════════════════════════════════════════ -->
     <div id="theater-screen" class="hidden">
-
-      <!-- Top info bar: persona name + scene · target -->
       <div class="theater-topbar">
         <div class="theater-topbar-name" id="theater-display-name">—</div>
         <div class="theater-topbar-meta">
@@ -455,42 +479,41 @@
         </div>
       </div>
 
-      <div class="theater-mode-strip" aria-hidden="true">
-        <div class="mode-chip mode-chip--active">MIND</div>
-        <div class="mode-chip">BODY</div>
-        <div class="mode-chip">SPEECH</div>
-        <div class="mode-chip">REACTION</div>
+      <div class="theater-output-stage">
+        <div class="guidance-box">
+          <div class="guidance-header">
+            <p class="guidance-kicker">Active Block</p>
+            <h3 id="guidance-title">MIND</h3>
+          </div>
+          <p id="guidance-content">正在加载同步人格参数...</p>
+        </div>
       </div>
 
-      <!-- Legacy theater-header (hidden via CSS, kept for safety) -->
+      <div class="theater-control-zone">
+        <div class="wheel-container">
+          <div id="main-wheel" class="wheel">
+            <div class="sector" style="--i:0"><span>MIND</span></div>
+            <div class="sector" style="--i:1"><span>BODY</span></div>
+            <div class="sector" style="--i:2"><span>SPEECH</span></div>
+            <div class="sector" style="--i:3"><span>REACTION</span></div>
+          </div>
+          <div class="pointer"></div>
+        </div>
+
+        <div class="theater-mode-strip" aria-hidden="true">
+          <div class="mode-chip mode-chip--active">MIND</div>
+          <div class="mode-chip">BODY</div>
+          <div class="mode-chip">SPEECH</div>
+          <div class="mode-chip">REACTION</div>
+        </div>
+
+        <div class="theater-actions">
+          <button class="btn help-btn" onclick="handleHelpClick()">求助</button>
+          <button class="btn exit-btn" onclick="exitTheater()">卸载面具</button>
+        </div>
+      </div>
+
       <div class="theater-header">剧场模式：运行中</div>
-
-      <!-- Navigation wheel (tap / swipe to cycle quadrants) -->
-      <div class="wheel-container">
-        <div id="main-wheel" class="wheel">
-          <div class="sector" style="--i:0"><span>逻辑</span></div>
-          <div class="sector" style="--i:1"><span>行为</span></div>
-          <div class="sector" style="--i:2"><span>语言</span></div>
-          <div class="sector" style="--i:3"><span>反应</span></div>
-        </div>
-        <div class="pointer"></div>
-      </div>
-
-      <!-- Content panel -->
-      <div class="guidance-box">
-        <div class="guidance-header">
-          <p class="guidance-kicker">Operational Output</p>
-          <h3 id="guidance-title">底层心法</h3>
-        </div>
-        <p  id="guidance-content">正在加载同步人格参数...</p>
-      </div>
-
-      <!-- Actions -->
-      <div class="theater-actions">
-        <button class="btn help-btn"  onclick="handleHelpClick()">求助</button>
-        <button class="btn exit-btn"  onclick="exitTheater()">卸载面具</button>
-      </div>
-
     </div><!-- /#theater-screen -->
 
 
@@ -580,14 +603,21 @@
     (function() {
       var heroName = document.getElementById('hero-persona-name');
       var heroSlogan = document.getElementById('hero-persona-slogan');
+      var heroQuadrants = document.getElementById('hero-persona-quadrants');
       var heroBtn = document.getElementById('hero-enter-btn');
+      var modeChips = Array.from(document.querySelectorAll('.mode-chip'));
 
-      function getCurrentCardButton() {
-        var buttons = Array.from(document.querySelectorAll('[onclick^="openPersonaDetail("]'));
-        if (!buttons.length) return null;
+      function getCurrentCard() {
+        var cards = document.querySelectorAll('.card');
+        if (!cards.length) return null;
         var idx = (typeof AppState !== 'undefined' && typeof AppState.currentCarouselIndex === 'number')
           ? AppState.currentCarouselIndex : 0;
-        return buttons[Math.max(0, Math.min(idx, buttons.length - 1))];
+        return cards[Math.max(0, Math.min(idx, cards.length - 1))];
+      }
+
+      function getCurrentCardButton() {
+        var card = getCurrentCard();
+        return card ? card.querySelector('[onclick^="openPersonaDetail("]') : null;
       }
 
       heroBtn && heroBtn.addEventListener('click', function() {
@@ -595,31 +625,55 @@
         if (btn && !btn.disabled) btn.click();
       });
 
-      var refreshHero = function() {
-        var cards = document.querySelectorAll('.card');
-        var idx = (typeof AppState !== 'undefined' && typeof AppState.currentCarouselIndex === 'number')
-          ? AppState.currentCarouselIndex : 0;
-        var card = cards[idx];
+      function parseQuadrants(card) {
+        var q = card ? card.querySelectorAll('div[style*="grid-template-columns:1fr 1fr"] > div') : [];
+        if (!q.length) return 'Dominant · Strategic · Controlled · Assertive';
+        var labels = ['Expressive', 'Open', 'Rational', 'Bold'];
+        return Array.from(q).map(function(cell, i) {
+          var v = (cell.textContent || '').replace(/\s+/g, ' ').trim();
+          var sign = v.indexOf('-') >= 0 ? 'Low' : 'High';
+          return sign + ' ' + labels[i];
+        }).join(' · ');
+      }
+
+      function refreshHero() {
+        var card = getCurrentCard();
         if (!card) return;
         var title = card.querySelector('.title');
         var desc = card.querySelector('.desc');
         if (title) heroName.textContent = title.textContent;
         if (desc) heroSlogan.textContent = desc.textContent.replace(/^"|"$/g, '');
-      };
+        if (heroQuadrants) heroQuadrants.textContent = parseQuadrants(card);
+      }
 
-      setInterval(refreshHero, 220);
+      setInterval(refreshHero, 240);
 
       var socialEl = document.getElementById('detail-social-essence');
       var coreEl = document.getElementById('detail-core-essence');
-      var coreDupEl = document.getElementById('detail-core-essence-dup');
+      var heroSloganEl = document.getElementById('detail-hero-slogan');
+      var heroIntroEl = document.getElementById('detail-hero-intro');
       var behaviorEl = document.getElementById('detail-behavior-pattern');
 
       var detailObs = new MutationObserver(function() {
-        if (coreDupEl && coreEl) coreDupEl.textContent = coreEl.textContent || '—';
-        if (behaviorEl && socialEl) behaviorEl.textContent = socialEl.textContent || '—';
+        if (heroSloganEl && socialEl) heroSloganEl.textContent = socialEl.textContent || '—';
+        if (heroIntroEl && coreEl) heroIntroEl.textContent = coreEl.textContent || '—';
+        if (behaviorEl && socialEl) {
+          behaviorEl.textContent = (socialEl.textContent || '—') + '\\n\\n在不同场景下保持稳定策略并按反馈微调。';
+        }
       });
+
       coreEl && detailObs.observe(coreEl, { childList: true, subtree: true });
       socialEl && detailObs.observe(socialEl, { childList: true, subtree: true });
+
+      var guideTitle = document.getElementById('guidance-title');
+      if (guideTitle) {
+        new MutationObserver(function() {
+          var t = (guideTitle.textContent || '').toUpperCase();
+          modeChips.forEach(function(chip) {
+            chip.classList.toggle('mode-chip--active', t.indexOf(chip.textContent) >= 0);
+          });
+        }).observe(guideTitle, { childList: true, subtree: true });
+      }
     })();
 
   </script>
