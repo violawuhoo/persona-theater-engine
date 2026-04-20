@@ -6,124 +6,184 @@
   <title>PERSONA THEATER</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    /* ── DETAIL PANEL ─────────────────────────────────────────────
-       position:fixed escapes body overflow:hidden clipping.
-       All detail-* styles are here to coexist with the inline
-       animation keyframes that also live in this block.        ── */
+    /* Detail panel visual redesign (logic unchanged) */
     #detail-panel {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      inset: 0;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      background: var(--bg-primary);
+      background:
+        radial-gradient(circle at 85% 0%, rgba(0, 212, 255, 0.14), transparent 36%),
+        radial-gradient(circle at 10% 15%, rgba(113, 91, 255, 0.12), transparent 30%),
+        var(--bg-primary);
       z-index: 500;
-      padding: 0 0 72px;
+      padding: 0 0 90px;
       box-sizing: border-box;
-      max-width: 480px;
+      max-width: 1280px;
       margin: 0 auto;
     }
 
-    /* ── Transitions ── */
     @keyframes detail-in  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
     @keyframes detail-out { from { opacity:1 } to { opacity:0 } }
     #detail-panel.detail-entering { animation: detail-in  0.22s ease-out forwards; }
     #detail-panel.detail-leaving  { animation: detail-out 0.14s ease-in  forwards; }
 
-    /* ── Detail hero area ── */
-    .detail-hero {
-      padding: 56px 22px 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      border-bottom: 1px solid var(--border-subtle);
-      margin-bottom: 12px;
-      position: relative;
+    .detail-shell {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding-top: 26px;
     }
 
-    /* Back button — top-left of hero */
+    .detail-hero {
+      padding: 66px 28px 28px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      margin-bottom: 18px;
+      position: relative;
+      background: linear-gradient(145deg, rgba(18, 31, 48, 0.96), rgba(9, 15, 24, 0.96));
+      box-shadow: var(--glow-card);
+    }
+
     .detail-back-chip {
       position: absolute;
       top: 16px; left: 16px;
-      background: transparent;
-      border: 1px solid var(--border-subtle);
+      background: rgba(7, 12, 19, 0.75);
+      border: 1px solid var(--border-mid);
       color: var(--text-secondary);
       font-family: inherit;
       font-size: 12px;
-      padding: 6px 14px;
-      border-radius: 20px;
+      padding: 8px 14px;
+      border-radius: 999px;
       cursor: pointer;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.08em;
       transition: border-color 0.15s, color 0.15s;
     }
 
-    /* Avatar placeholder */
-    .detail-avatar {
-      width: 76px; height: 76px;
-      border-radius: 50%;
-      background: var(--bg-elevated);
+    .detail-back-chip:hover { border-color: var(--accent-cyan); color: var(--text-primary); }
+
+    .detail-hero-visual {
+      min-height: 300px;
+      border-radius: 16px;
       border: 1px solid var(--border-subtle);
+      background:
+        radial-gradient(circle at 50% 18%, rgba(0, 212, 255, 0.28), transparent 45%),
+        radial-gradient(circle at 50% 100%, rgba(145, 113, 255, 0.22), transparent 60%),
+        linear-gradient(180deg, rgba(16, 27, 43, 0.96), rgba(7, 10, 16, 0.95));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .detail-avatar {
+      width: 116px; height: 116px;
+      border-radius: 28px;
+      background: rgba(6, 12, 20, 0.68);
+      border: 1px solid rgba(0, 212, 255, 0.36);
       display: flex; align-items: center; justify-content: center;
-      font-size: 26px;
-      color: var(--text-muted);
+      font-size: 34px;
+      color: var(--accent-cyan);
+      box-shadow: 0 18px 38px rgba(0, 212, 255, 0.22);
     }
 
-    /* Persona name */
     .detail-name {
-      font-size: 26px;
-      font-weight: 700;
+      font-size: clamp(2rem, 4.4vw, 3rem);
+      font-weight: 800;
       letter-spacing: 0.07em;
-      text-align: center;
+      margin-bottom: 10px;
+      text-transform: uppercase;
     }
 
-    /* ── Detail sections ── */
+    .detail-slogan {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    .detail-intro {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-primary);
+      max-width: 720px;
+      margin: 0;
+      white-space: pre-wrap;
+    }
+
+    .detail-doc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
     .detail-section {
-      margin: 8px 16px;
-      padding: 15px 16px;
-      border-radius: 12px;
+      margin: 0;
+      padding: 18px 18px;
+      border-radius: 16px;
       background: rgba(255,255,255,0.02);
       border: 1px solid var(--border-subtle);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
     }
-    .detail-section--core     { background: rgba(0,212,255,0.04); border-color: rgba(0,212,255,0.2); }
-    .detail-section--forbidden{ background: rgba(224,90,32,0.04); border-color: rgba(224,90,32,0.2); }
+    .detail-section--core     { background: rgba(0,212,255,0.05); border-color: rgba(0,212,255,0.25); }
+    .detail-section--forbidden{ background: rgba(146,61,113,0.07); border-color: rgba(217,85,155,0.26); }
 
     .detail-section-label {
-      font-size: 10px;
-      letter-spacing: 0.16em;
+      font-size: 11px;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 9px;
+      margin-bottom: 10px;
+      font-weight: 700;
     }
-    .detail-section--core      .detail-section-label { color: var(--accent-cyan); opacity: 0.7; }
-    .detail-section--forbidden .detail-section-label { color: #e05a20; opacity: 0.7; }
+    .detail-section--core .detail-section-label { color: var(--accent-cyan); }
+    .detail-section--forbidden .detail-section-label { color: #e595d0; }
 
-    .detail-core-text    { font-size: 14px; line-height: 1.75; color: var(--text-primary); }
-    .detail-section-value{ font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); white-space: pre-wrap; }
+    .detail-core-text,
+    .detail-section-value {
+      font-size: 14px;
+      line-height: 1.78;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      margin: 0;
+    }
 
-    /* ── Typical expressions ── */
-    .detail-expressions { display: flex; flex-direction: column; gap: 7px; }
+    .detail-expressions { display: flex; flex-direction: column; gap: 8px; }
     .detail-expr-line {
-      padding: 8px 12px;
-      border-left: 2px solid rgba(0,212,255,0.28);
-      background: rgba(0,212,255,0.03);
-      border-radius: 0 6px 6px 0;
-      font-size: 13px; color: var(--text-secondary); line-height: 1.55;
+      padding: 10px 12px;
+      border-left: 2px solid rgba(0,212,255,0.34);
+      background: rgba(0,212,255,0.05);
+      border-radius: 0 8px 8px 0;
+      font-size: 13px; color: var(--text-secondary); line-height: 1.6;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    /* ── Actions row ── */
     .detail-actions {
-      display: flex; gap: 12px;
-      margin: 22px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 18px 0 0;
     }
-    .detail-actions .btn { flex: 1; }
+
+    .detail-actions .btn { width: 100%; }
 
     .detail-btn-back {
       background: transparent !important;
-      border: 1px solid var(--border-subtle) !important;
+      border: 1px solid var(--border-mid) !important;
       color: var(--text-secondary) !important;
       box-shadow: none !important;
       font-size: 14px !important;
+    }
+
+    @media (max-width: 920px) {
+      .detail-hero {
+        grid-template-columns: 1fr;
+        padding-top: 72px;
+      }
+      .detail-doc-grid { grid-template-columns: 1fr; }
+      .detail-hero-visual { min-height: 220px; }
     }
   </style>
 </head>
@@ -167,54 +227,71 @@
     <!-- ══════════════════════════════════════════════════════════
          BROWSE PAGE
          ══════════════════════════════════════════════════════════ -->
-    <header>
-      <span class="header-brand">PERSONA</span><span class="header-brand-sub"> THEATER</span>
-    </header>
+    <div id="browse-hub">
+      <header>
+        <span class="header-brand">PERSONA</span><span class="header-brand-sub"> THEATER</span>
+      </header>
 
-    <div class="carousel" id="carousel">...</div>
-    <div class="dots"     id="dots"></div>
+      <section class="browse-hero" id="browse-hero">
+        <div class="browse-hero-content">
+          <p class="browse-kicker">Featured Protocol</p>
+          <h1 class="browse-hero-name" id="hero-persona-name">SELECT PERSONA</h1>
+          <p class="browse-hero-slogan" id="hero-persona-slogan">选择角色，开启你的现场策略剧场。</p>
+          <button class="btn browse-hero-btn" id="hero-enter-btn">进入人格详情</button>
+        </div>
+        <div class="browse-hero-visual" aria-hidden="true">
+          <div class="hero-orb"></div>
+        </div>
+      </section>
+
+      <div class="carousel" id="carousel">...</div>
+      <div class="dots" id="dots"></div>
+    </div>
 
 
     <!-- ══════════════════════════════════════════════════════════
          DETAIL PANEL  (Browse → Detail → Config)
          ══════════════════════════════════════════════════════════ -->
-    <div id="detail-panel" class="hidden">
+        <div id="detail-panel" class="hidden">
+      <div class="detail-shell">
+        <div class="detail-hero">
+          <button class="detail-back-chip" onclick="closePersonaDetail()">← 返回</button>
+          <div class="detail-hero-visual">
+            <div class="detail-avatar">◈</div>
+          </div>
+          <div class="detail-hero-copy">
+            <div id="detail-persona-name" class="detail-name"></div>
+            <div class="detail-slogan" id="detail-social-essence"></div>
+            <p id="detail-core-essence" class="detail-intro"></p>
+          </div>
+        </div>
 
-      <!-- Hero area -->
-      <div class="detail-hero">
-        <button class="detail-back-chip" onclick="closePersonaDetail()">← 返回</button>
-        <div class="detail-avatar">◈</div>
-        <div id="detail-persona-name" class="detail-name"></div>
-      </div>
+        <div class="detail-doc-grid">
+          <div class="detail-section detail-section--core">
+            <div class="detail-section-label">Core Essence</div>
+            <div id="detail-core-essence-dup" class="detail-core-text">以顶部介绍为主。</div>
+          </div>
 
-      <!-- Core essence -->
-      <div class="detail-section detail-section--core">
-        <div class="detail-section-label">核心本质</div>
-        <div id="detail-core-essence" class="detail-core-text"></div>
-      </div>
+          <div class="detail-section">
+            <div class="detail-section-label">Behavior Pattern</div>
+            <div id="detail-behavior-pattern" class="detail-section-value">社交模式已在上方展示。</div>
+          </div>
 
-      <!-- Social essence -->
-      <div class="detail-section">
-        <div class="detail-section-label">社交本质</div>
-        <div id="detail-social-essence" class="detail-section-value"></div>
-      </div>
+          <div class="detail-section">
+            <div class="detail-section-label">Typical Expressions</div>
+            <div id="detail-expressions" class="detail-expressions"></div>
+          </div>
 
-      <!-- Typical expressions -->
-      <div class="detail-section">
-        <div class="detail-section-label">典型表达</div>
-        <div id="detail-expressions" class="detail-expressions"></div>
-      </div>
+          <div class="detail-section detail-section--forbidden">
+            <div class="detail-section-label">Risks / Taboos</div>
+            <div id="detail-forbidden" class="detail-section-value"></div>
+          </div>
+        </div>
 
-      <!-- Taboos -->
-      <div class="detail-section detail-section--forbidden">
-        <div class="detail-section-label">禁忌</div>
-        <div id="detail-forbidden" class="detail-section-value"></div>
-      </div>
-
-      <!-- Actions -->
-      <div class="detail-actions">
-        <button class="btn detail-btn-back" onclick="closePersonaDetail()">← 返回筛选</button>
-        <button class="btn" id="detail-activate-btn" onclick="activateFromDetail()">激活面具</button>
+        <div class="detail-actions">
+          <button class="btn detail-btn-back" onclick="closePersonaDetail()">← 返回筛选</button>
+          <button class="btn" id="detail-activate-btn" onclick="activateFromDetail()">激活面具</button>
+        </div>
       </div>
     </div>
 
@@ -378,6 +455,13 @@
         </div>
       </div>
 
+      <div class="theater-mode-strip" aria-hidden="true">
+        <div class="mode-chip mode-chip--active">MIND</div>
+        <div class="mode-chip">BODY</div>
+        <div class="mode-chip">SPEECH</div>
+        <div class="mode-chip">REACTION</div>
+      </div>
+
       <!-- Legacy theater-header (hidden via CSS, kept for safety) -->
       <div class="theater-header">剧场模式：运行中</div>
 
@@ -394,7 +478,10 @@
 
       <!-- Content panel -->
       <div class="guidance-box">
-        <h3 id="guidance-title">底层心法</h3>
+        <div class="guidance-header">
+          <p class="guidance-kicker">Operational Output</p>
+          <h3 id="guidance-title">底层心法</h3>
+        </div>
         <p  id="guidance-content">正在加载同步人格参数...</p>
       </div>
 
@@ -488,6 +575,53 @@
       });
       obs.observe(screen, { attributes: true, attributeFilter: ['class'] });
     })();
+
+    /* ── HERO + DETAIL SUPPORT COPY (presentation only) ───────────── */
+    (function() {
+      var heroName = document.getElementById('hero-persona-name');
+      var heroSlogan = document.getElementById('hero-persona-slogan');
+      var heroBtn = document.getElementById('hero-enter-btn');
+
+      function getCurrentCardButton() {
+        var buttons = Array.from(document.querySelectorAll('[onclick^="openPersonaDetail("]'));
+        if (!buttons.length) return null;
+        var idx = (typeof AppState !== 'undefined' && typeof AppState.currentCarouselIndex === 'number')
+          ? AppState.currentCarouselIndex : 0;
+        return buttons[Math.max(0, Math.min(idx, buttons.length - 1))];
+      }
+
+      heroBtn && heroBtn.addEventListener('click', function() {
+        var btn = getCurrentCardButton();
+        if (btn && !btn.disabled) btn.click();
+      });
+
+      var refreshHero = function() {
+        var cards = document.querySelectorAll('.card');
+        var idx = (typeof AppState !== 'undefined' && typeof AppState.currentCarouselIndex === 'number')
+          ? AppState.currentCarouselIndex : 0;
+        var card = cards[idx];
+        if (!card) return;
+        var title = card.querySelector('.title');
+        var desc = card.querySelector('.desc');
+        if (title) heroName.textContent = title.textContent;
+        if (desc) heroSlogan.textContent = desc.textContent.replace(/^"|"$/g, '');
+      };
+
+      setInterval(refreshHero, 220);
+
+      var socialEl = document.getElementById('detail-social-essence');
+      var coreEl = document.getElementById('detail-core-essence');
+      var coreDupEl = document.getElementById('detail-core-essence-dup');
+      var behaviorEl = document.getElementById('detail-behavior-pattern');
+
+      var detailObs = new MutationObserver(function() {
+        if (coreDupEl && coreEl) coreDupEl.textContent = coreEl.textContent || '—';
+        if (behaviorEl && socialEl) behaviorEl.textContent = socialEl.textContent || '—';
+      });
+      coreEl && detailObs.observe(coreEl, { childList: true, subtree: true });
+      socialEl && detailObs.observe(socialEl, { childList: true, subtree: true });
+    })();
+
   </script>
 
 </body>
