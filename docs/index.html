@@ -12,7 +12,10 @@
       inset: 0;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      background: var(--bg-primary);
+      background:
+        radial-gradient(circle at 85% 0%, rgba(0, 212, 255, 0.14), transparent 36%),
+        radial-gradient(circle at 10% 15%, rgba(113, 91, 255, 0.12), transparent 30%),
+        var(--bg-primary);
       z-index: 500;
       padding: 0 0 120px;
       box-sizing: border-box;
@@ -194,6 +197,15 @@
       .detail-hero-visual {
         min-height: 148px;
       }
+    }
+
+    @media (max-width: 920px) {
+      .detail-hero {
+        grid-template-columns: 1fr;
+        padding-top: 72px;
+      }
+      .detail-doc-grid { grid-template-columns: 1fr; }
+      .detail-hero-visual { min-height: 220px; }
     }
   </style>
 </head>
