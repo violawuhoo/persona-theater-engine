@@ -229,7 +229,7 @@ header {
 }
 @keyframes scanLoop { 0% { top: -5%; } 100% { top: 105%; } }
 .sync-box {
-  width: 82%; max-width: 400px;
+  width: 82%; max-width: 420px;
   border: 1px solid var(--accent-cyan);
   padding: 26px;
   background: rgba(0, 16, 28, 0.92);
@@ -289,6 +289,7 @@ header {
   background: linear-gradient(165deg, rgba(0, 212, 255, 0.24), rgba(13, 26, 41, 0.96));
   box-shadow: 0 0 26px rgba(0, 212, 255, 0.28);
   color: var(--text-primary);
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.22);
 }
 .config-card-title { font-size: 13px; font-weight: 700; }
 .config-card-sub { font-size: 10px; letter-spacing: 0.04em; }
@@ -428,7 +429,6 @@ header {
   margin: 0 auto;
   overflow: hidden;
 }
-
 .wheel {
   width: 220px;
   height: 220px;
@@ -466,7 +466,6 @@ header {
   color: var(--persona-accent);
   font-weight: 700;
 }
-
 .pointer {
   position: absolute;
   top: 0;
