@@ -198,15 +198,6 @@
         min-height: 148px;
       }
     }
-
-    @media (max-width: 920px) {
-      .detail-hero {
-        grid-template-columns: 1fr;
-        padding-top: 72px;
-      }
-      .detail-doc-grid { grid-template-columns: 1fr; }
-      .detail-hero-visual { min-height: 220px; }
-    }
   </style>
 </head>
 <body>
@@ -288,30 +279,39 @@
         </div>
 
         <div class="detail-doc">
-          <section class="detail-section">
+          <section class="detail-section detail-section--persistent">
             <div class="detail-section-label">Core Essence</div>
             <p id="detail-core-essence" class="detail-core-text"></p>
           </section>
 
-          <section class="detail-section">
-            <div class="detail-section-label">Social Logic</div>
-            <p id="detail-social-essence" class="detail-section-value"></p>
-          </section>
+          <div class="detail-tabs" role="tablist" aria-label="Persona details">
+            <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">Social</button>
+            <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">Behaviour</button>
+            <button class="detail-tab" data-tab="signature" role="tab" aria-selected="false">Signature</button>
+            <button class="detail-tab" data-tab="taboo" role="tab" aria-selected="false">Taboo</button>
+          </div>
 
-          <section class="detail-section">
-            <div class="detail-section-label">Behavior Pattern</div>
-            <p id="detail-behavior-pattern" class="detail-section-value">该人格会根据社交本质动态调整行动路径，优先执行高收益策略。</p>
-          </section>
+          <div class="detail-tab-panels">
+            <section class="detail-pane" data-pane="social" hidden>
+              <div class="detail-section-label">Social Logic</div>
+              <div id="detail-social-essence" class="detail-section-value detail-list"></div>
+            </section>
 
-          <section class="detail-section">
-            <div class="detail-section-label">Signature Expressions</div>
-            <div id="detail-expressions" class="detail-expressions"></div>
-          </section>
+            <section class="detail-pane detail-pane--active" data-pane="behavior">
+              <div class="detail-section-label">Behaviour Pattern</div>
+              <div id="detail-behavior-pattern" class="detail-section-value detail-list">该人格会根据社交本质动态调整行动路径，优先执行高收益策略。</div>
+            </section>
 
-          <section class="detail-section">
-            <div class="detail-section-label">Taboos</div>
-            <p id="detail-forbidden" class="detail-section-value"></p>
-          </section>
+            <section class="detail-pane" data-pane="signature" hidden>
+              <div class="detail-section-label">Signature Expressions</div>
+              <div id="detail-expressions" class="detail-expressions"></div>
+            </section>
+
+            <section class="detail-pane" data-pane="taboo" hidden>
+              <div class="detail-section-label">Taboos</div>
+              <div id="detail-forbidden" class="detail-section-value detail-list"></div>
+            </section>
+          </div>
         </div>
       </div>
 
@@ -500,12 +500,6 @@
           <div class="pointer"></div>
         </div>
 
-        <div class="theater-mode-strip" aria-hidden="true">
-          <div class="mode-chip mode-chip--active">MIND</div>
-          <div class="mode-chip">BODY</div>
-          <div class="mode-chip">SPEECH</div>
-          <div class="mode-chip">REACTION</div>
-        </div>
 
         <div class="theater-actions">
           <button class="btn help-btn" onclick="handleHelpClick()">求助</button>
@@ -605,7 +599,6 @@
       var heroSlogan = document.getElementById('hero-persona-slogan');
       var heroQuadrants = document.getElementById('hero-persona-quadrants');
       var heroBtn = document.getElementById('hero-enter-btn');
-      var modeChips = Array.from(document.querySelectorAll('.mode-chip'));
 
       function getCurrentCard() {
         var cards = document.querySelectorAll('.card');
@@ -666,14 +659,64 @@
       socialEl && detailObs.observe(socialEl, { childList: true, subtree: true });
 
       var guideTitle = document.getElementById('guidance-title');
-      if (guideTitle) {
-        new MutationObserver(function() {
-          var t = (guideTitle.textContent || '').toUpperCase();
-          modeChips.forEach(function(chip) {
-            chip.classList.toggle('mode-chip--active', t.indexOf(chip.textContent) >= 0);
-          });
-        }).observe(guideTitle, { childList: true, subtree: true });
+      var sectors = Array.from(document.querySelectorAll('#main-wheel .sector'));
+      var map = { MIND: 0, BODY: 1, SPEECH: 2, REACTION: 3, 逻辑: 0, 行为: 1, 语言: 2, 反应: 3 };
+      function syncWheelActive() {
+        if (!guideTitle) return;
+        var t = (guideTitle.textContent || '').toUpperCase();
+        var idx = 0;
+        Object.keys(map).forEach(function(k) {
+          if (t.indexOf(k.toUpperCase()) >= 0) idx = map[k];
+        });
+        sectors.forEach(function(sec, i) {
+          sec.classList.toggle('sector--active', i === idx);
+        });
       }
+      if (guideTitle) {
+        new MutationObserver(syncWheelActive).observe(guideTitle, { childList: true, subtree: true });
+      }
+
+      // Detail tab system
+      var tabs = Array.from(document.querySelectorAll('.detail-tab'));
+      var panes = Array.from(document.querySelectorAll('.detail-pane'));
+      function setDetailTab(name) {
+        tabs.forEach(function(tab) {
+          var active = tab.dataset.tab === name;
+          tab.classList.toggle('detail-tab--active', active);
+          tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panes.forEach(function(pane) {
+          var active = pane.dataset.pane === name;
+          pane.classList.toggle('detail-pane--active', active);
+          pane.hidden = !active;
+        });
+      }
+      tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() { setDetailTab(tab.dataset.tab); });
+      });
+      setDetailTab('behavior');
+
+      // Persona color identity variables
+      function applyPersonaTheme(color) {
+        var c = color || '#00d4ff';
+        document.documentElement.style.setProperty('--persona-accent', c);
+        document.documentElement.style.setProperty('--persona-glow', c + '66');
+        document.documentElement.style.setProperty('--persona-gradient', 'linear-gradient(180deg, ' + c + ', #0a1525)');
+      }
+      function detectCurrentPersonaColor() {
+        var card = getCurrentCard();
+        var btn = card ? card.querySelector('.btn[style]') : null;
+        if (btn && btn.style.background) return btn.style.background;
+        if (typeof AppState !== 'undefined' && AppState.selectedPersona && Array.isArray(AppState.runtimePersonaRegistry)) {
+          var entry = AppState.runtimePersonaRegistry.find(function(p) { return p.id === AppState.selectedPersona; });
+          if (entry && entry.color) return entry.color;
+        }
+        return '#00d4ff';
+      }
+      setInterval(function() {
+        applyPersonaTheme(detectCurrentPersonaColor());
+        syncWheelActive();
+      }, 240);
     })();
 
   </script>
