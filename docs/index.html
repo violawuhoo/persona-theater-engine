@@ -96,18 +96,22 @@
     .detail-slogan {
       font-size: 16px;
       color: var(--text-secondary);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       line-height: 1.6;
       font-style: italic;
     }
 
     .detail-intro {
       margin: 0;
-      font-size: 14px;
-      line-height: 1.75;
+      font-size: 15px;
+      line-height: 1.85;
       color: var(--text-primary);
       opacity: 0.94;
       white-space: pre-wrap;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(8, 14, 24, 0.56);
     }
 
     .detail-doc {
@@ -217,15 +221,13 @@
   <!-- ── SYNC / CALIBRATION OVERLAY ────────────────────────────── -->
   <div id="sync-overlay" class="hidden">
     <div class="scan-line"></div>
-    <div class="sync-box">
-      <div class="sync-title">PERSONA PROTOCOL SYNCING</div>
+      <div class="sync-box">
+      <div class="sync-title">PERSONA ACTIVATION</div>
       <div class="sync-persona-name" id="sync-persona-name">Load...</div>
       <div class="sync-status">
-        <span class="status-label">BIOMETRIC:</span>
+        <span class="status-label">场景:</span>
         <span class="status-value">STABLE</span><br>
-        <span class="status-label">EMOTION:</span>
-        <span class="status-valueSuppress">SUPPRESSED</span><br>
-        <span class="status-label">LOGIC_CORE:</span>
+        <span class="status-label">对手:</span>
         <span class="status-value">ONLINE</span>
       </div>
       <div class="sync-progress-bar">
@@ -274,16 +276,12 @@
           <div class="detail-hero-copy">
             <div id="detail-persona-name" class="detail-name"></div>
             <p id="detail-hero-slogan" class="detail-slogan">人格正在同步...</p>
-            <p id="detail-hero-intro" class="detail-intro">加载人格叙述中...</p>
+            <p id="detail-hero-intro" class="detail-intro">加载人格核心中...</p>
+            <p id="detail-core-essence" class="hidden"></p>
           </div>
         </div>
 
         <div class="detail-doc">
-          <section class="detail-section detail-section--persistent">
-            <div class="detail-section-label">Core Essence</div>
-            <p id="detail-core-essence" class="detail-core-text"></p>
-          </section>
-
           <div class="detail-tabs" role="tablist" aria-label="Persona details">
             <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">Social</button>
             <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">Behaviour</button>
@@ -346,8 +344,8 @@
       <select id="target-select" class="hidden-select">
         <option value="甲方/决策者">甲方/决策者</option>
         <option value="竞争对手/同行">竞争对手/同行</option>
-        <option value="下属/执行层">下属/执行层</option>
-        <option value="朋友/熟人">朋友/熟人</option>
+        <option value="上级/管理层">上级/管理层</option>
+        <option value="合作者/同盟">合作者/同盟</option>
         <option value="陌生人/潜在资源">陌生人/潜在资源</option>
       </select>
 
@@ -410,14 +408,14 @@
             <span class="config-card-sub">同行 · 博弈</span>
           </button>
           <button class="config-card"
-                  data-select="target-select" data-value="下属/执行层">
-            <span class="config-card-title">下属</span>
-            <span class="config-card-sub">执行 · 指令</span>
+                  data-select="target-select" data-value="上级/管理层">
+            <span class="config-card-title">上级</span>
+            <span class="config-card-sub">管理 · 汇报</span>
           </button>
           <button class="config-card"
-                  data-select="target-select" data-value="朋友/熟人">
-            <span class="config-card-title">朋友熟人</span>
-            <span class="config-card-sub">信任 · 熟悉</span>
+                  data-select="target-select" data-value="合作者/同盟">
+            <span class="config-card-title">合作者</span>
+            <span class="config-card-sub">协作 · 同盟</span>
           </button>
           <button class="config-card"
                   data-select="target-select" data-value="陌生人/潜在资源">
@@ -433,23 +431,18 @@
         <div class="config-cards config-cards--scale" id="scale-cards">
           <button class="config-card config-card--active"
                   data-select="scale-select" data-value="1-3人 (深度对谈)">
-            <span class="config-card-title">1–3 人</span>
+            <span class="config-card-title">1–3人</span>
             <span class="config-card-sub">深度对谈</span>
           </button>
           <button class="config-card"
                   data-select="scale-select" data-value="3-5人 (小组博弈)">
-            <span class="config-card-title">3–5 人</span>
+            <span class="config-card-title">3–5人</span>
             <span class="config-card-sub">小组博弈</span>
           </button>
           <button class="config-card"
-                  data-select="scale-select" data-value="5-8人 (多变量社交)">
-            <span class="config-card-title">5–8 人</span>
-            <span class="config-card-sub">多变量社交</span>
-          </button>
-          <button class="config-card"
                   data-select="scale-select" data-value=">8人 (群体观察)">
-            <span class="config-card-title">8人＋</span>
-            <span class="config-card-sub">群体观察</span>
+            <span class="config-card-title">7人以上</span>
+            <span class="config-card-sub">多变量社交</span>
           </button>
         </div>
       </div>
@@ -647,11 +640,44 @@
       var heroIntroEl = document.getElementById('detail-hero-intro');
       var behaviorEl = document.getElementById('detail-behavior-pattern');
 
+      function toBullets(raw, fallback) {
+        var src = (raw || '').trim();
+        if (!src) return '• ' + fallback;
+        return src
+          .split(/\n+/)
+          .map(function(line) { return line.replace(/^[•\-\s]+/, '').trim(); })
+          .filter(Boolean)
+          .map(function(line) { return '• ' + line; })
+          .join('\n');
+      }
+
+      function extractBehaviorFromPersonaData() {
+        if (typeof AppState === 'undefined' || !AppState.currentPersonaData) return '';
+        var ts = AppState.currentPersonaData.theater_support || {};
+        var em = ts.expression_modulators || {};
+        var rc = ts.reaction_cues || {};
+        var lines = [];
+
+        if (em.physicality) lines.push('肢体: ' + em.physicality);
+        if (em.delivery_mode) lines.push('语速语调: ' + em.delivery_mode);
+        if (rc.micro_tell) lines.push('微反应: ' + rc.micro_tell);
+        if (rc.pressure_shift) lines.push('压力线索: ' + rc.pressure_shift);
+        if (rc.recovery_pattern) lines.push('复位方式: ' + rc.recovery_pattern);
+        return lines.join('\n');
+      }
+
       var detailObs = new MutationObserver(function() {
-        if (heroSloganEl && socialEl) heroSloganEl.textContent = socialEl.textContent || '—';
+        if (heroSloganEl && socialEl) {
+          var sloganLine = (socialEl.textContent || '').split('\n').map(function(s) { return s.trim(); }).find(Boolean);
+          heroSloganEl.textContent = sloganLine || '—';
+        }
         if (heroIntroEl && coreEl) heroIntroEl.textContent = coreEl.textContent || '—';
-        if (behaviorEl && socialEl) {
-          behaviorEl.textContent = (socialEl.textContent || '—') + '\\n\\n在不同场景下保持稳定策略并按反馈微调。';
+        if (behaviorEl) {
+          var behaviorText = extractBehaviorFromPersonaData();
+          behaviorEl.textContent = toBullets(behaviorText, '保持姿态稳定，根据反馈微调动作。');
+        }
+        if (socialEl) {
+          socialEl.textContent = toBullets(socialEl.textContent, '在关系中识别位置与力量变化。');
         }
       });
 
@@ -675,6 +701,28 @@
       if (guideTitle) {
         new MutationObserver(syncWheelActive).observe(guideTitle, { childList: true, subtree: true });
       }
+
+      var syncStatusEl = document.querySelector('.sync-status');
+      var syncObserver = new MutationObserver(function() {
+        if (!syncStatusEl) return;
+        var raw = syncStatusEl.textContent || '';
+        if (raw.indexOf('SCENE') === -1 && raw.indexOf('ENV_SCAN') === -1) return;
+        var html = syncStatusEl.innerHTML;
+        html = html
+          .replace(/PERSONA_ID:/g, '状态:')
+          .replace(/ENV_SCAN:/g, '场景:')
+          .replace(/TARGET_LOCK:/g, '对手:')
+          .replace(/FIELD_SCALE:/g, '规模:')
+          .replace(/EMOTION:/g, '意图:');
+        html = html
+          .replace(/1-3人 \(深度对谈\)/g, '深度对谈')
+          .replace(/3-5人 \(小组博弈\)/g, '小型局')
+          .replace(/5-8人 \(多变量社交\)/g, '中场互动')
+          .replace(/>8人 \(群体观察\)/g, '大场面')
+          .replace(/SUPPRESSED/g, (document.getElementById('intention-input') || {}).value || '已锁定');
+        syncStatusEl.innerHTML = html;
+      });
+      if (syncStatusEl) syncObserver.observe(syncStatusEl, { childList: true, subtree: true });
 
       // Detail tab system
       var tabs = Array.from(document.querySelectorAll('.detail-tab'));

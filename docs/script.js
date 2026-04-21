@@ -742,20 +742,23 @@ async function callAIWithPersonaProtocol(personaData, scene, target, scale, inte
     ? `${target}\n目标档案: ${targetProfile}`
     : target;
 
-  const systemPrompt = `你是在生成一个互动场景中的实时行动指令。
+  const systemPrompt = `You are generating **real-time behavioral guidance** inside a persona-based simulation system.
 
-## INPUT
+Your output MUST be **actionable, specific, and immediately usable**.
+
+# PRIMARY RULE
+
+DO NOT describe personality.
+DO NOT explain abstract strategy.
+ONLY produce **concrete next actions + exact wording**.
+
+# CONTEXT INPUTS
+
 Persona Description:
 ${personaDescription}
 
 Persona Behavior Rules:
 ${personaBehavior}
-
-Intention Direction (PRIMARY DRIVER):
-${intentionBucket}
-
-User Intention Detail:
-${intention}
 
 Scene:
 ${sceneLine}
@@ -766,84 +769,71 @@ ${targetLine}
 Scale:
 ${scale}
 
----
-## CORE TASK
-Generate 4 outputs:
-- mind (internal strategy awareness)
-- body (observable physical behavior)
-- speech (what is said)
-- reaction (how to respond dynamically)
+User Intention (raw):
+${intention}
 
----
-## CRITICAL DECISION LOGIC (MANDATORY)
-1. Intention determines the direction of behavior:
-- advance → move toward agreement
-- disrupt → introduce friction / break flow
-- delay → avoid commitment / slow things down
-- test → probe and observe
-- bond → build trust
-- control → dominate pacing and frame
-- exit → disengage cleanly
-2. Persona determines HOW the action is executed:
-- pacing
-- tone
-- control style
-- response structure
-3. Scene constrains plausibility:
-- behavior must fit the real-world interaction context
+Classified Intention Bucket:
+${intentionBucket}
 
----
-## OUTPUT REQUIREMENTS
-- All output MUST be in Chinese
-- Each field MUST be concise and concrete
-- No explanations, no meta language
+# INTENTION PRIORITY (CRITICAL)
 
----
-## STYLE: ACTION-FIRST (VERY IMPORTANT)
-You are NOT writing dialogue suggestions.
-You are describing:
-→ what this persona DOES to handle the situation
+The **intention_bucket is the primary driver** of behavior.
 
-Bad:
-"你可以试着缓和气氛"
-Good:
-"先停顿一秒，不接他的话，直接换一个角度提问"
+You MUST change behavior based on it:
 
----
-## SPEECH RULE
-Speech must be:
-- short
-- strategic
-- usable in real conversation
-- NOT generic advice
+* advance → push forward, create movement
+* delay → slow down, avoid commitment
+* disrupt → break flow, create instability
+* bond → increase trust, soften tone
+* control → dominate structure, lead interaction
+* test → probe, extract information
+* exit → disengage safely
 
----
-## STRICTLY FORBIDDEN
-- "你可以…"
-- "建议你…"
-- "你应该…"
-- "可以考虑…"
-- generic emotional comfort
-- repeating the user's input
-- explaining reasoning
-- long paragraphs
+If your output does not clearly reflect the intention, it is WRONG.
 
----
-## PERSONA AMPLIFICATION
-Slightly amplify persona traits, but keep realistic.
-Do NOT become theatrical or exaggerated.
+# OUTPUT STRUCTURE (MANDATORY)
 
----
-## DIFFERENTIATION REQUIREMENT
-The output MUST clearly reflect the intention direction.
-For the SAME persona:
-- advance vs disrupt MUST produce fundamentally different behavior
-If outputs look similar → you FAILED.
+You MUST follow this exact structure:
 
----
-## OUTPUT FORMAT
-Return STRICT JSON with no markdown or explanation:
-{"mind":"...","body":"...","speech":"...","reaction":"..."}`;
+[ASSESSMENT]
+(1 sentence — what is happening right now in the interaction)
+
+[ACTION]
+(2–3 bullet points — physical or timing-based actions)
+Each must be immediate and observable.
+
+[SPEECH]
+(1 short sentence — exactly what the user should say)
+Must be natural and usable in real conversation.
+
+[IF RESPONSE]
+(1 conditional — what to do if the other person reacts)
+Format: If X → do Y
+
+# HARD CONSTRAINTS
+
+* No long paragraphs
+* No personality explanation
+* No repetition from persona text
+* No generic advice
+* No multiple options — be decisive
+* Every line must be executable in real life
+
+# STYLE
+
+* Calm, precise, controlled
+* Minimal words, maximum clarity
+* Feels like a live coach, not a writer
+
+# GOAL
+
+Transform:
+
+"understanding what to do"
+
+→ into
+
+"doing the next move immediately"`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -867,17 +857,55 @@ Return STRICT JSON with no markdown or explanation:
   const raw   = data?.choices?.[0]?.message?.content;
   if (!raw) throw new Error('AI returned empty content');
 
-  const clean  = raw.replace(/```json|```/g, '').trim();
-  const parsed = JSON.parse(clean);
+  const clean = raw.replace(/```json|```/g, '').trim();
 
-  ['mind', 'body', 'speech', 'reaction'].forEach(k => {
-    if (!parsed[k] || typeof parsed[k] !== 'string') {
-      console.warn(`[AI] ⚠ Missing or invalid field: "${k}"`);
-      parsed[k] = '';
-    }
-  });
+  // Compatibility path A: legacy JSON still returned
+  try {
+    const parsed = JSON.parse(clean);
+    ['mind', 'body', 'speech', 'reaction'].forEach(k => {
+      if (!parsed[k] || typeof parsed[k] !== 'string') {
+        console.warn(`[AI] ⚠ Missing or invalid field: "${k}"`);
+        parsed[k] = '';
+      }
+    });
+    console.log('[AI] ✓ Valid legacy JSON response received.');
+    return parsed;
+  } catch (_) {
+    // continue to behavior-script parser
+  }
 
-  console.log('[AI] ✓ Valid four-field response received.');
+  // Compatibility path B: behavior-script text sections
+  function sectionValue(label, nextLabels = []) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const nextPattern = nextLabels.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const re = nextPattern
+      ? new RegExp(`\\[${escaped}\\]\\s*([\\s\\S]*?)(?=\\n\\[(?:${nextPattern})\\]|$)`, 'i')
+      : new RegExp(`\\[${escaped}\\]\\s*([\\s\\S]*)$`, 'i');
+    const m = clean.match(re);
+    return m ? m[1].trim() : '';
+  }
+
+  const assessment = sectionValue('ASSESSMENT', ['ACTION', 'SPEECH', 'IF RESPONSE']);
+  const action = sectionValue('ACTION', ['SPEECH', 'IF RESPONSE']);
+  const speech = sectionValue('SPEECH', ['IF RESPONSE']);
+  const ifResponse = sectionValue('IF RESPONSE');
+
+  const normalizeBullets = (txt) => {
+    const lines = txt.split('\n').map(s => s.trim()).filter(Boolean);
+    return lines.map(line => {
+      if (/^[-*•]/.test(line)) return line.replace(/^\*\s+/, '- ');
+      return '- ' + line;
+    }).slice(0, 3).join('\n');
+  };
+
+  const parsed = {
+    mind: `${assessment ? `【ASSESSMENT】\n${assessment}` : ''}${ifResponse ? `\n\n【IF RESPONSE】\n${ifResponse}` : ''}`.trim() || clean,
+    body: `${action ? `【ACTION】\n${normalizeBullets(action)}` : clean}`.trim(),
+    speech: `${speech ? `【SPEECH】\n${speech}` : clean}`.trim(),
+    reaction: `${ifResponse ? `【IF RESPONSE】\n${ifResponse}` : clean}`.trim()
+  };
+
+  console.log('[AI] ✓ Behavior-script text parsed via compatibility wrapper.');
   return parsed;
 }
 
