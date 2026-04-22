@@ -367,7 +367,8 @@ function renderHeroFromPersona(personaData) {
   const heroName = document.getElementById('hero-persona-name');
   const heroSlogan = document.getElementById('hero-persona-slogan');
   const heroQuadrants = document.getElementById('hero-persona-quadrants');
-  if (!heroName || !heroSlogan || !heroQuadrants || !personaData) return;
+  const heroEnterBtn = document.getElementById('hero-enter-btn');
+  if (!heroName || !heroSlogan || !heroQuadrants || !heroEnterBtn || !personaData) return;
 
   const q = personaData.quadrant;
   const fallbackQuadrants = 'Dominant · Strategic · Controlled · Assertive';
@@ -388,6 +389,15 @@ function renderHeroFromPersona(personaData) {
   heroName.textContent = safeStr(personaData.name, 'SELECT PERSONA');
   heroSlogan.textContent = safeStr(personaData.slogan, '选择角色，开启你的现场策略剧场。');
   heroQuadrants.textContent = quadrantText || fallbackQuadrants;
+
+  // Bind Hero CTA directly to the currently rendered Hero persona.
+  if (personaData.id && !personaData.failed) {
+    heroEnterBtn.dataset.personaId = safeStr(personaData.id).trim().toUpperCase();
+    heroEnterBtn.disabled = false;
+  } else {
+    delete heroEnterBtn.dataset.personaId;
+    heroEnterBtn.disabled = true;
+  }
 }
 
 // ── CAROUSEL UI ───────────────────────────────────────────────
@@ -421,9 +431,11 @@ async function initCarousel() {
     const cardName     = browse ? browse.name   : p.id;
     const cardSlogan   = browse ? browse.slogan : MISSING;
     heroDataByIndex.push({
+      id: p.id,
       name: cardName,
       slogan: p.failed ? '该人格协议加载失败' : cardSlogan,
-      quadrant: browse ? browse.quadrant : null
+      quadrant: browse ? browse.quadrant : null,
+      failed: !!p.failed
     });
     wrapper.innerHTML = `
       <div class="card ${p.failed ? 'card--failed' : ''}">
@@ -464,10 +476,9 @@ async function initCarousel() {
   const heroEnterBtn = document.getElementById('hero-enter-btn');
   if (heroEnterBtn && !heroEnterBtn.dataset.boundDetail) {
     heroEnterBtn.addEventListener('click', () => {
-      const idx = Math.max(0, Math.min(AppState.currentCarouselIndex, personaIndex.length - 1));
-      const activePersona = personaIndex[idx];
-      if (!activePersona || activePersona.failed) return;
-      openPersonaDetail(activePersona.id);
+      const personaId = safeStr(heroEnterBtn.dataset.personaId).trim().toUpperCase();
+      if (!personaId) return;
+      openPersonaDetail(personaId);
     });
     heroEnterBtn.dataset.boundDetail = '1';
   }
