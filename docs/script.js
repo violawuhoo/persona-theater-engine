@@ -460,6 +460,18 @@ async function initCarousel() {
   applyPersonaThemeFromCarousel();
   renderHeroFromPersona(heroDataByIndex[0]);
 
+  // Hero CTA: open Detail for currently visible persona card.
+  const heroEnterBtn = document.getElementById('hero-enter-btn');
+  if (heroEnterBtn && !heroEnterBtn.dataset.boundDetail) {
+    heroEnterBtn.addEventListener('click', () => {
+      const idx = Math.max(0, Math.min(AppState.currentCarouselIndex, personaIndex.length - 1));
+      const activePersona = personaIndex[idx];
+      if (!activePersona || activePersona.failed) return;
+      openPersonaDetail(activePersona.id);
+    });
+    heroEnterBtn.dataset.boundDetail = '1';
+  }
+
   console.log(`[Carousel] ✓ Rendered ${personaIndex.length} persona cards.`);
 }
 
