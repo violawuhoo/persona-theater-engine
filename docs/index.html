@@ -48,20 +48,6 @@
       padding: 24px;
     }
 
-    .detail-back-chip {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      background: rgba(7, 12, 20, 0.65);
-      border: 1px solid var(--border-mid);
-      color: var(--text-secondary);
-      border-radius: 999px;
-      padding: 8px 14px;
-      letter-spacing: 0.06em;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
     .detail-hero-visual {
       border-radius: 14px;
       border: 1px solid var(--border-subtle);
@@ -152,10 +138,72 @@
       white-space: pre-wrap;
     }
 
+    .detail-structured-block {
+      padding: 10px 12px;
+      border-left: 2px solid color-mix(in oklab, var(--persona-accent) 42%, transparent);
+      background: rgba(255, 255, 255, 0.035);
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 10px;
+    }
+
+    .detail-structured-block:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-structured-label {
+      color: var(--persona-accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1.35;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-structured-text {
+      margin-top: 5px;
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
     .detail-expressions {
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+
+    .config-section--core-scene {
+      padding-top: 22px;
+      padding-bottom: 12px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .config-section--core-scene .config-section-label {
+      color: var(--persona-accent);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      margin-bottom: 12px;
+    }
+
+    #intention-input.core-scene-input {
+      display: block;
+      min-height: 148px;
+      font-size: 18px;
+      line-height: 1.75;
+      padding: 18px 18px;
+      border-color: color-mix(in oklab, var(--persona-accent) 38%, var(--border-subtle));
+      background: rgba(11, 20, 33, 0.96);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), 0 14px 32px rgba(0, 0, 0, 0.22);
+      overflow-wrap: anywhere;
+    }
+
+    #intention-input.core-scene-input::placeholder {
+      color: rgba(216, 228, 240, 0.48);
+      opacity: 1;
     }
 
     .detail-expr-line {
@@ -269,14 +317,13 @@
         <div id="detail-panel" class="hidden">
       <div class="detail-shell">
         <div class="detail-hero">
-          <button class="detail-back-chip" onclick="closePersonaDetail()">← 返回</button>
           <div class="detail-hero-visual" aria-hidden="true">
             <div class="detail-avatar">◈</div>
           </div>
           <div class="detail-hero-copy">
             <div id="detail-persona-name" class="detail-name"></div>
-            <p id="detail-hero-slogan" class="detail-slogan">人格正在同步...</p>
-            <p id="detail-hero-intro" class="detail-intro">加载人格核心中...</p>
+            <p id="detail-hero-slogan" class="detail-slogan">人格画像已就绪。</p>
+            <p id="detail-hero-intro" class="detail-intro">点击 Enter Persona 继续。</p>
             <p id="detail-core-essence" class="hidden"></p>
           </div>
         </div>
@@ -315,7 +362,7 @@
 
       <div class="detail-actions">
         <button class="btn detail-btn-back" onclick="closePersonaDetail()">Back</button>
-        <button class="btn" id="detail-activate-btn" onclick="activateFromDetail()">Enter Persona</button>
+        <button class="btn" id="detail-activate-btn">Enter Persona</button>
       </div>
     </div>
 
@@ -448,9 +495,10 @@
       </div>
 
       <!-- ── INTENTION textarea ─────────────────────────────── -->
-      <div class="config-section">
+      <div class="config-section config-section--core-scene">
         <div class="config-section-label">核心戏纲</div>
         <textarea id="intention-input"
+                  class="core-scene-input"
                   placeholder="描述你在这个场景中的核心意图…&#10;例如：在不暴露底价的情况下，试探对方的合作诚意。"></textarea>
       </div>
 
@@ -478,7 +526,7 @@
             <p class="guidance-kicker">Active Block</p>
             <h3 id="guidance-title">MIND</h3>
           </div>
-          <p id="guidance-content">正在加载同步人格参数...</p>
+          <p id="guidance-content"></p>
         </div>
       </div>
 

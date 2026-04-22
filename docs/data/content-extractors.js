@@ -47,14 +47,15 @@ function extractDetailContent(persona) {
 // Slot mapping:
 //   [0] 底层逻辑  — theater_support.logic_axes + scene overlay mind
 //   [1] 行为特征  — theater_support.expression_modulators + scene_tactics + scene overlay body
-//   [2] 语言风格  — theater_support.expression_modulators + reaction_cues + scene overlay speech
-//   [3] 反应机制  — theater_support.reaction_cues + scene overlay reaction
+//   [2] 语言风格  — persona language/signature base + scene speech constraints
+//   [3] 反应机制  — persona reaction/logic base + scene reaction constraints
 // Dynamic AI response may overlay these blocks at runtime.
 function extractTheaterContent(data, scene = '', target = '', scale = '') {
   const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
   const targetProfile = TARGET_OVERLAYS[target]   || null;
 
   const ts             = (data && data.theater_support) || {};
+  const cf             = (data && data.consumer_fields) || {};
   const logicAxes      = ts.logic_axes            || {};
   const sceneTactics   = ts.scene_tactics         || {};
   const expressionMods = ts.expression_modulators || {};
@@ -66,7 +67,7 @@ function extractTheaterContent(data, scene = '', target = '', scale = '') {
     ? safeStr(sceneTactics.large_scale, safeStr(sceneTactics.small_scale, MISSING))
     : safeStr(sceneTactics.small_scale, safeStr(sceneTactics.large_scale, MISSING));
 
-  const personaName = safeStr(data.consumer_fields && data.consumer_fields.display_name, '');
+  const personaName = safeStr(cf.display_name, '');
 
   // ── [0] 底层逻辑: theater_support.logic_axes + scene overlay ───
   let mind;
@@ -102,33 +103,31 @@ function extractTheaterContent(data, scene = '', target = '', scale = '') {
          + (scaleTactic !== MISSING ? `\n\n【场景战术】\n${scaleTactic}` : '');
   }
 
-  // ── [2] 语言风格: scene overlay speech + reaction_cues as reference ──
-  let speech;
+  // ── [2] 语言风格: persona-first speech, scene as constraint ──
+  const signatureLines = Array.isArray(cf.signature_lines_pool) ? cf.signature_lines_pool : [];
+  const personaSpeechLines = [
+    `【人格语气】${safeStr(cf.language_style, safeStr(expressionMods.delivery_mode, MISSING))}`,
+    expressionMods.delivery_mode ? `【输出节奏】${safeStr(expressionMods.delivery_mode)}` : '',
+    ...signatureLines.slice(0, 3).map((line, idx) => `【人格例句${idx + 1}】\n↳ ${safeStr(line)}`)
+  ].filter(Boolean);
+  let speech = personaSpeechLines.join('\n\n') || MISSING;
   if (sceneOverlay) {
-    speech = sceneOverlay.tactical_focus.speech;
-    // Append up to 2 reaction_cues as persona-specific reference lines
-    const cueBonus = reactionCues.slice(0, 2).map(c =>
-      `【人格话术·${safeStr(c.trigger)}】\n↳ ${safeStr(c.guidance)}`
-    );
-    if (cueBonus.length > 0) speech += '\n\n' + cueBonus.join('\n\n');
-  } else {
-    const cueLines = reactionCues.map(c =>
-      `【${safeStr(c.trigger)}】\n↳ ${safeStr(c.guidance)}`
-    );
-    speech = `【输出风格】\n语言：${safeStr(expressionMods.delivery_mode, MISSING)}\n肢体：${safeStr(expressionMods.physicality, MISSING)}`
-           + (cueLines.length > 0 ? '\n\n' + cueLines.join('\n\n') : '');
+    speech += `\n\n【场景语言约束】\n${sceneOverlay.tactical_focus.speech}`;
   }
 
-  // ── [3] 反应机制: theater_support.reaction_cues + scene overlay ───
+  // ── [3] 反应机制: persona-first reaction, scene as constraint ───
   const reactionLines = reactionCues.map(c =>
     `【${safeStr(c.trigger)}】\n${safeStr(c.guidance)}`
   );
-  let reaction;
+  const personaReactionLines = [
+    logicAxes.interaction_focus ? `【互动焦点】${safeStr(logicAxes.interaction_focus)}` : '',
+    logicAxes.emotional_guard ? `【情感防护】${safeStr(logicAxes.emotional_guard)}` : '',
+    logicAxes.power_move ? `【升级动作】${safeStr(logicAxes.power_move)}` : '',
+    ...reactionLines
+  ].filter(Boolean);
+  let reaction = personaReactionLines.join('\n\n') || MISSING;
   if (sceneOverlay) {
-    reaction = sceneOverlay.tactical_focus.reaction
-             + (reactionLines.length > 0 ? '\n\n' + reactionLines.join('\n\n') : '');
-  } else {
-    reaction = reactionLines.join('\n\n') || MISSING;
+    reaction += `\n\n【场景反应约束】\n${sceneOverlay.tactical_focus.reaction}`;
   }
 
   console.log(`[Extractor] ✓ Theater content extracted — Scene: ${scene || 'generic'}, Target: ${target || 'generic'}, Scale: ${scale || 'default'}`);

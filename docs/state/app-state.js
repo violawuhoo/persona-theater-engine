@@ -33,10 +33,10 @@ const AppState = {
   // .text properties are mutated by startTheater(); read by updateGuidance() + triggerGacha().
   // Index mapping: 0=底层逻辑, 1=行为特征, 2=语言风格, 3=反应机制 (matches wheel quadrants at 90° each)
   contentData: [
-    { title: '底层逻辑', text: '正在同步人格底色...请稍后。' },
-    { title: '行为特征', text: '正在校准肢体语言...请稍后。' },
-    { title: '语言风格', text: '正在加载话术补丁...请稍后。' },
-    { title: '反应机制', text: '正在预设应激方案...请稍后。' }
+    { title: '底层逻辑', text: '' },
+    { title: '行为特征', text: '' },
+    { title: '语言风格', text: '' },
+    { title: '反应机制', text: '' }
   ]
 
 };
