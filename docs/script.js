@@ -95,6 +95,37 @@ function getPersonaColor() {
   return entry ? entry.color : '#00f2ff';
 }
 
+// Event-driven persona theme sync (no observer / polling).
+function applyPersonaTheme(color) {
+  const c = safeStr(color, '#00d4ff') || '#00d4ff';
+  document.documentElement.style.setProperty('--persona-accent', c);
+  document.documentElement.style.setProperty('--persona-glow', `${c}66`);
+  document.documentElement.style.setProperty('--persona-gradient', `linear-gradient(180deg, ${c}, #0a1525)`);
+}
+
+function getCarouselPersonaColor(index) {
+  const cards = document.querySelectorAll('#carousel .card');
+  const idx = Math.max(0, Math.min(Number(index) || 0, cards.length - 1));
+  const card = cards[idx];
+  const btn = card ? card.querySelector('.btn[style]') : null;
+  if (btn && btn.style && btn.style.background) return btn.style.background;
+  const entry = AppState.runtimePersonaRegistry[idx];
+  return entry && entry.color ? entry.color : '#00d4ff';
+}
+
+function applyPersonaThemeFromCarousel() {
+  applyPersonaTheme(getCarouselPersonaColor(AppState.currentCarouselIndex));
+}
+
+function renderTheaterTopbar({ personaName = '—', scene = '—', target = '—' } = {}) {
+  const nameEl = document.getElementById('theater-display-name');
+  const sceneEl = document.getElementById('theater-display-scene');
+  const targetEl = document.getElementById('theater-display-target');
+  if (nameEl) nameEl.innerText = personaName || '—';
+  if (sceneEl) sceneEl.innerText = scene || '—';
+  if (targetEl) targetEl.innerText = target || '—';
+}
+
 // ── CUSTOM MODAL (replaces browser alert / confirm) ───────────
 
 /**
@@ -332,6 +363,33 @@ function buildQuadrantBlock(params) {
   return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:8px 0;">${cells.join('')}</div>`;
 }
 
+function renderHeroFromPersona(personaData) {
+  const heroName = document.getElementById('hero-persona-name');
+  const heroSlogan = document.getElementById('hero-persona-slogan');
+  const heroQuadrants = document.getElementById('hero-persona-quadrants');
+  if (!heroName || !heroSlogan || !heroQuadrants || !personaData) return;
+
+  const q = personaData.quadrant;
+  const fallbackQuadrants = 'Dominant · Strategic · Controlled · Assertive';
+  const labels = [
+    { key: 'E', label: 'Expressive' },
+    { key: 'O', label: 'Open' },
+    { key: 'R', label: 'Rational' },
+    { key: 'B', label: 'Bold' }
+  ];
+  const quadrantText = q && typeof q === 'object'
+    ? labels.map(item => {
+      const value = q[item.key];
+      if (typeof value !== 'number') return null;
+      return `${value >= 0 ? 'High' : 'Low'} ${item.label}`;
+    }).filter(Boolean).join(' · ')
+    : '';
+
+  heroName.textContent = safeStr(personaData.name, 'SELECT PERSONA');
+  heroSlogan.textContent = safeStr(personaData.slogan, '选择角色，开启你的现场策略剧场。');
+  heroQuadrants.textContent = quadrantText || fallbackQuadrants;
+}
+
 // ── CAROUSEL UI ───────────────────────────────────────────────
 async function initCarousel() {
   const carousel      = document.getElementById('carousel');
@@ -341,6 +399,7 @@ async function initCarousel() {
   dotsContainer.innerHTML = '';
 
   const personaIndex = await loadPersonaIndex();
+  const heroDataByIndex = [];
   carousel.innerHTML = '';
 
   if (personaIndex.length === 0) {
@@ -361,6 +420,11 @@ async function initCarousel() {
     const quadrantHtml = browse ? buildQuadrantBlock(browse.quadrant) : '';
     const cardName     = browse ? browse.name   : p.id;
     const cardSlogan   = browse ? browse.slogan : MISSING;
+    heroDataByIndex.push({
+      name: cardName,
+      slogan: p.failed ? '该人格协议加载失败' : cardSlogan,
+      quadrant: browse ? browse.quadrant : null
+    });
     wrapper.innerHTML = `
       <div class="card ${p.failed ? 'card--failed' : ''}">
         <div class="title">${cardName}</div>
@@ -379,14 +443,22 @@ async function initCarousel() {
   });
 
   carousel.addEventListener('scroll', () => {
+    const prevIdx = AppState.currentCarouselIndex;
     const idx = Math.round(carousel.scrollLeft / window.innerWidth);
     AppState.currentCarouselIndex = idx;   // keep in sync so Detail can restore position
+    if (idx !== prevIdx) renderHeroFromPersona(heroDataByIndex[idx]);
+    applyPersonaTheme(getCarouselPersonaColor(idx));
     document.querySelectorAll('.dot').forEach((d, i) => {
       const color = personaIndex[i] ? personaIndex[i].color : '#fff';
       d.classList.toggle('active', i === idx);
       d.style.background = i === idx ? color : '';
     });
   });
+
+  // Initial Browse accent follows first visible persona.
+  AppState.currentCarouselIndex = 0;
+  applyPersonaThemeFromCarousel();
+  renderHeroFromPersona(heroDataByIndex[0]);
 
   console.log(`[Carousel] ✓ Rendered ${personaIndex.length} persona cards.`);
 }
@@ -416,6 +488,7 @@ async function openPersonaDetail(personaId) {
 
   const entry = AppState.runtimePersonaRegistry.find(p => p.id === cleanId);
   const color = entry ? entry.color : '#00f2ff';
+  applyPersonaTheme(color);
 
   // Show transient loading state on the card button
   const btn = document.querySelector(`[onclick="openPersonaDetail('${personaId}')"]`);
@@ -505,6 +578,7 @@ function closePersonaDetail() {
     // Restore carousel scroll position
     const carousel = document.getElementById('carousel');
     carousel.scrollLeft = AppState.currentCarouselIndex * window.innerWidth;
+    applyPersonaThemeFromCarousel();
 
     // Clear transient persona load — not activated
     AppState.currentPersonaData = null;
@@ -526,6 +600,7 @@ function activateFromDetail() {
   const cleanId = safeStr(AppState.currentPersonaData.id).toUpperCase();
   const entry   = AppState.runtimePersonaRegistry.find(p => p.id === cleanId);
   const color   = entry ? entry.color : '#00f2ff';
+  applyPersonaTheme(color);
 
   // Fix 2: disable button immediately to block double-tap during 150ms transition
   const activateBtn = document.getElementById('detail-activate-btn');
@@ -575,6 +650,7 @@ async function startTheater() {
   AppState.currentSceneContext = { scene, target, scale };
   AppState.usedGachaTips.clear();
   console.log(`[Theater] Starting — Persona: ${AppState.currentPersonaData.id}, Scene: ${scene}, Target: ${target}`);
+  renderTheaterTopbar({ personaName: personaDisplayName, scene, target });
 
   // ── Phase 1: Show calibration overlay immediately ────────
   const syncOverlay     = document.getElementById('sync-overlay');
@@ -582,6 +658,7 @@ async function startTheater() {
   syncPersonaName.innerText = personaDisplayName;
 
   const personaColor = getPersonaColor();
+  applyPersonaTheme(personaColor);
 
   const syncBox = syncOverlay.querySelector('.sync-box');
   if (syncBox) {
@@ -1092,6 +1169,8 @@ async function exitTheater() {
   document.getElementById('carousel').classList.remove('hidden');
   document.getElementById('dots').classList.remove('hidden');
   document.getElementById('intention-input').value = '';
+  applyPersonaThemeFromCarousel();
+  renderTheaterTopbar();
 
   AppState.currentPersonaData  = null;
   AppState.selectedPersona     = null;
@@ -1302,4 +1381,9 @@ function onConfirmHelp() {
 
 // ── INIT ──────────────────────────────────────────────────────
 console.log('[Init] Persona Theater System booting...');
+// TEMP FREEZE MITIGATION:
+// High-risk UI helper auto-sync hooks (MutationObserver/theater-context)
+// remain intentionally disabled in docs/index.html. Only low-risk event-driven
+// helpers are restored to keep core flow responsive:
+// Browse → Detail → Config → Theater.
 initCarousel();

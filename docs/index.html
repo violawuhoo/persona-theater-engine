@@ -39,7 +39,7 @@
       border: 1px solid var(--border-subtle);
       background:
         linear-gradient(170deg, rgba(14, 28, 44, 0.88), rgba(8, 14, 24, 0.95)),
-        radial-gradient(circle at 72% 0%, rgba(0, 212, 255, 0.2), transparent 40%);
+        radial-gradient(circle at 72% 0%, color-mix(in oklab, var(--persona-accent) 22%, transparent), transparent 40%);
       overflow: hidden;
       position: relative;
       display: grid;
@@ -66,7 +66,7 @@
       border-radius: 14px;
       border: 1px solid var(--border-subtle);
       background:
-        radial-gradient(circle at 50% 20%, rgba(0,212,255,0.36), transparent 45%),
+        radial-gradient(circle at 50% 20%, color-mix(in oklab, var(--persona-accent) 36%, transparent), transparent 45%),
         linear-gradient(180deg, rgba(13, 23, 37, 0.9), rgba(4, 9, 17, 0.98));
       display: flex;
       align-items: center;
@@ -77,12 +77,12 @@
       width: 92px;
       height: 92px;
       border-radius: 24px;
-      border: 1px solid rgba(0,212,255,0.35);
+      border: 1px solid color-mix(in oklab, var(--persona-accent) 40%, transparent);
       display: grid;
       place-items: center;
-      color: var(--accent-cyan);
+      color: var(--persona-accent);
       font-size: 30px;
-      box-shadow: 0 16px 35px rgba(0,212,255,0.2);
+      box-shadow: 0 16px 35px var(--persona-glow);
     }
 
     .detail-name {
@@ -541,19 +541,18 @@
 
   <script>
     /* ================================================================
-       UI PATCHES (purely presentational — no business logic changes)
+       SAFE RECOVERY: only low-risk event-driven helpers are enabled.
+       Heavy sync/observer helpers remain disabled.
        ================================================================ */
 
-    /* ── CONFIG CARD SELECTION ──────────────────────────────────────
-       Syncs card UI active state to the hidden <select> values that
-       startTheater() reads. Each card group operates independently. */
+    /* ── CONFIG CARD SELECTION (RESTORED, EVENT-DRIVEN) ───────────── */
     document.querySelectorAll('.config-card').forEach(function(card) {
       card.addEventListener('click', function() {
         var selectId = card.dataset.select;
-        var value    = card.dataset.value;
-        // Update the hidden <select> value
-        document.getElementById(selectId).value = value;
-        // Toggle active class within this card group only
+        var value = card.dataset.value;
+        var selectEl = document.getElementById(selectId);
+        if (!selectEl) return;
+        selectEl.value = value;
         document.querySelectorAll('[data-select="' + selectId + '"]').forEach(function(c) {
           c.classList.remove('config-card--active');
         });
@@ -561,172 +560,12 @@
       });
     });
 
-    /* ── THEATER TOP BAR POPULATION ─────────────────────────────────
-       Reads AppState (set by startTheater / activateFromDetail) and
-       fills the theater top bar when the theater-screen becomes visible.
-       Uses MutationObserver — no changes to any business logic. */
+    /* ── DETAIL TAB SYSTEM (RESTORED, EVENT-DRIVEN) ───────────────── */
     (function() {
-      var screen = document.getElementById('theater-screen');
-      var obs = new MutationObserver(function() {
-        if (screen.classList.contains('hidden')) return;
-        var nameEl   = document.getElementById('theater-display-name');
-        var sceneEl  = document.getElementById('theater-display-scene');
-        var targetEl = document.getElementById('theater-display-target');
-        if (typeof AppState !== 'undefined') {
-          if (AppState.currentPersonaData) {
-            var cf   = AppState.currentPersonaData.consumer_fields || {};
-            nameEl.innerText = cf.display_name || '—';
-          }
-          if (AppState.currentSceneContext) {
-            sceneEl.innerText  = AppState.currentSceneContext.scene  || '—';
-            targetEl.innerText = AppState.currentSceneContext.target || '—';
-          }
-        }
-      });
-      obs.observe(screen, { attributes: true, attributeFilter: ['class'] });
-    })();
-
-    /* ── HERO + DETAIL SUPPORT COPY (presentation only) ───────────── */
-    (function() {
-      var heroName = document.getElementById('hero-persona-name');
-      var heroSlogan = document.getElementById('hero-persona-slogan');
-      var heroQuadrants = document.getElementById('hero-persona-quadrants');
-      var heroBtn = document.getElementById('hero-enter-btn');
-
-      function getCurrentCard() {
-        var cards = document.querySelectorAll('.card');
-        if (!cards.length) return null;
-        var idx = (typeof AppState !== 'undefined' && typeof AppState.currentCarouselIndex === 'number')
-          ? AppState.currentCarouselIndex : 0;
-        return cards[Math.max(0, Math.min(idx, cards.length - 1))];
-      }
-
-      function getCurrentCardButton() {
-        var card = getCurrentCard();
-        return card ? card.querySelector('[onclick^="openPersonaDetail("]') : null;
-      }
-
-      heroBtn && heroBtn.addEventListener('click', function() {
-        var btn = getCurrentCardButton();
-        if (btn && !btn.disabled) btn.click();
-      });
-
-      function parseQuadrants(card) {
-        var q = card ? card.querySelectorAll('div[style*="grid-template-columns:1fr 1fr"] > div') : [];
-        if (!q.length) return 'Dominant · Strategic · Controlled · Assertive';
-        var labels = ['Expressive', 'Open', 'Rational', 'Bold'];
-        return Array.from(q).map(function(cell, i) {
-          var v = (cell.textContent || '').replace(/\s+/g, ' ').trim();
-          var sign = v.indexOf('-') >= 0 ? 'Low' : 'High';
-          return sign + ' ' + labels[i];
-        }).join(' · ');
-      }
-
-      function refreshHero() {
-        var card = getCurrentCard();
-        if (!card) return;
-        var title = card.querySelector('.title');
-        var desc = card.querySelector('.desc');
-        if (title) heroName.textContent = title.textContent;
-        if (desc) heroSlogan.textContent = desc.textContent.replace(/^"|"$/g, '');
-        if (heroQuadrants) heroQuadrants.textContent = parseQuadrants(card);
-      }
-
-      setInterval(refreshHero, 240);
-
-      var socialEl = document.getElementById('detail-social-essence');
-      var coreEl = document.getElementById('detail-core-essence');
-      var heroSloganEl = document.getElementById('detail-hero-slogan');
-      var heroIntroEl = document.getElementById('detail-hero-intro');
-      var behaviorEl = document.getElementById('detail-behavior-pattern');
-
-      function toBullets(raw, fallback) {
-        var src = (raw || '').trim();
-        if (!src) return '• ' + fallback;
-        return src
-          .split(/\n+/)
-          .map(function(line) { return line.replace(/^[•\-\s]+/, '').trim(); })
-          .filter(Boolean)
-          .map(function(line) { return '• ' + line; })
-          .join('\n');
-      }
-
-      function extractBehaviorFromPersonaData() {
-        if (typeof AppState === 'undefined' || !AppState.currentPersonaData) return '';
-        var ts = AppState.currentPersonaData.theater_support || {};
-        var em = ts.expression_modulators || {};
-        var rc = ts.reaction_cues || {};
-        var lines = [];
-
-        if (em.physicality) lines.push('肢体: ' + em.physicality);
-        if (em.delivery_mode) lines.push('语速语调: ' + em.delivery_mode);
-        if (rc.micro_tell) lines.push('微反应: ' + rc.micro_tell);
-        if (rc.pressure_shift) lines.push('压力线索: ' + rc.pressure_shift);
-        if (rc.recovery_pattern) lines.push('复位方式: ' + rc.recovery_pattern);
-        return lines.join('\n');
-      }
-
-      var detailObs = new MutationObserver(function() {
-        if (heroSloganEl && socialEl) {
-          var sloganLine = (socialEl.textContent || '').split('\n').map(function(s) { return s.trim(); }).find(Boolean);
-          heroSloganEl.textContent = sloganLine || '—';
-        }
-        if (heroIntroEl && coreEl) heroIntroEl.textContent = coreEl.textContent || '—';
-        if (behaviorEl) {
-          var behaviorText = extractBehaviorFromPersonaData();
-          behaviorEl.textContent = toBullets(behaviorText, '保持姿态稳定，根据反馈微调动作。');
-        }
-        if (socialEl) {
-          socialEl.textContent = toBullets(socialEl.textContent, '在关系中识别位置与力量变化。');
-        }
-      });
-
-      coreEl && detailObs.observe(coreEl, { childList: true, subtree: true });
-      socialEl && detailObs.observe(socialEl, { childList: true, subtree: true });
-
-      var guideTitle = document.getElementById('guidance-title');
-      var sectors = Array.from(document.querySelectorAll('#main-wheel .sector'));
-      var map = { MIND: 0, BODY: 1, SPEECH: 2, REACTION: 3, 逻辑: 0, 行为: 1, 语言: 2, 反应: 3 };
-      function syncWheelActive() {
-        if (!guideTitle) return;
-        var t = (guideTitle.textContent || '').toUpperCase();
-        var idx = 0;
-        Object.keys(map).forEach(function(k) {
-          if (t.indexOf(k.toUpperCase()) >= 0) idx = map[k];
-        });
-        sectors.forEach(function(sec, i) {
-          sec.classList.toggle('sector--active', i === idx);
-        });
-      }
-      if (guideTitle) {
-        new MutationObserver(syncWheelActive).observe(guideTitle, { childList: true, subtree: true });
-      }
-
-      var syncStatusEl = document.querySelector('.sync-status');
-      var syncObserver = new MutationObserver(function() {
-        if (!syncStatusEl) return;
-        var raw = syncStatusEl.textContent || '';
-        if (raw.indexOf('SCENE') === -1 && raw.indexOf('ENV_SCAN') === -1) return;
-        var html = syncStatusEl.innerHTML;
-        html = html
-          .replace(/PERSONA_ID:/g, '状态:')
-          .replace(/ENV_SCAN:/g, '场景:')
-          .replace(/TARGET_LOCK:/g, '对手:')
-          .replace(/FIELD_SCALE:/g, '规模:')
-          .replace(/EMOTION:/g, '意图:');
-        html = html
-          .replace(/1-3人 \(深度对谈\)/g, '深度对谈')
-          .replace(/3-5人 \(小组博弈\)/g, '小型局')
-          .replace(/5-8人 \(多变量社交\)/g, '中场互动')
-          .replace(/>8人 \(群体观察\)/g, '大场面')
-          .replace(/SUPPRESSED/g, (document.getElementById('intention-input') || {}).value || '已锁定');
-        syncStatusEl.innerHTML = html;
-      });
-      if (syncStatusEl) syncObserver.observe(syncStatusEl, { childList: true, subtree: true });
-
-      // Detail tab system
       var tabs = Array.from(document.querySelectorAll('.detail-tab'));
       var panes = Array.from(document.querySelectorAll('.detail-pane'));
+      if (!tabs.length || !panes.length) return;
+
       function setDetailTab(name) {
         tabs.forEach(function(tab) {
           var active = tab.dataset.tab === name;
@@ -739,34 +578,22 @@
           pane.hidden = !active;
         });
       }
+
       tabs.forEach(function(tab) {
         tab.addEventListener('click', function() { setDetailTab(tab.dataset.tab); });
       });
       setDetailTab('behavior');
-
-      // Persona color identity variables
-      function applyPersonaTheme(color) {
-        var c = color || '#00d4ff';
-        document.documentElement.style.setProperty('--persona-accent', c);
-        document.documentElement.style.setProperty('--persona-glow', c + '66');
-        document.documentElement.style.setProperty('--persona-gradient', 'linear-gradient(180deg, ' + c + ', #0a1525)');
-      }
-      function detectCurrentPersonaColor() {
-        var card = getCurrentCard();
-        var btn = card ? card.querySelector('.btn[style]') : null;
-        if (btn && btn.style.background) return btn.style.background;
-        if (typeof AppState !== 'undefined' && AppState.selectedPersona && Array.isArray(AppState.runtimePersonaRegistry)) {
-          var entry = AppState.runtimePersonaRegistry.find(function(p) { return p.id === AppState.selectedPersona; });
-          if (entry && entry.color) return entry.color;
-        }
-        return '#00d4ff';
-      }
-      setInterval(function() {
-        applyPersonaTheme(detectCurrentPersonaColor());
-        syncWheelActive();
-      }, 240);
     })();
 
+    /*
+      REMAIN DISABLED (freeze-risk / non-essential helper layer):
+      - Theater top bar sync helper (MutationObserver)
+      - Hero sync + periodic refresh
+      - Detail support copy auto-sync (MutationObserver)
+      - Wheel active auto-sync (MutationObserver)
+      - Status localization observer (root-cause block)
+      - Persona theme auto-sync interval
+    */
   </script>
 
 </body>
