@@ -425,12 +425,90 @@ header {
   font-size: 19px;
   font-weight: 800;
 }
+/* ── 3-tier theater hierarchy ─────────────────────────────────
+   Tier 1 (hero):     focal point. Read first, large, on-accent.
+   Tier 2 (supports): two short evidence items. Mid-weight.
+   Tier 3 (footer):   collapsible scene tactical detail. Muted, opt-in.
+   .guidance-content-legacy: fallback path for AI flat-string output.
+*/
+.guidance-hero {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--persona-accent);
+  letter-spacing: 0.01em;
+}
+.guidance-hero.hidden { display: none; }
+
+.guidance-supports {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+.guidance-supports.hidden { display: none; }
+.guidance-support-item {
+  position: relative;
+  padding: 8px 10px 8px 22px;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: rgba(235, 240, 248, 0.86);
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid var(--persona-accent);
+  border-radius: 4px;
+}
+.guidance-support-item::before {
+  content: '·';
+  position: absolute;
+  left: 9px;
+  top: 7px;
+  color: var(--persona-accent);
+  font-weight: 700;
+}
+
+.guidance-footer-wrap {
+  margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+.guidance-footer-wrap.hidden { display: none; }
+.guidance-footer-summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  user-select: none;
+  padding: 4px 0;
+}
+.guidance-footer-summary::-webkit-details-marker { display: none; }
+.guidance-footer-summary::before {
+  content: '＋ ';
+  color: var(--persona-accent);
+  font-weight: 700;
+}
+.guidance-footer-wrap[open] .guidance-footer-summary::before { content: '－ '; }
+.guidance-footer-wrap[open] .guidance-footer-summary {
+  color: rgba(235, 240, 248, 0.7);
+  margin-bottom: 8px;
+}
+.guidance-footer {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.7;
+  font-size: 12.5px;
+  color: rgba(235, 240, 248, 0.62);
+}
+
 #guidance-content {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.85;
   font-size: 14px;
 }
+#guidance-content.hidden { display: none; }
 
 .theater-control-zone {
   margin-top: 8px;

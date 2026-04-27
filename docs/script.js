@@ -1285,12 +1285,51 @@ function normalizeTheaterContent(rawContent, ctx, persona) {
   return { mind, body, speech, reaction };
 }
 
+// Flatten a structured panel { hero, supports, footer } back into a single string.
+// Used to populate contentData[i].text (gacha overlap detection consumes this).
+function flattenTheaterPanel(panel) {
+  if (!panel) return '';
+  if (typeof panel === 'string') return panel;
+  const parts = [];
+  if (panel.hero) parts.push(safeStr(panel.hero));
+  if (Array.isArray(panel.supports)) parts.push(...panel.supports.map(s => safeStr(s)).filter(Boolean));
+  if (panel.footer) parts.push(safeStr(panel.footer));
+  return parts.join('\n\n');
+}
+
+// Detect whether a panel value is the structured { hero, supports, footer } shape.
+function isStructuredPanel(panel) {
+  return panel && typeof panel === 'object' && !Array.isArray(panel)
+    && ('hero' in panel || 'supports' in panel || 'footer' in panel);
+}
+
+// applyTheaterContent — accepts either:
+//   (A) structured shape from extractTheaterContent: { mind:{hero,supports,footer}, body:{...}, ... }
+//       → writes directly to contentData[i] (hero, supports, footer, text=flattened).
+//   (B) flat-string shape from AI fallback:        { mind:"…", body:"…", speech:"…", reaction:"…" }
+//       → runs through normalizeTheaterContent (legacy guards) and updates ONLY .text.
+//         The structured hero/supports/footer from the prior local pass remain visible.
 function applyTheaterContent(rawContent, ctx, persona) {
-  const normalized = normalizeTheaterContent(rawContent || {}, ctx, persona);
-  AppState.contentData[0].text = normalized.mind;
-  AppState.contentData[1].text = normalized.body;
-  AppState.contentData[2].text = normalized.speech;
-  AppState.contentData[3].text = normalized.reaction;
+  const slots  = ['mind', 'body', 'speech', 'reaction'];
+  const safe   = rawContent || {};
+  const allStructured = slots.every(k => isStructuredPanel(safe[k]));
+
+  if (allStructured) {
+    slots.forEach((key, i) => {
+      const panel = safe[key];
+      AppState.contentData[i].hero     = safeStr(panel.hero, '');
+      AppState.contentData[i].supports = Array.isArray(panel.supports) ? panel.supports.map(s => safeStr(s)).filter(Boolean) : [];
+      AppState.contentData[i].footer   = safeStr(panel.footer, '');
+      AppState.contentData[i].text     = flattenTheaterPanel(panel);
+    });
+    return;
+  }
+
+  // Legacy / AI flat-string path: keep normalize guards; only update .text.
+  const normalized = normalizeTheaterContent(safe, ctx, persona);
+  slots.forEach((key, i) => {
+    AppState.contentData[i].text = normalized[key];
+  });
 }
 
 // ── AI PROTOCOL GENERATOR ─────────────────────────────────────
@@ -1560,12 +1599,53 @@ function sanitizeTheaterDisplayText(text) {
   return safeLines;
 }
 
+// Render one panel into the 3-tier DOM (hero / supports / collapsible footer).
+// Falls back to the legacy flat <p id="guidance-content"> when no structured hero exists
+// (e.g. AI returned a flat string and overwrote .text).
 function updateGuidance(index) {
   const d = AppState.contentData[index] || AppState.contentData[0];
-  const titleEl = document.getElementById('guidance-title');
-  const contentEl = document.getElementById('guidance-content');
+  const titleEl    = document.getElementById('guidance-title');
+  const heroEl     = document.getElementById('guidance-hero');
+  const supportsEl = document.getElementById('guidance-supports');
+  const footerWrap = document.getElementById('guidance-footer-wrap');
+  const footerEl   = document.getElementById('guidance-footer');
+  const legacyEl   = document.getElementById('guidance-content');
+
   if (titleEl) titleEl.innerText = safeStr(d && d.title, '');
-  if (contentEl) contentEl.innerText = sanitizeTheaterDisplayText(d && d.text);
+
+  const hero     = safeStr(d && d.hero, '');
+  const supports = Array.isArray(d && d.supports) ? d.supports.filter(Boolean) : [];
+  const footer   = safeStr(d && d.footer, '');
+
+  if (hero) {
+    // Structured render path
+    if (heroEl)     { heroEl.innerText = sanitizeTheaterDisplayText(hero); heroEl.classList.remove('hidden'); }
+    if (supportsEl) {
+      supportsEl.innerHTML = supports.map(s =>
+        `<li class="guidance-support-item">${escapeDetailHtml(sanitizeTheaterDisplayText(s))}</li>`
+      ).join('');
+      supportsEl.classList.toggle('hidden', supports.length === 0);
+    }
+    if (footerWrap && footerEl) {
+      if (footer) {
+        footerEl.innerText = sanitizeTheaterDisplayText(footer);
+        footerWrap.classList.remove('hidden');
+        footerWrap.open = false; // collapsed by default per Phase 1 spec
+      } else {
+        footerWrap.classList.add('hidden');
+      }
+    }
+    if (legacyEl) legacyEl.classList.add('hidden');
+  } else {
+    // Legacy fallback: flat-string render (AI overlay, missing data, etc.)
+    if (heroEl)     heroEl.classList.add('hidden');
+    if (supportsEl) supportsEl.classList.add('hidden');
+    if (footerWrap) footerWrap.classList.add('hidden');
+    if (legacyEl) {
+      legacyEl.innerText = sanitizeTheaterDisplayText(d && d.text);
+      legacyEl.classList.remove('hidden');
+    }
+  }
 }
 
 function rotateWheel(delta) {

@@ -526,7 +526,15 @@
             <p class="guidance-kicker">Active Block</p>
             <h3 id="guidance-title">MIND</h3>
           </div>
-          <p id="guidance-content"></p>
+          <!-- 3-tier hierarchy: hero (focal point) · supports (evidence) · footer (collapsible scene detail) -->
+          <p id="guidance-hero" class="guidance-hero"></p>
+          <ul id="guidance-supports" class="guidance-supports"></ul>
+          <details id="guidance-footer-wrap" class="guidance-footer-wrap">
+            <summary class="guidance-footer-summary">展开场域细节</summary>
+            <div id="guidance-footer" class="guidance-footer"></div>
+          </details>
+          <!-- Legacy fallback: shown when no structured hero is available (e.g. AI flat-string output) -->
+          <p id="guidance-content" class="guidance-content-legacy hidden"></p>
         </div>
       </div>
 

@@ -30,13 +30,17 @@ const AppState = {
   runtimeManifestMeta:    null, // {schema_version, total_personas} — set once on load
 
   // ── Theater content buffer ─────────────────────────────────
-  // .text properties are mutated by startTheater(); read by updateGuidance() + triggerGacha().
+  // Structured shape per entry: { title, hero, supports[], footer, text }
+  //   - hero/supports/footer power the 3-tier visual hierarchy in updateGuidance().
+  //   - text is the flat fallback used by triggerGacha() for overlap detection
+  //     and by updateGuidance() when structured fields are absent (legacy AI path).
+  // Mutated by applyTheaterContent(); read by updateGuidance() + triggerGacha().
   // Index mapping: 0=底层逻辑, 1=行为特征, 2=语言风格, 3=反应机制 (matches wheel quadrants at 90° each)
   contentData: [
-    { title: '底层逻辑', text: '' },
-    { title: '行为特征', text: '' },
-    { title: '语言风格', text: '' },
-    { title: '反应机制', text: '' }
+    { title: '底层逻辑', hero: '', supports: [], footer: '', text: '' },
+    { title: '行为特征', hero: '', supports: [], footer: '', text: '' },
+    { title: '语言风格', hero: '', supports: [], footer: '', text: '' },
+    { title: '反应机制', hero: '', supports: [], footer: '', text: '' }
   ]
 
 };
