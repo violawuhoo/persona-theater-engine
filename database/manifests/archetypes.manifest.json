@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-04-18T14:16:14Z",
-  "total_archetypes": 2,
+  "generated_at": "2026-04-27T00:00:00Z",
+  "total_archetypes": 3,
   "archetypes": [
     {
       "id": "ARCHETYPE_01",
@@ -19,6 +19,15 @@
       "seed_path": "database/archetypes/ARCHETYPE_02_seed.md",
       "name_cn": "The Social Fugitive (社交悍匪)",
       "name_en": "The Social Fugitive (社交悍匪)",
+      "status": "active"
+    },
+    {
+      "id": "ARCHETYPE_03",
+      "slug": "the-radiant-muse",
+      "json_path": "database/archetype_models/ARCHETYPE_03.json",
+      "seed_path": "database/archetypes/ARCHETYPE_03_seed.md",
+      "name_cn": "The Radiant Muse (璀璨引力)",
+      "name_en": "The Radiant Muse (璀璨引力)",
       "status": "active"
     }
   ]

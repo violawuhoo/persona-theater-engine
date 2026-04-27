@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-04-18T14:16:14Z",
-  "total_personas": 2,
+  "generated_at": "2026-04-27T00:00:00Z",
+  "total_personas": 3,
   "personas": [
     {
       "id": "ARCH01",
@@ -19,6 +19,15 @@
       "md_path": null,
       "name": "The Social Fugitive (社交悍匪)",
       "subtitle": "The Social Fugitive (社交悍匪)",
+      "status": "active"
+    },
+    {
+      "id": "ARCH03",
+      "archetype_id": "ARCHETYPE_03",
+      "json_path": "database/personas/ARCH03.json",
+      "md_path": null,
+      "name": "The Radiant Muse (璀璨引力)",
+      "subtitle": "The Radiant Muse (璀璨引力)",
       "status": "active"
     }
   ]

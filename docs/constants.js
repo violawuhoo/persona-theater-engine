@@ -23,7 +23,7 @@ const PERSONA_MANIFEST_PATH = './database/manifests/personas.manifest.json';
 const LEGACY_PERSONA_COLORS = {
   ARCH01: '#7ca4d8',
   ARCH02: '#90b8b8',
-  ARCH03: '#6a6a6a',
+  ARCH03: '#f0c674',
   ARCH04: '#e05a20'
 };
 
