@@ -103,25 +103,47 @@ function extractTheaterContent(data, scene = '', target = '', scale = '') {
   const logicAxes      = ts.logic_axes            || {};
   const expressionMods = ts.expression_modulators || {};
   const reactionCues   = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
+  const scenePlaybook  = (ts.scene_playbook && typeof ts.scene_playbook === 'object') ? ts.scene_playbook : {};
 
   const personaName    = safeStr(cf.display_name, '');
   const sceneLabel     = safeStr(scene, '');
   const sceneFocus     = (sceneOverlay && sceneOverlay.tactical_focus) || {};
 
+  // Phase 2 fields — read from consumer_fields (canonical) with safe fallbacks
+  const motivation     = safeStr(cf.motivation, '');
+  const coreFear       = safeStr(cf.core_fear, '');
+
   // ── [0] mind — 底层逻辑 ─────────────────────────────────────
-  // Hero: 「{persona}」把【{scene}】当作「{power_move 截到首冒号}」的舞台。
-  const powerKey = truncateAtColon(logicAxes.power_move) || MISSING;
-  const mindHero = personaName && sceneLabel
+  // Hero priority:
+  //   1. scene_playbook[scene] — authored per-persona-per-scene sentence (Phase 3)
+  //   2. composed: "「{persona}」把【{scene}】当作「{power_move}」的舞台" (Phase 1 fallback)
+  //   3. last-resort: power_move alone
+  const playbookHero = sceneLabel ? safeStr(scenePlaybook[sceneLabel], '') : '';
+  const powerKey     = truncateAtColon(logicAxes.power_move) || MISSING;
+  const composedMindHero = personaName && sceneLabel
     ? `「${personaName}」把【${sceneLabel}】当作「${powerKey}」的舞台。`
     : `主战术：${powerKey}。`;
+  const mindHero = playbookHero || composedMindHero;
 
+  // Supports: motivation (drive) + core_fear (warning), with graceful degradation
+  // if Phase 2 fields are absent (older personas pre-schema-extension).
   const mindSupports = [
-    `互动焦点 · ${truncateAtColon(logicAxes.interaction_focus) || MISSING}`,
-    targetProfile ? `目标焦点 · ${firstSentence(targetProfile, 32)}` : `情感防护 · ${truncateAtColon(logicAxes.emotional_guard) || MISSING}`
+    motivation ? `内在驱动 · ${motivation}` : `互动焦点 · ${truncateAtColon(logicAxes.interaction_focus) || MISSING}`,
+    coreFear   ? `致命破绽 · ${coreFear}`   : (targetProfile ? `目标焦点 · ${firstSentence(targetProfile, 32)}` : `情感防护 · ${truncateAtColon(logicAxes.emotional_guard) || MISSING}`)
   ];
-  const mindFooter = sceneOverlay
-    ? `${sceneOverlay.dynamics}\n\n${sceneFocus.mind || ''}`.trim()
-    : '';
+
+  // Footer: scene dynamics + tactical_focus.mind + (when motivation/core_fear are present)
+  // the demoted互动焦点/目标焦点 lines so they're still accessible if the user expands.
+  const mindFooterExtras = [];
+  if (motivation && coreFear) {
+    if (logicAxes.interaction_focus) mindFooterExtras.push(`【互动焦点】${truncateAtColon(logicAxes.interaction_focus)}`);
+    if (targetProfile)               mindFooterExtras.push(`【目标焦点·${target}】${firstSentence(targetProfile, 80)}`);
+  }
+  const mindFooter = [
+    sceneOverlay ? sceneOverlay.dynamics : '',
+    sceneFocus.mind || '',
+    mindFooterExtras.join('\n')
+  ].filter(Boolean).join('\n\n').trim();
 
   // ── [1] body — 行为特征 ─────────────────────────────────────
   // Hero: 身体先「{physicality 第一段}」，节奏走「{delivery_mode 第一段}」。

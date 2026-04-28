@@ -17,7 +17,9 @@
     "assets",
     "constraints",
     "generation_contract",
-    "summary"
+    "summary",
+    "axis_explanations",
+    "scene_playbook"
   ],
   "properties": {
     "id": {
@@ -86,7 +88,9 @@
         "social_stance",
         "interaction_logic",
         "emotional_logic",
-        "power_logic"
+        "power_logic",
+        "motivation",
+        "core_fear"
       ],
       "properties": {
         "core_essence": {
@@ -103,6 +107,14 @@
         },
         "power_logic": {
           "type": "string"
+        },
+        "motivation": {
+          "type": "string",
+          "description": "One sentence — what this archetype is chasing."
+        },
+        "core_fear": {
+          "type": "string",
+          "description": "One sentence — what would make this archetype collapse."
         }
       },
       "additionalProperties": false
@@ -221,6 +233,26 @@
     },
     "summary": {
       "type": "string"
+    },
+    "axis_explanations": {
+      "type": "object",
+      "required": ["E", "O", "R", "B"],
+      "properties": {
+        "E": { "type": "string" },
+        "O": { "type": "string" },
+        "R": { "type": "string" },
+        "B": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "description": "What each quadrant value means in observable behavior, authored per archetype."
+    },
+    "scene_playbook": {
+      "type": "object",
+      "description": "Per-scene authored hero sentence. Keys must match SCENARIO_OVERLAYS labels in docs/constants.js.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string"
+      }
     }
   },
   "additionalProperties": false

@@ -57,6 +57,9 @@
         "slogan",
         "core_essence",
         "social_essence",
+        "motivation",
+        "core_fear",
+        "axis_explanations",
         "signature_lines_pool",
         "taboos",
         "behavior_style",
@@ -78,6 +81,17 @@
         },
         "social_essence": {
           "type": "string"
+        },
+        "motivation": {
+          "type": "string",
+          "description": "One sentence — what this persona is chasing. Phase 2 schema extension."
+        },
+        "core_fear": {
+          "type": "string",
+          "description": "One sentence — what would make this persona collapse / break character. Phase 2 schema extension."
+        },
+        "axis_explanations": {
+          "$ref": "#/definitions/axis_explanations"
         },
         "signature_lines_pool": {
           "type": "array",
@@ -115,7 +129,8 @@
         "logic_axes",
         "scene_tactics",
         "expression_modulators",
-        "reaction_cues"
+        "reaction_cues",
+        "scene_playbook"
       ],
       "properties": {
         "logic_axes": {
@@ -176,6 +191,9 @@
           "items": {
             "$ref": "#/definitions/reaction_cue"
           }
+        },
+        "scene_playbook": {
+          "$ref": "#/definitions/scene_playbook"
         }
       },
       "additionalProperties": false
@@ -259,6 +277,42 @@
         }
       },
       "additionalProperties": false
+    },
+    "axis_explanations": {
+      "type": "object",
+      "required": [
+        "E",
+        "O",
+        "R",
+        "B"
+      ],
+      "properties": {
+        "E": {
+          "type": "string",
+          "description": "What this persona's E value means in observable behavior."
+        },
+        "O": {
+          "type": "string",
+          "description": "What this persona's O value means in observable behavior."
+        },
+        "R": {
+          "type": "string",
+          "description": "What this persona's R value means in observable behavior."
+        },
+        "B": {
+          "type": "string",
+          "description": "What this persona's B value means in observable behavior."
+        }
+      },
+      "additionalProperties": false
+    },
+    "scene_playbook": {
+      "type": "object",
+      "description": "Per-scene authored hero sentence: 'In this scene, this persona's primary tactic is X.' Keys must match SCENARIO_OVERLAYS labels in docs/constants.js. minProperties:1 — additional scenes may be added without schema changes.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string"
+      }
     },
     "response_protocol": {
       "type": "object",
