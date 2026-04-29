@@ -39,7 +39,12 @@ function extractDetailContent(persona) {
   const rawTaboos = Array.isArray(cf.taboos) ? cf.taboos : [];
   const taboos    = rawTaboos.slice(0, 3).map(t => stableField(t));
 
-  return { core_essence, social_essence, expressions, taboos };
+  // instinct_check — pass through verbatim if present
+  const instinct_check = (cf.instinct_check && typeof cf.instinct_check === 'object')
+    ? cf.instinct_check
+    : null;
+
+  return { core_essence, social_essence, expressions, taboos, instinct_check };
 }
 
 // ── Theater extractor helpers ─────────────────────────────────

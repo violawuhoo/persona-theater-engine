@@ -561,12 +561,16 @@ async function openPersonaDetail(personaId) {
       ? detail.taboos.map(t => normalizeDetailText(t)).join('\n\n')
       : normalizeDetailText('');
 
-    // Style activate button with persona colour
+    // Instinct check
+    populateInstinctCheck(detail.instinct_check, color, data);
+
+    // Style activate button with persona colour (button starts disabled until instinct check done)
     const activateBtn = document.getElementById('detail-activate-btn');
     if (activateBtn) {
       activateBtn.style.background = color;
       activateBtn.style.boxShadow  = `0 0 18px ${color}44`;
       activateBtn.style.color      = ['#00f2ff','#2ecc71','#90b8b8'].includes(color) ? '#000' : '#fff';
+      activateBtn.disabled = !!detail.instinct_check;
     }
     bindDetailActivateButton(data);
 
@@ -834,7 +838,58 @@ function resetDetailViewState() {
   if (activateBtn) {
     activateBtn.disabled = false;
     activateBtn.onclick = null;
+    activateBtn.style.opacity = '';
+    activateBtn.style.pointerEvents = '';
   }
+  // Reset instinct check UI
+  const optionsEl = document.getElementById('instinct-options');
+  const revealEl  = document.getElementById('instinct-reveal');
+  const scenarioEl = document.getElementById('instinct-scenario');
+  if (optionsEl)  optionsEl.innerHTML = '';
+  if (revealEl)   revealEl.classList.add('hidden');
+  if (scenarioEl) scenarioEl.textContent = '';
+}
+
+function populateInstinctCheck(instinctData, accentColor, personaData) {
+  const scenarioEl = document.getElementById('instinct-scenario');
+  const optionsEl  = document.getElementById('instinct-options');
+  const revealEl   = document.getElementById('instinct-reveal');
+  const revealLine = document.getElementById('instinct-reveal-line');
+  const section    = document.getElementById('instinct-check-section');
+  const activateBtn = document.getElementById('detail-activate-btn');
+
+  if (!instinctData || !scenarioEl || !optionsEl) return;
+
+  scenarioEl.textContent = instinctData.scenario || '';
+  optionsEl.innerHTML = '';
+  revealEl.classList.add('hidden');
+
+  const options = Array.isArray(instinctData.options) ? instinctData.options : [];
+  const personaChoice = typeof instinctData.persona_choice === 'number' ? instinctData.persona_choice : -1;
+
+  options.forEach(function(text, idx) {
+    const btn = document.createElement('button');
+    btn.className = 'instinct-option';
+    btn.textContent = text;
+    btn.addEventListener('click', function() {
+      // Mark all options
+      optionsEl.querySelectorAll('.instinct-option').forEach(function(b, i) {
+        b.classList.remove('instinct-option--chosen', 'instinct-option--unchosen');
+        b.classList.add(i === personaChoice ? 'instinct-option--chosen' : 'instinct-option--unchosen');
+        b.disabled = true;
+      });
+      // Show reveal
+      if (revealLine) revealLine.textContent = '「' + (instinctData.reveal_line || '') + '」';
+      revealEl.classList.remove('hidden');
+      // Unlock activate button
+      if (activateBtn) {
+        activateBtn.disabled = false;
+        activateBtn.style.opacity = '';
+        activateBtn.style.pointerEvents = '';
+      }
+    });
+    optionsEl.appendChild(btn);
+  });
 }
 
 function bindDetailActivateButton(personaData) {
@@ -842,7 +897,7 @@ function bindDetailActivateButton(personaData) {
   if (!activateBtn || !personaData || !personaData.id) return;
   const personaId = safeStr(personaData.id).trim().toUpperCase();
   activateBtn.dataset.personaId = personaId;
-  activateBtn.disabled = false;
+  // disabled state is managed by populateInstinctCheck — don't override it here
   activateBtn.onclick = () => activateFromDetail(personaData);
 }
 

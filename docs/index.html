@@ -34,7 +34,6 @@
 
     .detail-hero {
       margin-top: 34px;
-      min-height: 210px;
       border-radius: 16px;
       border: 1px solid var(--border-subtle);
       background:
@@ -42,62 +41,36 @@
         radial-gradient(circle at 72% 0%, color-mix(in oklab, var(--persona-accent) 22%, transparent), transparent 40%);
       overflow: hidden;
       position: relative;
-      display: grid;
-      grid-template-columns: 34% 1fr;
-      gap: 18px;
-      padding: 24px;
+      padding: 28px 24px 24px;
     }
 
-    .detail-hero-visual {
-      border-radius: 14px;
-      border: 1px solid var(--border-subtle);
-      background:
-        radial-gradient(circle at 50% 20%, color-mix(in oklab, var(--persona-accent) 36%, transparent), transparent 45%),
-        linear-gradient(180deg, rgba(13, 23, 37, 0.9), rgba(4, 9, 17, 0.98));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .detail-avatar {
-      width: 92px;
-      height: 92px;
-      border-radius: 24px;
-      border: 1px solid color-mix(in oklab, var(--persona-accent) 40%, transparent);
-      display: grid;
-      place-items: center;
-      color: var(--persona-accent);
-      font-size: 30px;
-      box-shadow: 0 16px 35px var(--persona-glow);
-    }
+    .detail-hero-visual { display: none; }
 
     .detail-name {
-      margin: 14px 0 8px;
-      font-size: clamp(2rem, 5vw, 2.8rem);
-      line-height: 1.1;
+      margin: 0 0 14px;
+      font-size: clamp(1.4rem, 4vw, 1.9rem);
+      line-height: 1.15;
       letter-spacing: 0.06em;
       text-transform: uppercase;
+      color: var(--text-secondary);
+      opacity: 0.7;
     }
 
     .detail-slogan {
-      font-size: 16px;
-      color: var(--text-secondary);
-      margin-bottom: 14px;
-      line-height: 1.6;
-      font-style: italic;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 16px;
+      line-height: 1.55;
+      letter-spacing: 0.01em;
     }
 
     .detail-intro {
       margin: 0;
       font-size: 15px;
-      line-height: 1.85;
-      color: var(--text-primary);
-      opacity: 0.94;
+      line-height: 1.9;
+      color: var(--text-secondary);
       white-space: pre-wrap;
-      padding: 12px 14px;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
-      background: rgba(8, 14, 24, 0.56);
     }
 
     .detail-doc {
@@ -242,13 +215,7 @@
     }
 
     @media (max-width: 760px) {
-      .detail-hero {
-        grid-template-columns: 1fr;
-        padding: 58px 16px 16px;
-      }
-      .detail-hero-visual {
-        min-height: 148px;
-      }
+      .detail-hero { padding: 20px 16px 18px; }
     }
   </style>
 </head>
@@ -317,23 +284,20 @@
         <div id="detail-panel" class="hidden">
       <div class="detail-shell">
         <div class="detail-hero">
-          <div class="detail-hero-visual" aria-hidden="true">
-            <div class="detail-avatar">◈</div>
-          </div>
           <div class="detail-hero-copy">
-            <div id="detail-persona-name" class="detail-name"></div>
             <p id="detail-hero-slogan" class="detail-slogan">人格画像已就绪。</p>
             <p id="detail-hero-intro" class="detail-intro">点击 Enter Persona 继续。</p>
+            <div id="detail-persona-name" class="detail-name"></div>
             <p id="detail-core-essence" class="hidden"></p>
           </div>
         </div>
 
         <div class="detail-doc">
           <div class="detail-tabs" role="tablist" aria-label="Persona details">
-            <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">Social</button>
-            <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">Behaviour</button>
-            <button class="detail-tab" data-tab="signature" role="tab" aria-selected="false">Signature</button>
-            <button class="detail-tab" data-tab="taboo" role="tab" aria-selected="false">Taboo</button>
+            <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">我如何定位</button>
+            <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">我如何行动</button>
+            <button class="detail-tab" data-tab="signature" role="tab" aria-selected="false">我会说什么</button>
+            <button class="detail-tab" data-tab="taboo" role="tab" aria-selected="false">我绝不做什么</button>
           </div>
 
           <div class="detail-tab-panels">
@@ -360,9 +324,20 @@
         </div>
       </div>
 
+      <div class="instinct-check" id="instinct-check-section">
+        <div class="instinct-check-label">直觉测试</div>
+        <div class="instinct-scenario" id="instinct-scenario"></div>
+        <div class="instinct-prompt">直觉上，你会怎么做？</div>
+        <div class="instinct-options" id="instinct-options"></div>
+        <div class="instinct-reveal hidden" id="instinct-reveal">
+          <span class="instinct-reveal-label">TA的选择</span>
+          <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+        </div>
+      </div>
+
       <div class="detail-actions">
         <button class="btn detail-btn-back" onclick="closePersonaDetail()">Back</button>
-        <button class="btn" id="detail-activate-btn">Enter Persona</button>
+        <button class="btn" id="detail-activate-btn" disabled>进入人格</button>
       </div>
     </div>
 

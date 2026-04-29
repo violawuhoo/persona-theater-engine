@@ -677,3 +677,98 @@ header {
   .config-cards { grid-template-columns: repeat(2, 1fr); }
   .config-cards--scale { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Instinct Check ───────────────────────────────────────────── */
+.instinct-check {
+  width: min(920px, calc(100% - 28px));
+  margin: 20px auto 0;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(10, 16, 27, 0.88);
+}
+.instinct-check-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  margin-bottom: 12px;
+}
+.instinct-scenario {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+}
+.instinct-prompt {
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.instinct-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.instinct-option {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s, opacity 0.18s;
+}
+.instinct-option:not(:disabled):hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+}
+.instinct-option--chosen {
+  border-color: var(--persona-accent) !important;
+  background: color-mix(in oklab, var(--persona-accent) 12%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+.instinct-option--unchosen {
+  opacity: 0.38;
+}
+.instinct-reveal {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--persona-accent) 8%, transparent);
+  border-left: 2px solid var(--persona-accent);
+  animation: fadeSlideUp 0.22s ease-out;
+}
+.instinct-reveal-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--persona-accent);
+  margin-bottom: 6px;
+}
+.instinct-reveal-line {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--persona-accent);
+  line-height: 1.6;
+}
+
+/* Disabled activate button */
+#detail-activate-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
