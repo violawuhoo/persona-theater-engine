@@ -550,26 +550,26 @@ async function openPersonaDetail(personaId) {
     // 核心本质 (stable)
     document.getElementById('detail-core-essence').innerText   = heroIntro;
 
-    // 典型表达 (selectable, max 3, deduped)
+    // 典型表达 — plain items, same pattern as behavior/social/taboo
     const exprEl = document.getElementById('detail-expressions');
     exprEl.innerHTML = detail.expressions.length > 0
-      ? detail.expressions.map(e => `<div class="detail-expr-line">↳ ${escapeDetailHtml(normalizeDetailText(e))}</div>`).join('')
-      : `<div class="detail-expr-line">${escapeDetailHtml(normalizeDetailText(''))}</div>`;
+      ? detail.expressions.map(e => `<div class="detail-plain-item">${escapeDetailHtml(normalizeDetailText(e))}</div>`).join('')
+      : `<div class="detail-plain-item">${escapeDetailHtml(normalizeDetailText(''))}</div>`;
 
-    // 人物禁忌 (stable strings, max 3 — no action/rule splitting)
-    document.getElementById('detail-forbidden').innerText = detail.taboos.length > 0
-      ? detail.taboos.map(t => normalizeDetailText(t)).join('\n\n')
-      : normalizeDetailText('');
+    // 人物禁忌 — plain items
+    const forbiddenEl = document.getElementById('detail-forbidden');
+    forbiddenEl.innerHTML = detail.taboos.length > 0
+      ? detail.taboos.map(t => `<div class="detail-plain-item">${escapeDetailHtml(normalizeDetailText(t))}</div>`).join('')
+      : `<div class="detail-plain-item">${escapeDetailHtml(normalizeDetailText(''))}</div>`;
 
     // Instinct check
     populateInstinctCheck(detail.instinct_check, color, data);
 
-    // Style activate button with persona colour (button starts disabled until instinct check done)
+    // Ghost-style activate button: border + text in persona colour, no fill
     const activateBtn = document.getElementById('detail-activate-btn');
     if (activateBtn) {
-      activateBtn.style.background = color;
-      activateBtn.style.boxShadow  = `0 0 18px ${color}44`;
-      activateBtn.style.color      = ['#00f2ff','#2ecc71','#90b8b8'].includes(color) ? '#000' : '#fff';
+      activateBtn.style.border  = `1px solid ${color}`;
+      activateBtn.style.color   = color;
       activateBtn.disabled = !!detail.instinct_check;
     }
     bindDetailActivateButton(data);
@@ -819,12 +819,9 @@ function buildDetailViewContent(persona, detail) {
 function renderDetailStructuredBlocks(container, blocks) {
   if (!container) return;
   const usableBlocks = Array.isArray(blocks) ? blocks : [];
-  container.innerHTML = usableBlocks.map(block => `
-    <div class="detail-structured-block">
-      <div class="detail-structured-label">${escapeDetailHtml(block.label)}</div>
-      <div class="detail-structured-text">${escapeDetailHtml(normalizeDetailText(block.text))}</div>
-    </div>
-  `).join('');
+  container.innerHTML = usableBlocks.map(block =>
+    `<div class="detail-plain-item">${escapeDetailHtml(normalizeDetailText(block.text))}</div>`
+  ).join('');
 }
 
 function resetDetailViewState() {

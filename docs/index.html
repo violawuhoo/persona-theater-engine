@@ -5,219 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>PERSONA THEATER</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
-  <style>
-    /* Detail reading page layout (presentation only) */
-    #detail-panel {
-      position: fixed;
-      inset: 0;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      background:
-        radial-gradient(circle at 85% 0%, rgba(0, 212, 255, 0.14), transparent 36%),
-        radial-gradient(circle at 10% 15%, rgba(113, 91, 255, 0.12), transparent 30%),
-        var(--bg-primary);
-      z-index: 500;
-      padding: 0 0 120px;
-      box-sizing: border-box;
-    }
-
-    @keyframes detail-in  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
-    @keyframes detail-out { from { opacity:1 } to { opacity:0 } }
-    #detail-panel.detail-entering { animation: detail-in  0.22s ease-out forwards; }
-    #detail-panel.detail-leaving  { animation: detail-out 0.14s ease-in  forwards; }
-
-    .detail-shell {
-      width: min(920px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 20px 0 0;
-    }
-
-    .detail-hero {
-      margin-top: 34px;
-      border-radius: 16px;
-      border: 1px solid var(--border-subtle);
-      background:
-        linear-gradient(170deg, rgba(14, 28, 44, 0.88), rgba(8, 14, 24, 0.95)),
-        radial-gradient(circle at 72% 0%, color-mix(in oklab, var(--persona-accent) 22%, transparent), transparent 40%);
-      overflow: hidden;
-      position: relative;
-      padding: 28px 24px 24px;
-    }
-
-    .detail-hero-visual { display: none; }
-
-    .detail-name {
-      margin: 0 0 14px;
-      font-size: clamp(1.4rem, 4vw, 1.9rem);
-      line-height: 1.15;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      opacity: 0.7;
-    }
-
-    .detail-slogan {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0 0 16px;
-      line-height: 1.55;
-      letter-spacing: 0.01em;
-    }
-
-    .detail-intro {
-      margin: 0;
-      font-size: 15px;
-      line-height: 1.9;
-      color: var(--text-secondary);
-      white-space: pre-wrap;
-    }
-
-    .detail-doc {
-      margin-top: 18px;
-      border-radius: 16px;
-      border: 1px solid var(--border-subtle);
-      background: rgba(10, 16, 27, 0.88);
-      padding: 18px 16px 8px;
-    }
-
-    .detail-section {
-      padding: 0 2px 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      margin-bottom: 18px;
-    }
-
-    .detail-section:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .detail-section-label {
-      margin-bottom: 8px;
-      color: var(--accent-cyan);
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .detail-core-text,
-    .detail-section-value {
-      margin: 0;
-      font-size: 14px;
-      line-height: 1.85;
-      color: var(--text-primary);
-      white-space: pre-wrap;
-    }
-
-    .detail-structured-block {
-      padding: 10px 12px;
-      border-left: 2px solid color-mix(in oklab, var(--persona-accent) 42%, transparent);
-      background: rgba(255, 255, 255, 0.035);
-      border-radius: 0 8px 8px 0;
-      margin-bottom: 10px;
-    }
-
-    .detail-structured-block:last-child {
-      margin-bottom: 0;
-    }
-
-    .detail-structured-label {
-      color: var(--persona-accent);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      line-height: 1.35;
-      text-transform: uppercase;
-      overflow-wrap: anywhere;
-    }
-
-    .detail-structured-text {
-      margin-top: 5px;
-      color: var(--text-primary);
-      font-size: 14px;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    .detail-expressions {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .config-section--core-scene {
-      padding-top: 22px;
-      padding-bottom: 12px;
-      margin-top: 6px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .config-section--core-scene .config-section-label {
-      color: var(--persona-accent);
-      font-size: 12px;
-      letter-spacing: 0.18em;
-      margin-bottom: 12px;
-    }
-
-    #intention-input.core-scene-input {
-      display: block;
-      min-height: 148px;
-      font-size: 18px;
-      line-height: 1.75;
-      padding: 18px 18px;
-      border-color: color-mix(in oklab, var(--persona-accent) 38%, var(--border-subtle));
-      background: rgba(11, 20, 33, 0.96);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), 0 14px 32px rgba(0, 0, 0, 0.22);
-      overflow-wrap: anywhere;
-    }
-
-    #intention-input.core-scene-input::placeholder {
-      color: rgba(216, 228, 240, 0.48);
-      opacity: 1;
-    }
-
-    .detail-expr-line {
-      padding: 10px 12px;
-      border-left: 2px solid rgba(0,212,255,0.3);
-      background: rgba(0,212,255,0.06);
-      border-radius: 0 8px 8px 0;
-      line-height: 1.65;
-      color: var(--text-secondary);
-      font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .detail-actions {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 510;
-      background: linear-gradient(180deg, rgba(5,10,18,0), rgba(5,10,18,0.98) 30%);
-      padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      max-width: 920px;
-      margin: 0 auto;
-    }
-
-    .detail-btn-back {
-      background: transparent !important;
-      border: 1px solid var(--border-mid) !important;
-      color: var(--text-secondary) !important;
-      box-shadow: none !important;
-    }
-
-    @media (max-width: 760px) {
-      .detail-hero { padding: 20px 16px 18px; }
-    }
-  </style>
 </head>
 <body>
 
@@ -267,11 +54,11 @@
         </header>
 
         <div class="browse-overlay-content">
-          <p class="browse-kicker">Persona Selection</p>
+          <p class="browse-kicker">选择人格</p>
           <h1 class="browse-hero-name" id="hero-persona-name">SELECT PERSONA</h1>
           <p class="browse-hero-slogan" id="hero-persona-slogan">选择角色，开启你的现场策略剧场。</p>
           <p class="browse-hero-quad" id="hero-persona-quadrants">Dominant · Strategic · Controlled · Assertive</p>
-          <button class="btn browse-hero-btn" id="hero-enter-btn">Persona Detail</button>
+          <button class="btn browse-hero-btn" id="hero-enter-btn">了解更多</button>
           <p class="browse-swipe-hint">左右滑动切换人格</p>
         </div>
       </section>
@@ -302,41 +89,41 @@
 
           <div class="detail-tab-panels">
             <section class="detail-pane" data-pane="social" hidden>
-              <div class="detail-section-label">Social Logic</div>
+              <div class="detail-section-label">我如何定位自己</div>
               <div id="detail-social-essence" class="detail-section-value detail-list"></div>
             </section>
 
             <section class="detail-pane detail-pane--active" data-pane="behavior">
-              <div class="detail-section-label">Behaviour Pattern</div>
-              <div id="detail-behavior-pattern" class="detail-section-value detail-list">该人格会根据社交本质动态调整行动路径，优先执行高收益策略。</div>
+              <div class="detail-section-label">我如何行动</div>
+              <div id="detail-behavior-pattern" class="detail-section-value detail-list"></div>
             </section>
 
             <section class="detail-pane" data-pane="signature" hidden>
-              <div class="detail-section-label">Signature Expressions</div>
+              <div class="detail-section-label">我会说什么</div>
               <div id="detail-expressions" class="detail-expressions"></div>
             </section>
 
             <section class="detail-pane" data-pane="taboo" hidden>
-              <div class="detail-section-label">Taboos</div>
+              <div class="detail-section-label">我绝不做什么</div>
               <div id="detail-forbidden" class="detail-section-value detail-list"></div>
             </section>
           </div>
         </div>
-      </div>
 
-      <div class="instinct-check" id="instinct-check-section">
-        <div class="instinct-check-label">直觉测试</div>
-        <div class="instinct-scenario" id="instinct-scenario"></div>
-        <div class="instinct-prompt">直觉上，你会怎么做？</div>
-        <div class="instinct-options" id="instinct-options"></div>
-        <div class="instinct-reveal hidden" id="instinct-reveal">
-          <span class="instinct-reveal-label">TA的选择</span>
-          <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+        <div class="instinct-check" id="instinct-check-section">
+          <div class="instinct-check-label">直觉测试</div>
+          <div class="instinct-scenario" id="instinct-scenario"></div>
+          <div class="instinct-prompt">直觉上，你会怎么做？</div>
+          <div class="instinct-options" id="instinct-options"></div>
+          <div class="instinct-reveal hidden" id="instinct-reveal">
+            <span class="instinct-reveal-label">TA的选择</span>
+            <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+          </div>
         </div>
       </div>
 
       <div class="detail-actions">
-        <button class="btn detail-btn-back" onclick="closePersonaDetail()">Back</button>
+        <button class="btn detail-btn-back" onclick="closePersonaDetail()">返回</button>
         <button class="btn" id="detail-activate-btn" disabled>进入人格</button>
       </div>
     </div>
