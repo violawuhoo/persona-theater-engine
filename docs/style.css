@@ -248,6 +248,7 @@ header {
   margin-bottom: 6px;
   margin-top: 10px;
   text-transform: uppercase;
+  grid-column: 1 / -1;
 }
 
 /* Config */
