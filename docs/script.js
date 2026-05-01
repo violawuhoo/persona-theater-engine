@@ -117,13 +117,13 @@ function applyPersonaThemeFromCarousel() {
   applyPersonaTheme(getCarouselPersonaColor(AppState.currentCarouselIndex));
 }
 
-function renderTheaterTopbar({ personaName = '—', scene = '—', target = '—' } = {}) {
+function renderTheaterTopbar({ personaName = '—', scene = '—', mode = '' } = {}) {
   const nameEl = document.getElementById('theater-display-name');
   const sceneEl = document.getElementById('theater-display-scene');
   const targetEl = document.getElementById('theater-display-target');
   if (nameEl) nameEl.innerText = personaName || '—';
   if (sceneEl) sceneEl.innerText = scene || '—';
-  if (targetEl) targetEl.innerText = target || '—';
+  if (targetEl) targetEl.innerText = mode === 'strategic' ? '策略' : '沉浸';
 }
 
 // ── CUSTOM MODAL (replaces browser alert / confirm) ───────────
@@ -969,17 +969,16 @@ function activateFromDetail(personaData = AppState.currentPersonaData) {
 
 // ── THEATER STARTUP ───────────────────────────────────────────
 // TIMING CONTRACT:
-//   • Calibration overlay shows for exactly SYNC_DURATION_MS
 //   • AI call is raced against AI_TIMEOUT_MS
-//   • Theater opens at SYNC_DURATION_MS regardless of AI result
+//   • Theater opens immediately after AI resolves (or times out)
 async function startTheater() {
-  const intention = document.getElementById('intention-input').value.trim();
+  const mode      = document.getElementById('mode-select').value || 'immersive';
   const scene     = document.getElementById('scene-select').value;
-  const target    = document.getElementById('target-select').value;
-  const scale     = document.getElementById('scale-select').value;
+  const target    = mode === 'strategic' ? document.getElementById('target-select').value : '';
+  const intention = mode === 'strategic' ? document.getElementById('intention-input').value.trim() : '';
 
-  if (!intention) {
-    await showAlert('请先输入你的戏纲', { title: '配置不完整' });
+  if (mode === 'strategic' && !intention) {
+    await showAlert('请先输入你的意图', { title: '配置不完整' });
     return;
   }
   if (!AppState.currentPersonaData) {
@@ -988,65 +987,26 @@ async function startTheater() {
   }
 
   const personaDisplayName = safeStr(AppState.currentPersonaData.consumer_fields.display_name);
-  AppState.currentSceneContext = buildTheaterSceneContext(AppState.currentPersonaData, scene, target, scale, intention);
+  AppState.currentSceneContext = buildTheaterSceneContext(AppState.currentPersonaData, scene, target, mode, intention);
   AppState.usedGachaTips.clear();
-  console.log(`[Theater] Starting — Persona: ${AppState.currentPersonaData.id}, Scene: ${scene}, Target: ${target}`);
-  renderTheaterTopbar({ personaName: personaDisplayName, scene, target });
-
-  // ── Phase 1: Show calibration overlay immediately ────────
-  const syncOverlay     = document.getElementById('sync-overlay');
-  const syncPersonaName = document.getElementById('sync-persona-name');
-  syncPersonaName.innerText = personaDisplayName;
+  console.log(`[Theater] Starting — Persona: ${AppState.currentPersonaData.id}, Scene: ${scene}, Mode: ${mode}`);
+  renderTheaterTopbar({ personaName: personaDisplayName, scene, mode });
 
   const personaColor = getPersonaColor();
   applyPersonaTheme(personaColor);
 
-  const syncBox = syncOverlay.querySelector('.sync-box');
-  if (syncBox) {
-    syncBox.style.borderColor = personaColor;
-    syncBox.style.boxShadow   = `0 0 20px ${personaColor}44`;
-  }
-
-  const progressFill = syncOverlay.querySelector('.sync-progress-fill');
-  if (progressFill) {
-    progressFill.style.background = personaColor;
-    progressFill.style.boxShadow  = `0 0 10px ${personaColor}`;
-    progressFill.style.animation  = 'none';
-    progressFill.offsetHeight; // force reflow to restart animation
-    progressFill.style.animation  = `progressLoad ${CONFIG.SYNC_DURATION_MS}ms ease-in-out forwards`;
-  }
-
-  syncOverlay.style.color = personaColor;
-  syncOverlay.classList.remove('hidden');
-
-  const syncStatus = document.querySelector('.sync-status');
-  if (syncStatus) {
-    syncStatus.innerHTML = `
-      <span class="status-label">PERSONA_ID:</span>
-        <span class="status-value">${AppState.currentPersonaData.id} — ${safeStr(AppState.currentPersonaData.archetype_id)}</span><br>
-      <span class="status-label">ENV_SCAN:</span>
-        <span class="status-value">${scene}</span><br>
-      <span class="status-label">TARGET_LOCK:</span>
-        <span class="status-value">${target}</span><br>
-      <span class="status-label">FIELD_SCALE:</span>
-        <span class="status-value">${scale}</span><br>
-      <span class="status-label">EMOTION:</span>
-        <span class="status-valueSuppress">SUPPRESSED</span>
-    `;
-  }
-
-  // ── Phase 2: Extract local content immediately (theater_support) ─
-  const localContent = extractTheaterContent(AppState.currentPersonaData, scene, target, scale);
+  // ── Phase 1: Extract local content immediately (theater_support) ─
+  const localContent = extractTheaterContent(AppState.currentPersonaData, scene, target);
   applyTheaterContent(localContent, AppState.currentSceneContext, AppState.currentPersonaData);
 
-  // ── Phase 3: Race AI call against timeout ────────────────
+  // ── Phase 2: Race AI call against timeout ────────────────
   const aiTimeout = new Promise((_, reject) =>
     setTimeout(() => reject(new Error('AI_TIMEOUT')), CONFIG.AI_TIMEOUT_MS)
   );
 
   try {
     const aiContent = await Promise.race([
-      callAIWithPersonaProtocol(AppState.currentPersonaData, scene, target, scale, intention),
+      callAIWithPersonaProtocol(AppState.currentPersonaData, scene, target, mode, intention),
       aiTimeout
     ]);
     applyTheaterContent({
@@ -1061,18 +1021,13 @@ async function startTheater() {
     console.warn(`[Theater] AI ${reason} — running on local theater_support data.`);
   }
 
-  // ── Phase 4: Transition at SYNC_DURATION_MS ──────────────
-  setTimeout(() => {
-    syncOverlay.classList.add('hidden');
-    document.getElementById('config-panel').classList.add('hidden');
-    updateGuidance(0);
-    document.getElementById('theater-screen').classList.remove('hidden');
-
-    AppState.isTheaterModeActive = true;
-    startGachaSystem();
-
-    console.log(`[Theater] ✓ ${personaDisplayName} — 面具激活完成。`);
-  }, CONFIG.SYNC_DURATION_MS);
+  // ── Phase 3: Direct transition ───────────────────────────
+  document.getElementById('config-panel').classList.add('hidden');
+  updateGuidance(0);
+  document.getElementById('theater-screen').classList.remove('hidden');
+  AppState.isTheaterModeActive = true;
+  startGachaSystem();
+  console.log(`[Theater] ✓ ${personaDisplayName} — 面具激活完成。`);
 }
 
 // ── INTENTION CLASSIFIER ──────────────────────────────────────
@@ -1091,21 +1046,23 @@ function classifyIntentionBucket(rawIntention) {
   return 'advance';
 }
 
-function buildTheaterSceneContext(personaData, scene, target, scale, intention) {
+function buildTheaterSceneContext(personaData, scene, target, mode, intention) {
   const cf = (personaData && personaData.consumer_fields) || {};
   return {
     personaId: safeStr(personaData && personaData.id, ''),
     personaName: safeStr(cf.display_name, safeStr(personaData && personaData.id, '')),
     scene: safeStr(scene),
     target: safeStr(target),
-    scale: safeStr(scale),
+    mode: safeStr(mode) || 'immersive',
     intention: safeStr(intention),
     intentionBucket: classifyIntentionBucket(intention)
   };
 }
 
 function isCompleteTheaterContext(ctx) {
-  return !!(ctx && ctx.personaId && ctx.scene && ctx.target && ctx.scale && ctx.intention);
+  if (!ctx || !ctx.personaId || !ctx.scene) return false;
+  if (ctx.mode === 'strategic') return !!(ctx.target && ctx.intention);
+  return true; // immersive only needs scene
 }
 
 function splitTheaterLines(text) {
@@ -1172,15 +1129,18 @@ function shortContextSnippet(text, maxLen = 30) {
 }
 
 function buildContextPrefix(ctx) {
-  return `【场景】${ctx.scene}｜${ctx.target}｜${ctx.scale}\n【戏纲】${shortContextSnippet(ctx.intention, 42)}`;
+  const targetPart = ctx.target ? `｜${ctx.target}` : '';
+  return `【场景】${ctx.scene}${targetPart}\n【戏纲】${shortContextSnippet(ctx.intention, 42)}`;
 }
 
 function buildMechanismContextPrefix(ctx) {
-  return `【机制范围】${ctx.scene}中的${ctx.target}｜${ctx.scale}\n【判定目标】围绕${shortContextSnippet(ctx.intention, 34)}调整信号评估。`;
+  const targetPart = ctx.target ? `中的${ctx.target}` : '';
+  return `【机制范围】${ctx.scene}${targetPart}\n【判定目标】围绕${shortContextSnippet(ctx.intention, 34)}调整信号评估。`;
 }
 
 function buildDialogueContextPrefix(ctx) {
-  return `【表达范围】${ctx.scene}｜面向${ctx.target}｜${ctx.scale}\n【表达目标】用${intentionVerb(ctx.intentionBucket)}回应「${shortContextSnippet(ctx.intention, 34)}」。`;
+  const targetPart = ctx.target ? `｜面向${ctx.target}` : '';
+  return `【表达范围】${ctx.scene}${targetPart}\n【表达目标】用${intentionVerb(ctx.intentionBucket)}回应「${shortContextSnippet(ctx.intention, 34)}」。`;
 }
 
 function buildMechanismFallback(persona, ctx) {
@@ -1192,10 +1152,10 @@ function buildMechanismFallback(persona, ctx) {
   const cueLine = firstCue.trigger
     ? `【信号评估】遇到${stripTheaterLabels(firstCue.trigger)}时，先按${stripTheaterLabels(firstCue.guidance)}处理。`
     : `【信号评估】先判断对方是在推进、试探还是施压，再决定回应强度。`;
-  const scaleLine = ctx.scale.includes('>8') || ctx.scale.includes('5-8')
-    ? '【节奏调整】大场域先控制可见动作和发言时机，避免被多人反馈牵引。'
-    : '【节奏调整】小场域先控制距离和停顿长度，让对方的下一步更容易被读出。';
-  return `【反应底层】${guard}\n${cueLine}\n${scaleLine}`;
+  const modeLine = ctx.mode === 'strategic'
+    ? '【节奏调整】策略模式下先锁定意图方向，用每次回应检验对方的真实立场。'
+    : '【节奏调整】先控制距离和停顿长度，让对方的下一步更容易被读出。';
+  return `【反应底层】${guard}\n${cueLine}\n${modeLine}`;
 }
 
 function buildDialogueFallback(persona, ctx) {
@@ -1222,13 +1182,13 @@ function personaReactionSeed(persona, ctx) {
   const ts = (persona && persona.theater_support) || {};
   const logicAxes = ts.logic_axes || {};
   const cues = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
-  const scaleMode = ctx.scale.includes('>8') || ctx.scale.includes('5-8') ? '多人压力下' : '近距离压力下';
+  const modeContext = ctx.mode === 'strategic' ? '策略压力下' : '近距离压力下';
   const cueLines = cues.slice(0, 2).map(c =>
     `【人格反应·${stripTheaterLabels(c.trigger)}】${stripTheaterLabels(c.guidance)}`
   );
   return [
     logicAxes.interaction_focus ? `【人格评估】${stripLeadingConceptLabel(logicAxes.interaction_focus)}` : '',
-    logicAxes.emotional_guard ? `【节奏防护】${scaleMode}，${stripLeadingConceptLabel(logicAxes.emotional_guard)}` : '',
+    logicAxes.emotional_guard ? `【节奏防护】${modeContext}，${stripLeadingConceptLabel(logicAxes.emotional_guard)}` : '',
     logicAxes.power_move ? `【升级方式】${stripLeadingConceptLabel(logicAxes.power_move)}` : '',
     ...cueLines
   ].filter(Boolean).join('\n');
@@ -1242,7 +1202,7 @@ function sceneReactionModifier(rawReaction, ctx) {
   const sceneLine = sentenceParts(marked)
     .map(stripTheaterLabels)
     .find(line => line && !containsDialogue(line) && !containsSpeechSignal(line));
-  const fallback = `${ctx.scene}中按${scaleLabel(ctx.scale)}风险调整节奏，优先服务于${intentionVerb(ctx.intentionBucket)}。`;
+  const fallback = `${ctx.scene}中调整节奏，优先服务于${intentionVerb(ctx.intentionBucket)}。`;
   return `【场景调制】${sceneLine || fallback}`;
 }
 
@@ -1327,7 +1287,7 @@ function normalizeTheaterContent(rawContent, ctx, persona) {
   }
   const safeCtx = isCompleteTheaterContext(ctx)
     ? ctx
-    : buildTheaterSceneContext(persona, ctx && ctx.scene, ctx && ctx.target, ctx && ctx.scale, ctx && ctx.intention);
+    : buildTheaterSceneContext(persona, ctx && ctx.scene, ctx && ctx.target, ctx && ctx.mode, ctx && ctx.intention);
 
   const mind = contextInjectTheaterBlock('判断框架', rawContent && rawContent.mind, safeCtx);
   const body = contextInjectTheaterBlock('行动基准', rawContent && rawContent.body, safeCtx);
@@ -1387,7 +1347,7 @@ function applyTheaterContent(rawContent, ctx, persona) {
 // ── AI PROTOCOL GENERATOR ─────────────────────────────────────
 // Builds a prompt using ONLY consumer_fields and theater_support.
 // No old-schema fields (core_directive, root_logic_core, etc.) are read here.
-async function callAIWithPersonaProtocol(personaData, scene, target, scale, intention) {
+async function callAIWithPersonaProtocol(personaData, scene, target, mode, intention) {
   const url = 'https://api.moonshot.cn/v1/chat/completions';
 
   const cf = personaData.consumer_fields || {};
@@ -1406,10 +1366,7 @@ async function callAIWithPersonaProtocol(personaData, scene, target, scale, inte
   const expressionMods = ts.expression_modulators || {};
   const reactionCues   = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
 
-  const isLargeScale = scale && (scale.includes('5-8') || scale.includes('>8'));
-  const scaleTactic  = isLargeScale
-    ? safeStr(sceneTactics.large_scale, safeStr(sceneTactics.small_scale))
-    : safeStr(sceneTactics.small_scale, safeStr(sceneTactics.large_scale));
+  const sceneTactic = safeStr(sceneTactics.small_scale, safeStr(sceneTactics.large_scale));
 
   const reactionCueSummary = reactionCues.map(c =>
     `${safeStr(c.trigger)}: ${safeStr(c.guidance)}`
@@ -1439,7 +1396,7 @@ async function callAIWithPersonaProtocol(personaData, scene, target, scale, inte
   if (safeStr(logicAxes.power_move)        !== MISSING) behaviorLines.push(`权力动作: ${safeStr(logicAxes.power_move)}`);
   if (safeStr(expressionMods.delivery_mode) !== MISSING) behaviorLines.push(`语言模式: ${safeStr(expressionMods.delivery_mode)}`);
   if (safeStr(expressionMods.physicality)   !== MISSING) behaviorLines.push(`肢体基准: ${safeStr(expressionMods.physicality)}`);
-  if (scaleTactic) behaviorLines.push(`场景战术: ${scaleTactic}`);
+  if (sceneTactic) behaviorLines.push(`场景战术: ${sceneTactic}`);
   if (reactionCueSummary !== '[反应线索缺失]') behaviorLines.push(`反应线索:\n${reactionCueSummary}`);
   behaviorLines.push(`绝对禁忌:\n${taboosList}`);
   const personaBehavior = behaviorLines.join('\n');
@@ -1476,8 +1433,8 @@ ${sceneLine}
 Target:
 ${targetLine}
 
-Scale:
-${scale}
+Mode:
+${mode === 'strategic' ? '策略模式 — 定向对象与意图' : '沉浸模式 — 专注当下体验'}
 
 User Intention (raw):
 ${intention}
@@ -1757,13 +1714,6 @@ function sentenceParts(text) {
     .filter(part => part.length > 5 && part !== MISSING && part !== '[缺失]');
 }
 
-function scaleLabel(scale) {
-  if (safeStr(scale).includes('>8')) return '多人场';
-  if (safeStr(scale).includes('5-8')) return '多人场';
-  if (safeStr(scale).includes('3-5')) return '小组场';
-  return '近距场';
-}
-
 function intentionVerb(bucket) {
   return {
     advance: '把话题推向下一步',
@@ -1780,8 +1730,7 @@ function scoreTipCandidate(text, ctx) {
   const value = normalizeTheaterText(text, '');
   let score = 0;
   if (value.includes(ctx.scene.split('/')[0])) score += 3;
-  if (value.includes(ctx.target.split('/')[0])) score += 2;
-  if (value.includes(scaleLabel(ctx.scale))) score += 2;
+  if (ctx.target && value.includes(ctx.target.split('/')[0])) score += 2;
   if (/距离|节奏|停顿|视线|身体|话题|回应|边界|承诺|框架|观察/.test(value)) score += 1;
   if (ctx.intentionBucket === 'test' && /试探|观察|确认|判断|信息|底线/.test(value)) score += 3;
   if (ctx.intentionBucket === 'delay' && /暂缓|承诺|慢|停顿|拖|清醒/.test(value)) score += 3;
@@ -1796,7 +1745,8 @@ function composeContextualTip(base, ctx) {
   const sceneName = safeStr(ctx.scene).split('/')[0] || '当前场景';
   const setup = shortContextSnippet(ctx.intention, 24);
   const action = stripTheaterLabels(base).replace(/[。.]$/, '');
-  return `${sceneName}·${scaleLabel(ctx.scale)}：围绕「${setup}」，${intentionVerb(ctx.intentionBucket)}；${action}。`;
+  const intentPart = setup ? `围绕「${setup}」，${intentionVerb(ctx.intentionBucket)}；` : `${intentionVerb(ctx.intentionBucket)}；`;
+  return `${sceneName}：${intentPart}${action}。`;
 }
 
 // ── SCENE TIP GENERATOR ───────────────────────────────────────
@@ -1822,12 +1772,8 @@ function generateSceneTip(persona, sceneContext, theaterContent) {
   }
   if (targetProfile) candidates.push(targetProfile);
 
-  // theater_support.scene_tactics is scale-aware, so scene changes and scale changes alter the pool.
   const st = ts.scene_tactics || {};
-  const isLarge = ctx.scale && (ctx.scale.includes('5-8') || ctx.scale.includes('>8'));
-  const rawTactic = isLarge
-    ? safeStr(st.large_scale, safeStr(st.small_scale))
-    : safeStr(st.small_scale, safeStr(st.large_scale));
+  const rawTactic = safeStr(st.small_scale, safeStr(st.large_scale));
   candidates.push(rawTactic);
 
   const cues = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
@@ -1880,7 +1826,7 @@ async function rewriteTipImperative(originalLine, sceneContext) {
           },
           {
             role: 'user',
-            content: `场景：${safeStr(ctx.scene)}\n规模：${safeStr(ctx.scale)}\n戏纲：${safeStr(ctx.intention)}\n原文：${originalLine}\n改写为祈使句：`
+            content: `场景：${safeStr(ctx.scene)}\n模式：${safeStr(ctx.mode)}\n戏纲：${safeStr(ctx.intention)}\n原文：${originalLine}\n改写为祈使句：`
           }
         ],
         temperature: 0.3,
@@ -1929,7 +1875,7 @@ async function exitTheater() {
   AppState.isTheaterModeActive = false;
   if (AppState.gachaTimer) clearInterval(AppState.gachaTimer);
   AppState.usedGachaTips.clear();
-  AppState.currentSceneContext = { personaId: '', personaName: '', scene: '', target: '', scale: '', intention: '', intentionBucket: '' };
+  AppState.currentSceneContext = { personaId: '', personaName: '', scene: '', target: '', mode: '', intention: '', intentionBucket: '' };
 
   document.getElementById('theater-screen').classList.add('hidden');
   document.getElementById('carousel').classList.remove('hidden');
@@ -1988,7 +1934,6 @@ async function requestSceneHelp(userInput) {
   const persona = AppState.currentPersonaData;
   const scene   = AppState.currentSceneContext.scene;
   const target  = AppState.currentSceneContext.target;
-  const scale   = AppState.currentSceneContext.scale;
   const content = AppState.contentData;
 
   const cf = (persona && persona.consumer_fields) || {};
