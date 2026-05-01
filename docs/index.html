@@ -125,7 +125,7 @@
       <!-- Hidden functional selects — JS reads .value; cards keep them in sync -->
       <input type="hidden" id="mode-select" value="immersive">
       <select id="scene-select" class="hidden-select">
-        <option value="会议/述职">会议/述职</option>
+        <option value="会议/工作场合">会议/工作场合</option>
         <option value="商务饭局/谈判">商务饭局/谈判</option>
         <option value="面试/合伙洽谈">面试/合伙洽谈</option>
         <option value="职场社交/行业活动">职场社交/行业活动</option>
@@ -164,7 +164,7 @@
           <!-- 职场/正式 -->
           <div class="config-group-label">职场 / 正式</div>
           <button class="config-card config-card--active"
-                  data-select="scene-select" data-value="会议/述职">
+                  data-select="scene-select" data-value="会议/工作场合">
             <span class="config-card-title">会议述职</span>
             <span class="config-card-sub">汇报 · 博弈</span>
           </button>
@@ -371,11 +371,11 @@
       if (isStrategic) {
         var sceneEl = document.getElementById('scene-select');
         if (sceneEl && sceneEl.value === '独处时刻') {
-          sceneEl.value = '会议/述职';
+          sceneEl.value = '会议/工作场合';
           document.querySelectorAll('[data-select="scene-select"]').forEach(function(c) {
             c.classList.remove('config-card--active');
           });
-          var first = document.querySelector('[data-select="scene-select"][data-value="会议/述职"]');
+          var first = document.querySelector('[data-select="scene-select"][data-value="会议/工作场合"]');
           if (first) first.classList.add('config-card--active');
         }
       }

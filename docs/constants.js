@@ -33,8 +33,8 @@ const LEGACY_PERSONA_COLORS = {
 //   priority_protocols — which persona protocols matter most here
 //   tactical_focus     — scene-specific local fallback content (mind/body/speech/reaction)
 const SCENARIO_OVERLAYS = {
-  '会议/述职': {
-    dynamics: '绩效叙事的战场。每个词都在被权力方解读和记录。核心压力：数据质疑、责任归因、资源竞争。你不是在汇报，你是在构建一个让决策者必须支持你的框架。',
+  '会议/工作场合': {
+    dynamics: '所有发言都在被解读、记录和归因。这个场域没有中性的话——每句话都在构建你的位置和可信度。核心动态：谁在定义议题，谁在回应议题，谁在沉默中观察。你的目标不是把话说完，而是让房间里的人记住你说的哪一句。',
     priority_protocols: ['logical_trap', 'attack', 'validation_received', 'being_ignored'],
     tactical_focus: {
       mind: '【叙事重构】\n绩效数据是道具，不是目的。目的是让听众相信：你是这个方向上最有掌控力的人。\n\n【风险先发制人】\n主动提出问题，同时给出已准备好的对策。这将「暴露问题」转变为「展示前瞻性」。\n\n【权力地图扫描】\n开场前，快速判断今天谁的意见权重最高。所有内容优先对那个人校准。',
@@ -44,7 +44,7 @@ const SCENARIO_OVERLAYS = {
     }
   },
   '商务饭局/谈判': {
-    dynamics: '酒桌与谈判桌的双场博弈。正式场域是框架争夺，非正式场域是信息采集。酒精是社交溶剂——它同时溶解对方的防御和你的判断力。核心任务：维持信息优势，不在放松氛围中暴露底牌。',
+    dynamics: '关系先于议程。这个场域的潜规则是：真正的决定在非正式层面被确认，桌面上的谈判只是仪式。核心动态：谁在主导节奏，谁在试探底线，谁在用轻松掩盖目的。放松是武器，不是状态。',
     priority_protocols: ['attack', 'logical_trap', 'excessive_flattery', 'validation_received'],
     tactical_focus: {
       mind: '【场域定性】\n将此场域归类为：框架争夺战与信息采集行动的叠加。谁设置了议程，谁就赢了谈判；谁保持清醒，谁就掌握了信息差。\n\n【核心任务】\n锚定高位，让对方在你预设的选项范围内做选择。保持清醒度比对方高30%，这是信息优势。\n\n【认知警报】\n对方每一次表达"诚意"或"放松氛围"，均归类为：降低你防御阈值的战术动作。',
@@ -54,7 +54,7 @@ const SCENARIO_OVERLAYS = {
     }
   },
   '面试/合伙洽谈': {
-    dynamics: '双向筛选场——不是单向审判。对方在评估你，你也在评估对方是否值得你的时间。最常见的致命错误：把这个场域定义为求职者接受审判。',
+    dynamics: '双向筛选场，不是单向审判。对方在评估你，你也在评估对方是否值得你的时间和资源。核心动态：谁在设定评价框架，谁在接受框架。最大的错误是把主动权拱手相让。',
     priority_protocols: ['logical_trap', 'praise_received', 'validation_received', 'attack'],
     tactical_focus: {
       mind: '【场域重定义】\n这是两个主权个体在评估合作可行性。带着这个框架进场。你的稀缺性不需要被证明——它需要被感知。\n\n【信息不对称利用】\n你比他们更了解你自己。在叙事中掌握节奏，决定展示哪些信息，以什么顺序。\n\n【反向筛选】\n准备3个判断对方质量的标准。如果对方不达标，这不是好机会。',
@@ -64,22 +64,22 @@ const SCENARIO_OVERLAYS = {
     }
   },
   '职场社交/行业活动': {
-    dynamics: '',
+    dynamics: '弱连接的播种场。每段对话窗口短暂，没有固定议程。核心任务不是深入，而是在有限时间内留下一个足够清晰的印象，让对方在离开后还记得你是谁。',
     priority_protocols: [],
     tactical_focus: { mind: '', body: '', speech: '', reaction: '' }
   },
   '朋友聚会/饭局': {
-    dynamics: '',
+    dynamics: '关系能量的流动场。没有输赢，只有氛围和连接质量。核心动态：谁在输出能量，谁在消耗能量，谁在边缘游走。这个场域考验的是真实存在感，而不是表现。',
     priority_protocols: [],
     tactical_focus: { mind: '', body: '', speech: '', reaction: '' }
   },
   '一对一深谈': {
-    dynamics: '',
+    dynamics: '高密度的真实性场域。没有旁观者，没有表演空间。对方的注意力完全在你身上，任何不一致都会被感知到。核心动态：开放程度决定连接深度，但开放本身也是一种选择和策略。',
     priority_protocols: [],
     tactical_focus: { mind: '', body: '', speech: '', reaction: '' }
   },
   '相亲/约会': {
-    dynamics: '真实性与策略性的张力场。过度计算会被感知到，零计算会失去主动权。核心任务：让对方感觉被真正看见，同时保持自身的神秘感和信息缺口。',
+    dynamics: '吸引力与真实性的博弈场。过度计算会被感知到，零计算会失去主动权。核心动态：谁在主导节奏，谁在被吸引，谁在保持适度的神秘感和信息缺口。',
     priority_protocols: ['excessive_flattery', 'gratitude_received', 'peer_coldness', 'praise_received'],
     tactical_focus: {
       mind: '【目标重设】\n不是表现出最好的自己，而是创造一个让对方主动想要了解更多的信息缺口。\n\n【吸引力物理学】\n真正的吸引来自于：对方感觉「我还没有完全看懂这个人」。给出足够多的信息让对方感兴趣，但永远保留一个未解的层次。\n\n【情绪自给】\n进场前确认：你今晚不需要任何来自对方的认可。这种自足感会被本能感知到。',
@@ -89,7 +89,7 @@ const SCENARIO_OVERLAYS = {
     }
   },
   '偶遇/陌生场合': {
-    dynamics: '无剧本即兴场。时间窗口极短，通常只有30-120秒来建立基准印象。前5秒的物理状态决定整场互动的权力基准线。最大风险：被反应性情绪劫持。',
+    dynamics: '无剧本的即兴场。时间窗口极短，通常只有30–120秒建立基准印象。前5秒的状态决定整场互动的基调。核心风险：被突发情绪劫持，或因准备不足而丧失主动权。',
     priority_protocols: ['attack', 'being_ignored', 'peer_coldness', 'excessive_flattery'],
     tactical_focus: {
       mind: '【即时状态切换】\n在接触发生前的0.5秒内完成重置：脊椎延伸，呼吸下沉，将对方归类为「待观察变量」而非威胁或机会。\n\n【时间压缩意识】\n你有大约90秒来建立一个让对方想要继续了解的印象。不浪费在寒暄上。\n\n【偶然感维护】\n让这次遭遇感觉像是一个好的巧合，而非一场预谋的表演。',
@@ -99,7 +99,7 @@ const SCENARIO_OVERLAYS = {
     }
   },
   '独处时刻': {
-    dynamics: '',
+    dynamics: '没有观众的内在场域。不需要对外输出，只需要向内居住。核心任务：用这个人格的眼睛看自己的空间、念头和感受——不是表演，而是真正从内部体验另一种思维方式的运作。',
     priority_protocols: [],
     tactical_focus: { mind: '', body: '', speech: '', reaction: '' }
   }
