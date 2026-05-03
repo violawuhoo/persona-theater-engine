@@ -534,6 +534,8 @@ async function openPersonaDetail(personaId) {
 
     // All Detail content extracted through extractDetailContent (consumer_fields only)
     const detail = extractDetailContent(data);
+    const coreThinkingEl = document.getElementById('detail-core-thinking');
+    if (coreThinkingEl) coreThinkingEl.textContent = detail.core_thinking;
     const detailView = buildDetailViewContent(data, detail);
     const heroSlogan = detailView.heroSlogan;
     const heroIntro = detailView.heroIntro;
@@ -561,14 +563,34 @@ async function openPersonaDetail(personaId) {
       ? detail.taboos.map(t => normalizeDetailText(t)).join('\n\n')
       : normalizeDetailText('');
 
-    // Style activate button with persona colour
+    // Style activate button — ghost style with persona accent
     const activateBtn = document.getElementById('detail-activate-btn');
     if (activateBtn) {
-      activateBtn.style.background = color;
-      activateBtn.style.boxShadow  = `0 0 18px ${color}44`;
-      activateBtn.style.color      = ['#00f2ff','#2ecc71','#90b8b8'].includes(color) ? '#000' : '#fff';
+      activateBtn.style.background = 'transparent';
+      activateBtn.style.border     = `1px solid ${color}`;
+      activateBtn.style.color      = color;
+      activateBtn.style.boxShadow  = '';
     }
     bindDetailActivateButton(data);
+
+    // Wire optional depth toggle
+    const moreLink      = document.getElementById('detail-more-link');
+    const optionalDepth = document.getElementById('detail-optional-depth');
+    const collapseLink  = document.getElementById('detail-collapse-link');
+    if (moreLink && optionalDepth) {
+      moreLink.onclick = function () {
+        optionalDepth.style.display = 'block';
+        requestAnimationFrame(() => optionalDepth.classList.add('is-visible'));
+      };
+    }
+    if (collapseLink && optionalDepth) {
+      collapseLink.onclick = function () {
+        optionalDepth.classList.remove('is-visible');
+        setTimeout(() => {
+          if (!optionalDepth.classList.contains('is-visible')) optionalDepth.style.display = '';
+        }, 230);
+      };
+    }
 
     // ── Navigate: hide Browse, show Detail with fade-in+slide-up ─
     document.getElementById('carousel').classList.add('hidden');
@@ -831,6 +853,11 @@ function resetDetailViewState() {
   if (panel) panel.classList.remove('detail-entering', 'detail-leaving');
   if (modalOverlay) modalOverlay.classList.add('hidden');
   if (helpOverlay) helpOverlay.classList.add('hidden');
+  const optionalDepth = document.getElementById('detail-optional-depth');
+  if (optionalDepth) {
+    optionalDepth.classList.remove('is-visible');
+    optionalDepth.style.display = '';
+  }
   if (activateBtn) {
     activateBtn.disabled = false;
     activateBtn.onclick = null;
