@@ -51,63 +51,73 @@
     <!-- ══════════════════════════════════════════════════════════
          DETAIL PANEL  (Browse → Detail → Config)
          ══════════════════════════════════════════════════════════ -->
-        <div id="detail-panel" class="hidden">
+    <div id="detail-panel" class="hidden">
       <div class="detail-shell">
+
+        <!-- SECTION A — Hero -->
         <div class="detail-hero">
-          <div class="detail-hero-copy">
-            <p id="detail-hero-slogan" class="detail-slogan">人格画像已就绪。</p>
-            <p id="detail-hero-intro" class="detail-intro">点击 Enter Persona 继续。</p>
-            <div id="detail-persona-name" class="detail-name"></div>
-            <p id="detail-core-essence" class="hidden"></p>
-          </div>
+          <p id="detail-hero-slogan" class="detail-slogan"></p>
+          <p id="detail-core-thinking" class="detail-core-thinking"></p>
+          <div id="detail-persona-name" class="detail-name"></div>
+          <!-- kept hidden for JS compat -->
+          <p id="detail-hero-intro" class="hidden"></p>
+          <p id="detail-core-essence" class="hidden"></p>
         </div>
 
-        <div class="detail-doc">
-          <div class="detail-tabs" role="tablist" aria-label="Persona details">
-            <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">我如何定位</button>
-            <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">我如何行动</button>
-            <button class="detail-tab" data-tab="signature" role="tab" aria-selected="false">我会说什么</button>
-            <button class="detail-tab" data-tab="taboo" role="tab" aria-selected="false">我绝不做什么</button>
-          </div>
-
-          <div class="detail-tab-panels">
-            <section class="detail-pane" data-pane="social" hidden>
-              <div class="detail-section-label">我如何定位自己</div>
-              <div id="detail-social-essence" class="detail-section-value detail-list"></div>
-            </section>
-
-            <section class="detail-pane detail-pane--active" data-pane="behavior">
-              <div class="detail-section-label">我如何行动</div>
-              <div id="detail-behavior-pattern" class="detail-section-value detail-list"></div>
-            </section>
-
-            <section class="detail-pane" data-pane="signature" hidden>
-              <div class="detail-section-label">我会说什么</div>
-              <div id="detail-expressions" class="detail-expressions"></div>
-            </section>
-
-            <section class="detail-pane" data-pane="taboo" hidden>
-              <div class="detail-section-label">我绝不做什么</div>
-              <div id="detail-forbidden" class="detail-section-value detail-list"></div>
-            </section>
-          </div>
+        <!-- SECTION B — Actions -->
+        <div class="detail-actions-primary">
+          <button class="btn detail-enter-btn" id="detail-activate-btn">进入</button>
+          <span class="detail-more-link" id="detail-more-link">了解更多</span>
         </div>
 
-        <div class="instinct-check" id="instinct-check-section">
-          <div class="instinct-check-label">直觉测试</div>
-          <div class="instinct-scenario" id="instinct-scenario"></div>
-          <div class="instinct-prompt">直觉上，你会怎么做？</div>
-          <div class="instinct-options" id="instinct-options"></div>
-          <div class="instinct-reveal hidden" id="instinct-reveal">
-            <span class="instinct-reveal-label">TA的选择</span>
-            <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+        <!-- SECTION C — Optional depth (hidden by default) -->
+        <div class="detail-optional-depth" id="detail-optional-depth">
+          <div class="detail-doc">
+            <div class="detail-tabs" role="tablist" aria-label="Persona details">
+              <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">我如何定位</button>
+              <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">我如何行动</button>
+              <button class="detail-tab" data-tab="signature" role="tab" aria-selected="false">我会说什么</button>
+              <button class="detail-tab" data-tab="taboo" role="tab" aria-selected="false">我绝不做什么</button>
+            </div>
+
+            <div class="detail-tab-panels">
+              <section class="detail-pane" data-pane="social" hidden>
+                <div class="detail-section-label">我如何定位自己</div>
+                <div id="detail-social-essence" class="detail-section-value detail-list"></div>
+              </section>
+              <section class="detail-pane detail-pane--active" data-pane="behavior">
+                <div class="detail-section-label">我如何行动</div>
+                <div id="detail-behavior-pattern" class="detail-section-value detail-list"></div>
+              </section>
+              <section class="detail-pane" data-pane="signature" hidden>
+                <div class="detail-section-label">我会说什么</div>
+                <div id="detail-expressions" class="detail-expressions"></div>
+              </section>
+              <section class="detail-pane" data-pane="taboo" hidden>
+                <div class="detail-section-label">我绝不做什么</div>
+                <div id="detail-forbidden" class="detail-section-value detail-list"></div>
+              </section>
+            </div>
           </div>
+
+          <div class="instinct-check" id="instinct-check-section">
+            <div class="instinct-check-label">直觉测试</div>
+            <div class="instinct-scenario" id="instinct-scenario"></div>
+            <div class="instinct-prompt">直觉上，你会怎么做？</div>
+            <div class="instinct-options" id="instinct-options"></div>
+            <div class="instinct-reveal hidden" id="instinct-reveal">
+              <span class="instinct-reveal-label">TA的选择</span>
+              <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+            </div>
+          </div>
+
+          <span class="detail-collapse-link" id="detail-collapse-link">收起</span>
         </div>
+
       </div>
 
       <div class="detail-actions">
         <button class="btn detail-btn-back" onclick="closePersonaDetail()">返回</button>
-        <button class="btn" id="detail-activate-btn" disabled>进入人格</button>
       </div>
     </div>
 
