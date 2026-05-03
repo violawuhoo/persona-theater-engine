@@ -44,7 +44,10 @@ function extractDetailContent(persona) {
     ? cf.instinct_check
     : null;
 
-  return { core_essence, social_essence, expressions, taboos, instinct_check };
+  // core_thinking — verbatim passthrough, falls back to empty string
+  const core_thinking = cf.core_thinking || '';
+
+  return { core_essence, social_essence, expressions, taboos, instinct_check, core_thinking };
 }
 
 // ── Theater extractor helpers ─────────────────────────────────

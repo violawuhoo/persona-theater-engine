@@ -5,6 +5,267 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>PERSONA THEATER</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
+  <style>
+    /* Detail reading page layout (presentation only) */
+    #detail-panel {
+      position: fixed;
+      inset: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background:
+        radial-gradient(circle at 85% 0%, rgba(0, 212, 255, 0.14), transparent 36%),
+        radial-gradient(circle at 10% 15%, rgba(113, 91, 255, 0.12), transparent 30%),
+        var(--bg-primary);
+      z-index: 500;
+      padding: 0 0 120px;
+      box-sizing: border-box;
+    }
+
+    @keyframes detail-in  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes detail-out { from { opacity:1 } to { opacity:0 } }
+    #detail-panel.detail-entering { animation: detail-in  0.22s ease-out forwards; }
+    #detail-panel.detail-leaving  { animation: detail-out 0.14s ease-in  forwards; }
+
+    .detail-shell {
+      width: min(920px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 20px 0 0;
+    }
+
+    .detail-hero {
+      margin-top: 34px;
+      padding: 40px 24px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--persona-accent) 14%, transparent), transparent 55%);
+    }
+
+    .detail-name {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      opacity: 0.55;
+      margin: 0;
+    }
+
+    .detail-slogan {
+      font-size: 22px;
+      color: var(--persona-accent);
+      margin: 0 0 20px;
+      line-height: 1.55;
+      font-weight: 500;
+    }
+
+    .detail-core-thinking {
+      font-size: 16px;
+      line-height: 1.9;
+      color: var(--text-primary);
+      margin: 0 0 20px;
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .detail-intro { display: none; }
+
+    .detail-doc {
+      margin-top: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(10, 16, 27, 0.88);
+      padding: 18px 16px 8px;
+    }
+
+    .detail-section {
+      padding: 0 2px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 18px;
+    }
+
+    .detail-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .detail-section-label {
+      margin-bottom: 8px;
+      color: var(--accent-cyan);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .detail-core-text,
+    .detail-section-value {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+    }
+
+    .detail-structured-block {
+      padding: 10px 12px;
+      border-left: 2px solid color-mix(in oklab, var(--persona-accent) 42%, transparent);
+      background: rgba(255, 255, 255, 0.035);
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 10px;
+    }
+
+    .detail-structured-block:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-structured-label {
+      color: var(--persona-accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1.35;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-structured-text {
+      margin-top: 5px;
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-expressions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .config-section--core-scene {
+      padding-top: 22px;
+      padding-bottom: 12px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .config-section--core-scene .config-section-label {
+      color: var(--persona-accent);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      margin-bottom: 12px;
+    }
+
+    #intention-input.core-scene-input {
+      display: block;
+      min-height: 148px;
+      font-size: 18px;
+      line-height: 1.75;
+      padding: 18px 18px;
+      border-color: color-mix(in oklab, var(--persona-accent) 38%, var(--border-subtle));
+      background: rgba(11, 20, 33, 0.96);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), 0 14px 32px rgba(0, 0, 0, 0.22);
+      overflow-wrap: anywhere;
+    }
+
+    #intention-input.core-scene-input::placeholder {
+      color: rgba(216, 228, 240, 0.48);
+      opacity: 1;
+    }
+
+    .detail-expr-line {
+      padding: 10px 12px;
+      border-left: 2px solid rgba(0,212,255,0.3);
+      background: rgba(0,212,255,0.06);
+      border-radius: 0 8px 8px 0;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .detail-actions-primary {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .detail-enter-btn {
+      width: 100%;
+      font-size: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      background: transparent;
+      border: 1px solid var(--persona-accent);
+      color: var(--persona-accent);
+      box-shadow: none;
+    }
+
+    .detail-more-link,
+    .detail-collapse-link {
+      display: block;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-secondary);
+      opacity: 0.6;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .detail-more-link:hover,
+    .detail-collapse-link:hover { opacity: 1; }
+
+    .detail-collapse-link {
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    .detail-optional-depth {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+      margin-top: 24px;
+    }
+
+    .detail-optional-depth.is-visible {
+      display: block;
+      opacity: 1;
+    }
+
+    .detail-actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 510;
+      background: linear-gradient(180deg, rgba(5,10,18,0), rgba(5,10,18,0.98) 30%);
+      padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .detail-btn-back {
+      width: 100%;
+      background: transparent !important;
+      border: 1px solid var(--border-mid) !important;
+      color: var(--text-secondary) !important;
+      box-shadow: none !important;
+    }
+  </style>
 </head>
 <body>
 
@@ -70,61 +331,62 @@
          ══════════════════════════════════════════════════════════ -->
         <div id="detail-panel" class="hidden">
       <div class="detail-shell">
+
+        <!-- SECTION A — Hero: atmosphere first -->
         <div class="detail-hero">
-          <div class="detail-hero-copy">
-            <p id="detail-hero-slogan" class="detail-slogan">人格画像已就绪。</p>
-            <p id="detail-hero-intro" class="detail-intro">点击 Enter Persona 继续。</p>
-            <div id="detail-persona-name" class="detail-name"></div>
-            <p id="detail-core-essence" class="hidden"></p>
-          </div>
+          <p id="detail-hero-slogan" class="detail-slogan"></p>
+          <p id="detail-core-thinking" class="detail-core-thinking"></p>
+          <div id="detail-persona-name" class="detail-name"></div>
+          <!-- kept in DOM for JS compat, not rendered -->
+          <p id="detail-hero-intro" class="hidden"></p>
+          <p id="detail-core-essence" class="hidden"></p>
         </div>
 
-        <div class="detail-doc">
-          <div class="detail-tabs" role="tablist" aria-label="Persona details">
-            <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">我如何定位</button>
-            <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">我如何行动</button>
-            <button class="detail-tab" data-tab="signature" role="tab" aria-selected="false">我会说什么</button>
-            <button class="detail-tab" data-tab="taboo" role="tab" aria-selected="false">我绝不做什么</button>
-          </div>
-
-          <div class="detail-tab-panels">
-            <section class="detail-pane" data-pane="social" hidden>
-              <div class="detail-section-label">我如何定位自己</div>
-              <div id="detail-social-essence" class="detail-section-value detail-list"></div>
-            </section>
-
-            <section class="detail-pane detail-pane--active" data-pane="behavior">
-              <div class="detail-section-label">我如何行动</div>
-              <div id="detail-behavior-pattern" class="detail-section-value detail-list"></div>
-            </section>
-
-            <section class="detail-pane" data-pane="signature" hidden>
-              <div class="detail-section-label">我会说什么</div>
-              <div id="detail-expressions" class="detail-expressions"></div>
-            </section>
-
-            <section class="detail-pane" data-pane="taboo" hidden>
-              <div class="detail-section-label">我绝不做什么</div>
-              <div id="detail-forbidden" class="detail-section-value detail-list"></div>
-            </section>
-          </div>
+        <!-- SECTION B — Primary actions -->
+        <div class="detail-actions-primary">
+          <button class="btn detail-enter-btn" id="detail-activate-btn">进入</button>
+          <span class="detail-more-link" id="detail-more-link">了解更多</span>
         </div>
 
-        <div class="instinct-check" id="instinct-check-section">
-          <div class="instinct-check-label">直觉测试</div>
-          <div class="instinct-scenario" id="instinct-scenario"></div>
-          <div class="instinct-prompt">直觉上，你会怎么做？</div>
-          <div class="instinct-options" id="instinct-options"></div>
-          <div class="instinct-reveal hidden" id="instinct-reveal">
-            <span class="instinct-reveal-label">TA的选择</span>
-            <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+        <!-- SECTION C — Optional depth (hidden by default) -->
+        <div class="detail-optional-depth" id="detail-optional-depth">
+          <div class="detail-doc">
+            <div class="detail-tabs" role="tablist" aria-label="Persona details">
+              <button class="detail-tab" data-tab="social" role="tab" aria-selected="false">我如何定位</button>
+              <button class="detail-tab detail-tab--active" data-tab="behavior" role="tab" aria-selected="true">我如何行动</button>
+              <button class="detail-tab" data-tab="signature" role="tab" aria-selected="false">我会说什么</button>
+              <button class="detail-tab" data-tab="taboo" role="tab" aria-selected="false">我绝不做什么</button>
+            </div>
+
+            <div class="detail-tab-panels">
+              <section class="detail-pane" data-pane="social" hidden>
+                <div class="detail-section-label">社交逻辑</div>
+                <div id="detail-social-essence" class="detail-section-value detail-list"></div>
+              </section>
+
+              <section class="detail-pane detail-pane--active" data-pane="behavior">
+                <div class="detail-section-label">行为模式</div>
+                <div id="detail-behavior-pattern" class="detail-section-value detail-list"></div>
+              </section>
+
+              <section class="detail-pane" data-pane="signature" hidden>
+                <div class="detail-section-label">典型表达</div>
+                <div id="detail-expressions" class="detail-expressions"></div>
+              </section>
+
+              <section class="detail-pane" data-pane="taboo" hidden>
+                <div class="detail-section-label">人格禁忌</div>
+                <div id="detail-forbidden" class="detail-section-value detail-list"></div>
+              </section>
+            </div>
           </div>
+          <span class="detail-collapse-link" id="detail-collapse-link">收起</span>
         </div>
+
       </div>
 
       <div class="detail-actions">
         <button class="btn detail-btn-back" onclick="closePersonaDetail()">返回</button>
-        <button class="btn" id="detail-activate-btn" disabled>进入人格</button>
       </div>
     </div>
 
