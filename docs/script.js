@@ -564,15 +564,19 @@ async function openPersonaDetail(personaId) {
       ? detail.taboos.map(t => `<div class="detail-plain-item">${escapeDetailHtml(normalizeDetailText(t))}</div>`).join('')
       : `<div class="detail-plain-item">${escapeDetailHtml(normalizeDetailText(''))}</div>`;
 
-    // Style activate button — ghost style with persona accent
+    // Style activate button — ghost style with persona accent, disabled until instinct answered
     const activateBtn = document.getElementById('detail-activate-btn');
     if (activateBtn) {
       activateBtn.style.background = 'transparent';
       activateBtn.style.border     = `1px solid ${color}`;
       activateBtn.style.color      = color;
       activateBtn.style.boxShadow  = '';
+      activateBtn.disabled = true;
     }
     bindDetailActivateButton(data);
+
+    // Instinct check — hard gate on 进入
+    populateInstinctCheck(detail.instinct_check, color, data);
 
     // Wire optional depth toggle
     const moreLink      = document.getElementById('detail-more-link');
@@ -857,7 +861,7 @@ function resetDetailViewState() {
     optionalDepth.style.display = '';
   }
   if (activateBtn) {
-    activateBtn.disabled = false;
+    activateBtn.disabled = true;
     activateBtn.onclick = null;
     activateBtn.style.opacity = '';
     activateBtn.style.pointerEvents = '';
@@ -1052,13 +1056,16 @@ async function startTheater() {
     console.warn(`[Theater] AI ${reason} — running on local theater_support data.`);
   }
 
-  // ── Phase 3: Direct transition ───────────────────────────
+  // ── Phase 3: Entry ritual → theater ─────────────────────
   document.getElementById('config-panel').classList.add('hidden');
   updateGuidance(0);
-  document.getElementById('theater-screen').classList.remove('hidden');
   AppState.isTheaterModeActive = true;
   startGachaSystem();
-  console.log(`[Theater] ✓ ${personaDisplayName} — 面具激活完成。`);
+  const ritualPool = (AppState.currentPersonaData.consumer_fields.entry_ritual_pool) || [];
+  runEntryRitual(ritualPool, () => {
+    document.getElementById('theater-screen').classList.remove('hidden');
+    console.log(`[Theater] ✓ ${personaDisplayName} — 面具激活完成。`);
+  });
 }
 
 // ── INTENTION CLASSIFIER ──────────────────────────────────────
@@ -2118,6 +2125,41 @@ async function onSubmitHelp() {
  */
 function onConfirmHelp() {
   document.getElementById('help-modal-overlay').classList.add('hidden');
+}
+
+// ── ENTRY RITUAL ──────────────────────────────────────────────
+function runEntryRitual(pool, onComplete) {
+  const overlay  = document.getElementById('ritual-overlay');
+  const stepText = document.getElementById('ritual-step-text');
+  if (!overlay || !stepText || !pool.length) {
+    if (onComplete) onComplete();
+    return;
+  }
+
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const steps    = shuffled.slice(0, 3);
+  overlay.classList.remove('hidden');
+
+  let i = 0;
+  function showStep() {
+    if (i >= steps.length) {
+      overlay.classList.add('hidden');
+      if (onComplete) onComplete();
+      return;
+    }
+    stepText.textContent = steps[i];
+    stepText.classList.remove('visible');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        stepText.classList.add('visible');
+        setTimeout(() => {
+          stepText.classList.remove('visible');
+          setTimeout(() => { i++; showStep(); }, 600);
+        }, 2400);
+      });
+    });
+  }
+  showStep();
 }
 
 // ── INIT ──────────────────────────────────────────────────────

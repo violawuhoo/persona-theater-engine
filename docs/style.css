@@ -6,6 +6,7 @@
   --accent-purple: #7968ff;
   --text-primary: #ecf4ff;
   --text-secondary: #b0c0d8;
+  --text-tertiary: #6e7f95;
   --text-muted: #7589a6;
   --border-subtle: rgba(255, 255, 255, 0.09);
   --border-mid: rgba(255, 255, 255, 0.18);
@@ -365,20 +366,22 @@ header {
 .detail-hero-visual { display: none; }
 
 .detail-slogan {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--persona-accent);
-  margin: 0 0 20px;
-  line-height: 1.55;
-  letter-spacing: 0.01em;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin: 0 0 16px;
+  line-height: 1.5;
+  letter-spacing: 0.05em;
+  text-align: center;
 }
 
 .detail-core-thinking {
-  font-size: 16px;
-  line-height: 1.9;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.6;
   color: var(--text-primary);
-  margin: 0 0 20px;
-  max-width: 320px;
+  margin: 0 auto 28px;
+  max-width: 300px;
   text-align: center;
 }
 
@@ -988,3 +991,26 @@ header {
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* ── Entry Ritual Overlay ─────────────────────────────────────── */
+#ritual-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+}
+#ritual-overlay.hidden { display: none; }
+.ritual-step {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  max-width: 280px;
+  line-height: 1.6;
+}
+.ritual-step.visible { opacity: 1; }

@@ -325,13 +325,25 @@
           <p id="detail-core-essence" class="hidden"></p>
         </div>
 
-        <!-- SECTION B — Actions -->
+        <!-- SECTION B — Instinct check (always visible, gates 进入) -->
+        <div class="instinct-check" id="instinct-check-section">
+          <div class="instinct-check-label">直觉测试</div>
+          <div class="instinct-scenario" id="instinct-scenario"></div>
+          <div class="instinct-prompt">直觉上，你会怎么做？</div>
+          <div class="instinct-options" id="instinct-options"></div>
+          <div class="instinct-reveal hidden" id="instinct-reveal">
+            <span class="instinct-reveal-label">TA的选择</span>
+            <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+          </div>
+        </div>
+
+        <!-- SECTION C — Actions -->
         <div class="detail-actions-primary">
-          <button class="btn detail-enter-btn" id="detail-activate-btn">进入</button>
+          <button class="btn detail-enter-btn" id="detail-activate-btn" disabled>进入</button>
           <span class="detail-more-link" id="detail-more-link">了解更多</span>
         </div>
 
-        <!-- SECTION C — Optional depth (hidden by default) -->
+        <!-- SECTION D — Optional depth (hidden by default) -->
         <div class="detail-optional-depth" id="detail-optional-depth">
           <div class="detail-doc">
             <div class="detail-tabs" role="tablist" aria-label="Persona details">
@@ -358,17 +370,6 @@
                 <div class="detail-section-label">我绝不做什么</div>
                 <div id="detail-forbidden" class="detail-section-value detail-list"></div>
               </section>
-            </div>
-          </div>
-
-          <div class="instinct-check" id="instinct-check-section">
-            <div class="instinct-check-label">直觉测试</div>
-            <div class="instinct-scenario" id="instinct-scenario"></div>
-            <div class="instinct-prompt">直觉上，你会怎么做？</div>
-            <div class="instinct-options" id="instinct-options"></div>
-            <div class="instinct-reveal hidden" id="instinct-reveal">
-              <span class="instinct-reveal-label">TA的选择</span>
-              <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
             </div>
           </div>
 
@@ -524,6 +525,14 @@
       <button class="btn start-btn" onclick="startTheater()">启动剧场</button>
 
     </div><!-- /#config-panel -->
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         ENTRY RITUAL OVERLAY
+         ══════════════════════════════════════════════════════════ -->
+    <div id="ritual-overlay" class="hidden">
+      <div class="ritual-step" id="ritual-step-text"></div>
+    </div>
 
 
     <!-- ══════════════════════════════════════════════════════════
