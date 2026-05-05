@@ -281,23 +281,6 @@
     </div>
   </div>
 
-  <!-- ── SYNC / CALIBRATION OVERLAY ────────────────────────────── -->
-  <div id="sync-overlay" class="hidden">
-    <div class="scan-line"></div>
-      <div class="sync-box">
-      <div class="sync-title">PERSONA ACTIVATION</div>
-      <div class="sync-persona-name" id="sync-persona-name">Load...</div>
-      <div class="sync-status">
-        <span class="status-label">场景:</span>
-        <span class="status-value">STABLE</span><br>
-        <span class="status-label">对手:</span>
-        <span class="status-value">ONLINE</span>
-      </div>
-      <div class="sync-progress-bar">
-        <div class="sync-progress-fill"></div>
-      </div>
-    </div>
-  </div>
 
   <!-- ── APP ROOT ───────────────────────────────────────────────── -->
   <div id="app">
@@ -329,20 +312,20 @@
     <!-- ══════════════════════════════════════════════════════════
          DETAIL PANEL  (Browse → Detail → Config)
          ══════════════════════════════════════════════════════════ -->
-        <div id="detail-panel" class="hidden">
+    <div id="detail-panel" class="hidden">
       <div class="detail-shell">
 
-        <!-- SECTION A — Hero: atmosphere first -->
+        <!-- SECTION A — Hero -->
         <div class="detail-hero">
           <p id="detail-hero-slogan" class="detail-slogan"></p>
           <p id="detail-core-thinking" class="detail-core-thinking"></p>
           <div id="detail-persona-name" class="detail-name"></div>
-          <!-- kept in DOM for JS compat, not rendered -->
+          <!-- kept hidden for JS compat -->
           <p id="detail-hero-intro" class="hidden"></p>
           <p id="detail-core-essence" class="hidden"></p>
         </div>
 
-        <!-- SECTION B — Primary actions -->
+        <!-- SECTION B — Actions -->
         <div class="detail-actions-primary">
           <button class="btn detail-enter-btn" id="detail-activate-btn">进入</button>
           <span class="detail-more-link" id="detail-more-link">了解更多</span>
@@ -360,26 +343,35 @@
 
             <div class="detail-tab-panels">
               <section class="detail-pane" data-pane="social" hidden>
-                <div class="detail-section-label">社交逻辑</div>
+                <div class="detail-section-label">我如何定位自己</div>
                 <div id="detail-social-essence" class="detail-section-value detail-list"></div>
               </section>
-
               <section class="detail-pane detail-pane--active" data-pane="behavior">
-                <div class="detail-section-label">行为模式</div>
+                <div class="detail-section-label">我如何行动</div>
                 <div id="detail-behavior-pattern" class="detail-section-value detail-list"></div>
               </section>
-
               <section class="detail-pane" data-pane="signature" hidden>
-                <div class="detail-section-label">典型表达</div>
+                <div class="detail-section-label">我会说什么</div>
                 <div id="detail-expressions" class="detail-expressions"></div>
               </section>
-
               <section class="detail-pane" data-pane="taboo" hidden>
-                <div class="detail-section-label">人格禁忌</div>
+                <div class="detail-section-label">我绝不做什么</div>
                 <div id="detail-forbidden" class="detail-section-value detail-list"></div>
               </section>
             </div>
           </div>
+
+          <div class="instinct-check" id="instinct-check-section">
+            <div class="instinct-check-label">直觉测试</div>
+            <div class="instinct-scenario" id="instinct-scenario"></div>
+            <div class="instinct-prompt">直觉上，你会怎么做？</div>
+            <div class="instinct-options" id="instinct-options"></div>
+            <div class="instinct-reveal hidden" id="instinct-reveal">
+              <span class="instinct-reveal-label">TA的选择</span>
+              <span class="instinct-reveal-line" id="instinct-reveal-line"></span>
+            </div>
+          </div>
+
           <span class="detail-collapse-link" id="detail-collapse-link">收起</span>
         </div>
 
@@ -401,129 +393,132 @@
         设置场景：<span id="active-persona-display"></span>
       </div>
 
-      <!-- ── Hidden functional <select> elements ────────────────
-           JS reads .value from these; card clicks keep them in sync. -->
-      <select id="scene-select"  class="hidden-select">
-        <option value="商务谈判/签约">商务谈判/签约</option>
-        <option value="半正式晚宴/酒局">半正式晚宴/酒局</option>
-        <option value="部门会议/述职">部门会议/述职</option>
-        <option value="面试/潜在合伙人面谈">面试/潜在合伙人面谈</option>
-        <option value="私人社交/相亲">私人社交/相亲</option>
-        <option value="偶然遭遇战">偶然遭遇战</option>
+      <!-- Hidden functional selects — JS reads .value; cards keep them in sync -->
+      <input type="hidden" id="mode-select" value="immersive">
+      <select id="scene-select" class="hidden-select">
+        <option value="会议/工作场合">会议/工作场合</option>
+        <option value="商务饭局/谈判">商务饭局/谈判</option>
+        <option value="面试/合伙洽谈">面试/合伙洽谈</option>
+        <option value="职场社交/行业活动">职场社交/行业活动</option>
+        <option value="朋友聚会/饭局">朋友聚会/饭局</option>
+        <option value="相亲/约会">相亲/约会</option>
+        <option value="一对一深谈">一对一深谈</option>
+        <option value="偶遇/陌生场合">偶遇/陌生场合</option>
+        <option value="独处时刻">独处时刻</option>
       </select>
-
       <select id="target-select" class="hidden-select">
-        <option value="甲方/决策者">甲方/决策者</option>
-        <option value="竞争对手/同行">竞争对手/同行</option>
-        <option value="上级/管理层">上级/管理层</option>
-        <option value="合作者/同盟">合作者/同盟</option>
-        <option value="陌生人/潜在资源">陌生人/潜在资源</option>
+        <option value="我在上位">我在上位</option>
+        <option value="平等关系">平等关系</option>
+        <option value="我在下位">我在下位</option>
+        <option value="关系未定">关系未定</option>
       </select>
 
-      <select id="scale-select"  class="hidden-select">
-        <option value="1-3人 (深度对谈)">1-3人 (深度对谈)</option>
-        <option value="3-5人 (小组博弈)">3-5人 (小组博弈)</option>
-        <option value="5-8人 (多变量社交)">5-8人 (多变量社交)</option>
-        <option value=">8人 (群体观察)">>8人 (群体观察)</option>
-      </select>
+      <!-- ── MODE selector ──────────────────────────────────── -->
+      <div class="config-section">
+        <div class="config-section-label">模式选择</div>
+        <div class="mode-selector">
+          <button class="mode-card mode-card--active" data-mode="immersive" onclick="selectMode('immersive', this)">
+            <div class="mode-card-label">沉浸模式</div>
+            <div class="mode-card-desc">专注当下体验<br>无需策略分析</div>
+          </button>
+          <button class="mode-card" data-mode="strategic" onclick="selectMode('strategic', this)">
+            <div class="mode-card-label">策略模式</div>
+            <div class="mode-card-desc">设定对象与意图<br>获取定向指导</div>
+          </button>
+        </div>
+      </div>
 
       <!-- ── SCENE card grid ────────────────────────────────── -->
       <div class="config-section">
         <div class="config-section-label">环境场景</div>
         <div class="config-cards" id="scene-cards">
+          <!-- 职场/正式 -->
+          <div class="config-group-label">职场 / 正式</div>
           <button class="config-card config-card--active"
-                  data-select="scene-select" data-value="商务谈判/签约">
-            <span class="config-card-title">商务谈判</span>
-            <span class="config-card-sub">签约 · 博弈</span>
-          </button>
-          <button class="config-card"
-                  data-select="scene-select" data-value="半正式晚宴/酒局">
-            <span class="config-card-title">晚宴酒局</span>
-            <span class="config-card-sub">社交 · 放松</span>
-          </button>
-          <button class="config-card"
-                  data-select="scene-select" data-value="部门会议/述职">
+                  data-select="scene-select" data-value="会议/工作场合">
             <span class="config-card-title">会议述职</span>
             <span class="config-card-sub">汇报 · 博弈</span>
           </button>
           <button class="config-card"
-                  data-select="scene-select" data-value="面试/潜在合伙人面谈">
+                  data-select="scene-select" data-value="商务饭局/谈判">
+            <span class="config-card-title">商务饭局</span>
+            <span class="config-card-sub">酒桌 · 谈判</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="面试/合伙洽谈">
             <span class="config-card-title">面试洽谈</span>
             <span class="config-card-sub">评估 · 筛选</span>
           </button>
           <button class="config-card"
-                  data-select="scene-select" data-value="私人社交/相亲">
-            <span class="config-card-title">私人社交</span>
+                  data-select="scene-select" data-value="职场社交/行业活动">
+            <span class="config-card-title">行业活动</span>
+            <span class="config-card-sub">拓展 · 展示</span>
+          </button>
+          <!-- 私人/非正式 -->
+          <div class="config-group-label">私人 / 非正式</div>
+          <button class="config-card"
+                  data-select="scene-select" data-value="朋友聚会/饭局">
+            <span class="config-card-title">朋友聚会</span>
+            <span class="config-card-sub">轻松 · 关系</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="相亲/约会">
+            <span class="config-card-title">相亲约会</span>
             <span class="config-card-sub">信任 · 吸引</span>
           </button>
           <button class="config-card"
-                  data-select="scene-select" data-value="偶然遭遇战">
-            <span class="config-card-title">偶然遭遇</span>
+                  data-select="scene-select" data-value="一对一深谈">
+            <span class="config-card-title">一对一深谈</span>
+            <span class="config-card-sub">真实 · 深度</span>
+          </button>
+          <button class="config-card"
+                  data-select="scene-select" data-value="偶遇/陌生场合">
+            <span class="config-card-title">偶遇陌生场</span>
             <span class="config-card-sub">即兴 · 印象</span>
+          </button>
+          <!-- 独处 (仅沉浸模式) -->
+          <div class="config-group-label" id="scene-group-solo">独处</div>
+          <button class="config-card" id="scene-card-solo"
+                  data-select="scene-select" data-value="独处时刻">
+            <span class="config-card-title">独处时刻</span>
+            <span class="config-card-sub">内省 · 重置</span>
           </button>
         </div>
       </div>
 
-      <!-- ── TARGET card grid ───────────────────────────────── -->
-      <div class="config-section">
-        <div class="config-section-label">核心对手</div>
+      <!-- ── TARGET card grid (策略模式 only) ──────────────── -->
+      <div class="config-section" id="target-section" style="display:none">
+        <div class="config-section-label">关系位置</div>
         <div class="config-cards" id="target-cards">
           <button class="config-card config-card--active"
-                  data-select="target-select" data-value="甲方/决策者">
-            <span class="config-card-title">决策者</span>
-            <span class="config-card-sub">甲方 · 权力</span>
+                  data-select="target-select" data-value="我在上位">
+            <span class="config-card-title">我在上位</span>
+            <span class="config-card-sub">主导 · 决策</span>
           </button>
           <button class="config-card"
-                  data-select="target-select" data-value="竞争对手/同行">
-            <span class="config-card-title">竞争对手</span>
+                  data-select="target-select" data-value="平等关系">
+            <span class="config-card-title">平等关系</span>
             <span class="config-card-sub">同行 · 博弈</span>
           </button>
           <button class="config-card"
-                  data-select="target-select" data-value="上级/管理层">
-            <span class="config-card-title">上级</span>
-            <span class="config-card-sub">管理 · 汇报</span>
+                  data-select="target-select" data-value="我在下位">
+            <span class="config-card-title">我在下位</span>
+            <span class="config-card-sub">汇报 · 影响</span>
           </button>
           <button class="config-card"
-                  data-select="target-select" data-value="合作者/同盟">
-            <span class="config-card-title">合作者</span>
-            <span class="config-card-sub">协作 · 同盟</span>
-          </button>
-          <button class="config-card"
-                  data-select="target-select" data-value="陌生人/潜在资源">
-            <span class="config-card-title">陌生人</span>
-            <span class="config-card-sub">资源 · 机会</span>
+                  data-select="target-select" data-value="关系未定">
+            <span class="config-card-title">关系未定</span>
+            <span class="config-card-sub">陌生 · 试探</span>
           </button>
         </div>
       </div>
 
-      <!-- ── SCALE card grid ────────────────────────────────── -->
-      <div class="config-section">
-        <div class="config-section-label">场域规模</div>
-        <div class="config-cards config-cards--scale" id="scale-cards">
-          <button class="config-card config-card--active"
-                  data-select="scale-select" data-value="1-3人 (深度对谈)">
-            <span class="config-card-title">1–3人</span>
-            <span class="config-card-sub">深度对谈</span>
-          </button>
-          <button class="config-card"
-                  data-select="scale-select" data-value="3-5人 (小组博弈)">
-            <span class="config-card-title">3–5人</span>
-            <span class="config-card-sub">小组博弈</span>
-          </button>
-          <button class="config-card"
-                  data-select="scale-select" data-value=">8人 (群体观察)">
-            <span class="config-card-title">7人以上</span>
-            <span class="config-card-sub">多变量社交</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- ── INTENTION textarea ─────────────────────────────── -->
-      <div class="config-section config-section--core-scene">
-        <div class="config-section-label">核心戏纲</div>
+      <!-- ── INTENTION textarea (策略模式 only) ────────────── -->
+      <div class="config-section config-section--core-scene" id="intention-section" style="display:none">
+        <div class="config-section-label">我的意图</div>
         <textarea id="intention-input"
                   class="core-scene-input"
-                  placeholder="描述你在这个场景中的核心意图…&#10;例如：在不暴露底价的情况下，试探对方的合作诚意。"></textarea>
+                  placeholder="今天，我想要＿＿＿&#10;例如：在不暴露底价的情况下，试探对方的合作诚意。"></textarea>
       </div>
 
       <button class="btn start-btn" onclick="startTheater()">启动剧场</button>
@@ -624,6 +619,38 @@
        SAFE RECOVERY: only low-risk event-driven helpers are enabled.
        Heavy sync/observer helpers remain disabled.
        ================================================================ */
+
+    /* ── MODE SELECTOR ────────────────────────────────────────────── */
+    function selectMode(mode, btn) {
+      document.getElementById('mode-select').value = mode;
+      document.querySelectorAll('.mode-card').forEach(function(c) {
+        c.classList.remove('mode-card--active');
+      });
+      btn.classList.add('mode-card--active');
+
+      var isStrategic = mode === 'strategic';
+      document.getElementById('target-section').style.display    = isStrategic ? '' : 'none';
+      document.getElementById('intention-section').style.display  = isStrategic ? '' : 'none';
+
+      // 独处时刻 only in immersive mode
+      var soloCard  = document.getElementById('scene-card-solo');
+      var soloLabel = document.getElementById('scene-group-solo');
+      var hidden    = isStrategic;
+      if (soloCard)  soloCard.style.display  = hidden ? 'none' : '';
+      if (soloLabel) soloLabel.style.display = hidden ? 'none' : '';
+      // If 独处时刻 was selected and we switch to strategic, reset to first card
+      if (isStrategic) {
+        var sceneEl = document.getElementById('scene-select');
+        if (sceneEl && sceneEl.value === '独处时刻') {
+          sceneEl.value = '会议/工作场合';
+          document.querySelectorAll('[data-select="scene-select"]').forEach(function(c) {
+            c.classList.remove('config-card--active');
+          });
+          var first = document.querySelector('[data-select="scene-select"][data-value="会议/工作场合"]');
+          if (first) first.classList.add('config-card--active');
+        }
+      }
+    }
 
     /* ── CONFIG CARD SELECTION (RESTORED, EVENT-DRIVEN) ───────────── */
     document.querySelectorAll('.config-card').forEach(function(card) {
