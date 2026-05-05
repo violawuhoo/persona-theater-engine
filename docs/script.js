@@ -869,6 +869,13 @@ function resetDetailViewState() {
   if (optionsEl)  optionsEl.innerHTML = '';
   if (revealEl)   revealEl.classList.add('hidden');
   if (scenarioEl) scenarioEl.textContent = '';
+  // Reset optional depth section
+  const depthSection  = document.getElementById('detail-optional-depth');
+  const moreLink      = document.getElementById('detail-more-link');
+  const collapseLink  = document.getElementById('detail-collapse-link');
+  if (depthSection) depthSection.classList.remove('is-visible');
+  if (moreLink)     moreLink.classList.remove('hidden');
+  if (collapseLink) collapseLink.classList.add('hidden');
 }
 
 function populateInstinctCheck(instinctData, accentColor, personaData) {
@@ -2121,3 +2128,24 @@ console.log('[Init] Persona Theater System booting...');
 // helpers are restored to keep core flow responsive:
 // Browse → Detail → Config → Theater.
 initCarousel();
+
+// ── OPTIONAL DEPTH TOGGLE ─────────────────────────────────────
+(function () {
+  const moreLink     = document.getElementById('detail-more-link');
+  const collapseLink = document.getElementById('detail-collapse-link');
+  const depthSection = document.getElementById('detail-optional-depth');
+  if (moreLink) {
+    moreLink.addEventListener('click', () => {
+      depthSection.classList.add('is-visible');
+      moreLink.classList.add('hidden');
+      collapseLink.classList.remove('hidden');
+    });
+  }
+  if (collapseLink) {
+    collapseLink.addEventListener('click', () => {
+      depthSection.classList.remove('is-visible');
+      moreLink.classList.remove('hidden');
+      collapseLink.classList.add('hidden');
+    });
+  }
+}());

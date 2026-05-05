@@ -8,8 +8,8 @@
       "archetype_id": "ARCHETYPE_01",
       "json_path": "database/personas/ARCH01.json",
       "md_path": null,
-      "name": "The CGI Cold (高冷建模脸)",
-      "subtitle": "The CGI Cold (高冷建模脸)",
+      "name": "高冷建模脸",
+      "subtitle": "高冷建模脸",
       "status": "active"
     },
     {
@@ -17,8 +17,8 @@
       "archetype_id": "ARCHETYPE_02",
       "json_path": "database/personas/ARCH02.json",
       "md_path": null,
-      "name": "The Social Fugitive (社交悍匪)",
-      "subtitle": "The Social Fugitive (社交悍匪)",
+      "name": "社交悍匪",
+      "subtitle": "社交悍匪",
       "status": "active"
     },
     {
@@ -26,8 +26,8 @@
       "archetype_id": "ARCHETYPE_03",
       "json_path": "database/personas/ARCH03.json",
       "md_path": null,
-      "name": "The Radiant Muse (璀璨引力)",
-      "subtitle": "The Radiant Muse (璀璨引力)",
+      "name": "璀璨引力",
+      "subtitle": "璀璨引力",
       "status": "active"
     }
   ]
