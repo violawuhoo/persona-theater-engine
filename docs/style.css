@@ -351,40 +351,47 @@ header {
   border: 1px solid var(--border-subtle);
   background:
     linear-gradient(170deg, rgba(14, 28, 44, 0.88), rgba(8, 14, 24, 0.95)),
-    radial-gradient(circle at 72% 0%, color-mix(in oklab, var(--persona-accent) 22%, transparent), transparent 40%);
+    radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--persona-accent) 14%, transparent), transparent 60%);
   overflow: hidden;
   position: relative;
-  padding: 28px 24px 24px;
+  padding: 36px 24px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 
 .detail-hero-visual { display: none; }
 
-.detail-name {
-  margin: 0 0 14px;
-  font-size: clamp(1.4rem, 4vw, 1.9rem);
-  line-height: 1.15;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  opacity: 0.7;
-}
-
 .detail-slogan {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 16px;
+  color: var(--persona-accent);
+  margin: 0 0 20px;
   line-height: 1.55;
   letter-spacing: 0.01em;
 }
 
-.detail-intro {
-  margin: 0;
-  font-size: 15px;
+.detail-core-thinking {
+  font-size: 16px;
   line-height: 1.9;
-  color: var(--text-secondary);
-  white-space: pre-wrap;
+  color: var(--text-primary);
+  margin: 0 0 20px;
+  max-width: 320px;
+  text-align: center;
 }
+
+.detail-name {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  margin: 0;
+}
+
+.detail-intro { display: none; }
 
 .detail-doc {
   margin-top: 18px;
@@ -468,6 +475,54 @@ header {
   opacity: 1;
 }
 
+/* Primary action block: enter button + 了解更多 link */
+.detail-actions-primary {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* Ghost enter button — JS overrides border/color with persona color at runtime */
+.detail-enter-btn {
+  width: 100%;
+  font-size: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--persona-accent);
+  color: var(--persona-accent);
+  box-shadow: none;
+}
+
+.detail-more-link,
+.detail-collapse-link {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  margin-top: 14px;
+  cursor: pointer;
+}
+.detail-more-link:hover,
+.detail-collapse-link:hover { text-decoration: underline; opacity: 1; }
+
+/* Optional depth section: hidden by default, fades in */
+.detail-optional-depth {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.detail-optional-depth.is-visible {
+  display: block;
+  opacity: 1;
+}
+
+.detail-collapse-link { margin-top: 24px; margin-bottom: 80px; }
+
+/* Fixed footer: back button only */
 .detail-actions {
   position: fixed;
   left: 0;
@@ -476,29 +531,20 @@ header {
   z-index: 510;
   background: linear-gradient(180deg, rgba(5,10,18,0), rgba(5,10,18,0.98) 30%);
   padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
   max-width: 920px;
   margin: 0 auto;
 }
 
 .detail-btn-back {
+  width: 100%;
   background: transparent !important;
   border: 1px solid var(--border-mid) !important;
   color: var(--text-secondary) !important;
   box-shadow: none !important;
 }
 
-/* Ghost style for enter-persona button; JS overrides border/color with persona color */
-#detail-activate-btn {
-  background: transparent;
-  border: 1px solid var(--persona-accent);
-  color: var(--persona-accent);
-}
-
 @media (max-width: 760px) {
-  .detail-hero { padding: 20px 16px 18px; }
+  .detail-hero { padding: 28px 20px 24px; }
 }
 
 .detail-tabs {
