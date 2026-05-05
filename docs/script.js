@@ -1366,7 +1366,7 @@ async function callAIWithPersonaProtocol(personaData, scene, target, mode, inten
   const expressionMods = ts.expression_modulators || {};
   const reactionCues   = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
 
-  const sceneTactic = safeStr(sceneTactics.small_scale, safeStr(sceneTactics.large_scale));
+  const sceneTactic = safeStr((ts.scene_playbook || {})[scene]);
 
   const reactionCueSummary = reactionCues.map(c =>
     `${safeStr(c.trigger)}: ${safeStr(c.guidance)}`
@@ -1772,8 +1772,7 @@ function generateSceneTip(persona, sceneContext, theaterContent) {
   }
   if (targetProfile) candidates.push(targetProfile);
 
-  const st = ts.scene_tactics || {};
-  const rawTactic = safeStr(st.small_scale, safeStr(st.large_scale));
+  const rawTactic = safeStr((ts.scene_playbook || {})[ctx.scene]);
   candidates.push(rawTactic);
 
   const cues = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
