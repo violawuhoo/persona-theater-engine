@@ -105,7 +105,7 @@ function firstSegment(s) {
 //   [2] 语言风格  — verbatim signature line as hero
 //   [3] 反应机制  — verbatim reaction_cue as hero
 // Dynamic AI response may overlay these blocks at runtime (kept as flat string in legacy shape).
-function extractTheaterContent(data, scene = '', target = '', scale = '') {
+function extractTheaterContent(data, scene = '', target = '', mode = '') {
   const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
   const targetProfile = TARGET_OVERLAYS[target]   || null;
 
@@ -115,6 +115,33 @@ function extractTheaterContent(data, scene = '', target = '', scale = '') {
   const expressionMods = ts.expression_modulators || {};
   const reactionCues   = Array.isArray(ts.reaction_cues) ? ts.reaction_cues : [];
   const scenePlaybook  = (ts.scene_playbook && typeof ts.scene_playbook === 'object') ? ts.scene_playbook : {};
+
+  // ── Mode-aware 3-slot path ────────────────────────────────────
+  if (mode === 'immersive' || mode === 'strategic') {
+    const sceneLabel   = safeStr(scene, '');
+    const playbookLine = safeStr(scenePlaybook[sceneLabel], '');
+    const physLine     = safeStr(expressionMods.physicality, '');
+    const sigLines     = Array.isArray(cf.signature_lines_pool) ? cf.signature_lines_pool : [];
+    const reactionCue0 = reactionCues[0];
+    const emptySlot    = { hero: '', supports: [], footer: '' };
+
+    let slot0, slot1, slot2;
+    if (mode === 'immersive') {
+      slot0 = { hero: playbookLine || sceneLabel, supports: [], footer: '' };
+      slot1 = { hero: physLine || MISSING, supports: [], footer: '' };
+      slot2 = {
+        hero: (reactionCue0 ? safeStr(reactionCue0.guidance) : '') || safeStr(sigLines[0], MISSING),
+        supports: [], footer: ''
+      };
+    } else {
+      const dynamicsFirst = sceneOverlay ? firstSentence(sceneOverlay.dynamics, 60) : '';
+      slot0 = { hero: playbookLine || sceneLabel, supports: [], footer: dynamicsFirst };
+      slot1 = { hero: physLine || MISSING, supports: [], footer: '' };
+      slot2 = { hero: safeStr(sigLines[0], MISSING), supports: [], footer: '' };
+    }
+    console.log(`[Extractor] ✓ Theater content extracted (${mode}) — Scene: ${scene || 'generic'}`);
+    return { mind: slot0, body: slot1, speech: slot2, reaction: emptySlot };
+  }
 
   const personaName    = safeStr(cf.display_name, '');
   const sceneLabel     = safeStr(scene, '');
@@ -206,7 +233,7 @@ function extractTheaterContent(data, scene = '', target = '', scale = '') {
     sceneFocus.reaction || ''
   ].filter(Boolean).join('\n\n').trim();
 
-  console.log(`[Extractor] ✓ Theater content extracted — Scene: ${scene || 'generic'}, Target: ${target || 'generic'}, Scale: ${scale || 'default'}`);
+  console.log(`[Extractor] ✓ Theater content extracted (legacy 4-slot) — Scene: ${scene || 'generic'}, Target: ${target || 'generic'}`);
   return {
     mind:     { hero: mindHero,     supports: mindSupports,     footer: mindFooter },
     body:     { hero: bodyHero,     supports: bodySupports,     footer: bodyFooter },

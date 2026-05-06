@@ -11,7 +11,7 @@
 // or inject this value via a build-time environment variable.
 const CONFIG = {
   KIMI_API_KEY:      'sk-wNKkSpE2pWwN47rzi3OKKLAELVhhWesFFJ06P1nl3rzUrHaB',
-  AI_TIMEOUT_MS:     2000,
+  AI_TIMEOUT_MS:     15000,
   GACHA_INTERVAL_MS: 10000
 };
 

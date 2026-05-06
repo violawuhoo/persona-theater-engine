@@ -1031,7 +1031,7 @@ async function startTheater() {
   applyPersonaTheme(personaColor);
 
   // ── Phase 1: Extract local content immediately (theater_support) ─
-  const localContent = extractTheaterContent(AppState.currentPersonaData, scene, target);
+  const localContent = extractTheaterContent(AppState.currentPersonaData, scene, target, mode);
   applyTheaterContent(localContent, AppState.currentSceneContext, AppState.currentPersonaData);
 
   // ── Phase 2: Race AI call against timeout ────────────────
@@ -2145,12 +2145,14 @@ function runEntryRitual(pool, onComplete) {
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const steps    = shuffled.slice(0, 3);
   console.log('[Ritual] Steps:', steps);
+  overlay.style.display = '';
   overlay.classList.remove('hidden');
 
   let i = 0;
   function showStep() {
     if (i >= steps.length) {
       overlay.classList.add('hidden');
+      overlay.style.display = 'none';
       if (onComplete) onComplete();
       return;
     }
