@@ -376,7 +376,7 @@ header {
 }
 
 .detail-core-thinking {
-  font-size: 26px;
+  font-size: 26px !important;
   font-weight: 600;
   line-height: 1.6;
   color: var(--text-primary);

@@ -2138,6 +2138,7 @@ function runEntryRitual(pool, onComplete) {
 
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const steps    = shuffled.slice(0, 3);
+  console.log('[Ritual] Steps:', steps);
   overlay.classList.remove('hidden');
 
   let i = 0;
