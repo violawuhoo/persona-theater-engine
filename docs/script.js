@@ -1057,6 +1057,19 @@ async function startTheater() {
   }
 
   // ── Phase 3: Entry ritual → theater ─────────────────────
+  // Update wheel slot labels for current mode
+  if (mode === 'immersive') {
+    AppState.contentData[0].title = '此刻注意到';
+    AppState.contentData[1].title = '内在感受';
+    AppState.contentData[2].title = '自然会做';
+    AppState.contentData[3].title = '';
+  } else {
+    AppState.contentData[0].title = '读懂现在';
+    AppState.contentData[1].title = '现在做这个';
+    AppState.contentData[2].title = '说这句话';
+    AppState.contentData[3].title = '';
+  }
+
   document.getElementById('config-panel').classList.add('hidden');
   updateGuidance(0);
   AppState.isTheaterModeActive = true;
@@ -1414,9 +1427,11 @@ async function callAIWithPersonaProtocol(personaData, scene, target, mode, inten
   const sceneOverlay  = SCENARIO_OVERLAYS[scene]  || null;
   const targetProfile = TARGET_OVERLAYS[target]   || null;
 
-  // Classify intention into direction bucket
-  const intentionBucket = classifyIntentionBucket(intention);
-  console.log(`[AI] Intention bucket: ${intentionBucket} ← "${intention}"`);
+  const isImmersive = mode === 'immersive';
+
+  // In 沉浸模式, scene drives behavior; in 策略模式, classify intention
+  const intentionBucket = isImmersive ? scene : classifyIntentionBucket(intention);
+  console.log(`[AI] Intention bucket: ${intentionBucket} ← "${isImmersive ? scene : intention}"`);
 
   // ── Build structured prompt sections ──────────────────────
 
@@ -1447,105 +1462,81 @@ async function callAIWithPersonaProtocol(personaData, scene, target, mode, inten
     ? `${target}\n目标档案: ${targetProfile}`
     : target;
 
-  const systemPrompt = `You are generating **real-time behavioral guidance** inside a persona-based simulation system.
+  const systemPrompt = isImmersive ? `
+你正在为一个人格扮演系统生成实时内在引导。
 
-Your output MUST be **actionable, specific, and immediately usable**.
+用户正在扮演【${displayName}】，当前场景是【${scene}】。
 
-# PRIMARY RULE
+你的任务是生成这个人格在此刻的内在视角——他们在注意什么，感受什么，会做什么。
 
-DO NOT describe personality.
-DO NOT explain abstract strategy.
-ONLY produce **concrete next actions + exact wording**.
+不要描述人格特征。
+不要给出策略分析。
+只输出这个人格此刻真实的内在状态。
 
-# CONTEXT INPUTS
-
-Persona Description:
-${personaDescription}
-
-Persona Behavior Rules:
+人格核心行为规则：
 ${personaBehavior}
 
-Scene:
-${sceneLine}
+场域规则：
+${sceneOverlay ? sceneOverlay.dynamics : scene}
 
-Target:
-${targetLine}
+输出格式（严格遵守）：
 
-Mode:
-${mode === 'strategic' ? '策略模式 — 定向对象与意图' : '沉浸模式 — 专注当下体验'}
+[此刻注意到]
+（1句话——这个人格在这个场景里第一眼注意到什么）
 
-User Intention (raw):
-${intention}
+[内在感受]
+（1句话——这个人格此刻的内在状态，用第一人称）
 
-Classified Intention Bucket:
-${intentionBucket}
+[自然会做]
+（1-2个动作——这个人格在这个场景里自然会做的事，具体可执行）
 
-# INTENTION PRIORITY (CRITICAL)
+硬性约束：
+- 每个section只有1-2句
+- 用第一人称或直接动作描述
+- 不抽象，不解释，不说教
+- 符合${displayName}的语言风格和能量
+` : `
+你正在为一个人格扮演系统生成实时行动引导。
 
-The **intention_bucket is the primary driver** of behavior.
+用户正在扮演【${displayName}】，当前场景是【${scene}】，对象关系是【${target}】。
+用户意图：${intention}（意图分类：${intentionBucket}）
 
-You MUST change behavior based on it:
+你的任务是生成这个人格在此刻应该做什么、说什么——具体、直接、立刻可用。
 
-* advance → push forward, create movement
-* delay → slow down, avoid commitment
-* disrupt → break flow, create instability
-* bond → increase trust, soften tone
-* control → dominate structure, lead interaction
-* test → probe, extract information
-* exit → disengage safely
+不要描述人格特征。
+不要给出策略分析。
+只输出此刻最关键的一个动作和一句话。
 
-If your output does not clearly reflect the intention, it is WRONG.
+人格核心行为规则：
+${personaBehavior}
 
-# OUTPUT STRUCTURE (MANDATORY)
+场域规则：
+${sceneOverlay ? sceneOverlay.dynamics : scene}
 
-You MUST follow this exact structure:
+对象档案：
+${targetProfile ? targetProfile : target}
 
-[ASSESSMENT]
-(1 sentence — what is happening right now in the interaction)
+场景战术：
+${sceneTactic || '无'}
 
-[ACTION]
-(2–3 bullet points — physical or timing-based actions)
-Each must be immediate and observable.
+输出格式（严格遵守）：
 
-[SPEECH]
-(1 short sentence — exactly what the user should say)
-Must be natural and usable in real conversation.
-Only language output: tone, sentence shape, and exact wording.
-Do NOT include behavioral logic, distance management, signal evaluation, or escalation rules here.
+[读懂现在]
+（1句话——此刻这个场域里最重要的动态是什么）
 
-[IF RESPONSE]
-(1 conditional — what to do if the other person reacts)
-Format: If X → do Y
-Only behavioral mechanism: signal evaluation, distance/timing adjustment, escalation/de-escalation.
-Do NOT include quoted dialogue or exact wording here.
+[现在做这个]
+（1-2个具体动作——身体、位置、节奏。不是策略，是动作）
 
-# HARD CONSTRAINTS
+[说这句话]
+（1句完整的话——自然、直接、符合${displayName}的语气，可以直接说出口）
 
-* No long paragraphs
-* No personality explanation
-* No repetition from persona text
-* No generic advice
-* No multiple options — be decisive
-* No overlap between [SPEECH] and [IF RESPONSE]
-* Keep behavioral logic out of [SPEECH]
-* Keep spoken language out of [IF RESPONSE]
-* Every line must be executable in real life
-
-# STYLE
-
-* Calm, precise, controlled
-* Minimal words, maximum clarity
-* Feels like a live coach, not a writer
-
-# GOAL
-
-Transform:
-
-"understanding what to do"
-
-→ into
-
-"doing the next move immediately"`;
+硬性约束：
+- 每个section只有1-2句
+- [说这句话]必须是真实可说出口的中文
+- 不抽象，不解释
+- 意图分类${intentionBucket}必须影响[说这句话]的方向
+- 符合${displayName}的语言风格和能量
+`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -1586,7 +1577,7 @@ Transform:
     // continue to behavior-script parser
   }
 
-  // Compatibility path B: behavior-script text sections
+  // Section extractor — works for any [label] header (Chinese or English)
   function sectionValue(label, nextLabels = []) {
     const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const nextPattern = nextLabels.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
@@ -1597,27 +1588,32 @@ Transform:
     return m ? m[1].trim() : '';
   }
 
-  const assessment = sectionValue('ASSESSMENT', ['ACTION', 'SPEECH', 'IF RESPONSE']);
-  const action = sectionValue('ACTION', ['SPEECH', 'IF RESPONSE']);
-  const speech = sectionValue('SPEECH', ['IF RESPONSE']);
-  const ifResponse = sectionValue('IF RESPONSE');
+  let parsed;
+  if (isImmersive) {
+    // 沉浸模式: [此刻注意到] / [内在感受] / [自然会做]
+    const noticing = sectionValue('此刻注意到', ['内在感受', '自然会做']);
+    const feeling  = sectionValue('内在感受',   ['自然会做']);
+    const doing    = sectionValue('自然会做');
+    parsed = {
+      mind:     noticing || clean,
+      body:     feeling  || clean,
+      speech:   doing    || clean,
+      reaction: ''
+    };
+  } else {
+    // 策略模式: [读懂现在] / [现在做这个] / [说这句话]
+    const reading  = sectionValue('读懂现在',   ['现在做这个', '说这句话']);
+    const acting   = sectionValue('现在做这个', ['说这句话']);
+    const saying   = sectionValue('说这句话');
+    parsed = {
+      mind:     reading || clean,
+      body:     acting  || clean,
+      speech:   saying  || clean,
+      reaction: ''
+    };
+  }
 
-  const normalizeBullets = (txt) => {
-    const lines = txt.split('\n').map(s => s.trim()).filter(Boolean);
-    return lines.map(line => {
-      if (/^[-*•]/.test(line)) return line.replace(/^\*\s+/, '- ');
-      return '- ' + line;
-    }).slice(0, 3).join('\n');
-  };
-
-  const parsed = {
-    mind: `${assessment ? `【ASSESSMENT】\n${assessment}` : ''}${ifResponse ? `\n\n【IF RESPONSE】\n${ifResponse}` : ''}`.trim() || clean,
-    body: `${action ? `【ACTION】\n${normalizeBullets(action)}` : clean}`.trim(),
-    speech: `${speech ? `【SPEECH】\n${speech}` : clean}`.trim(),
-    reaction: `${ifResponse ? `【IF RESPONSE】\n${ifResponse}` : clean}`.trim()
-  };
-
-  console.log('[AI] ✓ Behavior-script text parsed via compatibility wrapper.');
+  console.log('[AI] ✓ Mode-aware text parsed.');
   return parsed;
 }
 
@@ -1651,6 +1647,16 @@ function sanitizeTheaterDisplayText(text) {
 // (e.g. AI returned a flat string and overwrote .text).
 function updateGuidance(index) {
   const d = AppState.contentData[index] || AppState.contentData[0];
+
+  // Hide the entire guidance panel when this slot is the reaction slot with no content
+  const guidancePanel = document.getElementById('guidance-panel') || document.getElementById('guidance-content')?.parentElement;
+  const isEmpty = !d.hero && !d.text && !(Array.isArray(d.supports) && d.supports.length);
+  if (isEmpty && !d.title) {
+    if (guidancePanel) guidancePanel.style.display = 'none';
+    return;
+  }
+  if (guidancePanel) guidancePanel.style.display = '';
+
   const titleEl    = document.getElementById('guidance-title');
   const heroEl     = document.getElementById('guidance-hero');
   const supportsEl = document.getElementById('guidance-supports');
