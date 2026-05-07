@@ -1081,11 +1081,11 @@ async function startTheater() {
   document.getElementById('config-panel').classList.add('hidden');
   updateGuidance(0);
   AppState.isTheaterModeActive = true;
-  startGachaSystem();
   const ritualPool = (AppState.currentPersonaData.consumer_fields.entry_ritual_pool) || [];
   runEntryRitual(ritualPool, () => {
     window.__theaterOpenTime = Date.now();
     document.getElementById('theater-screen').classList.remove('hidden');
+    startGachaSystem();
     console.log(`[Theater] ✓ ${personaDisplayName} — 面具激活完成。`);
   });
 }
@@ -2164,10 +2164,12 @@ function runEntryRitual(pool, onComplete) {
   function complete() {
     if (completed) return;
     completed = true;
+    clearTimeout(safetyTimer);
     overlay.classList.add('hidden');
     overlay.style.display = 'none';
     stepText.classList.remove('visible');
     stepText.textContent = '';
+    console.log('[Ritual] ✓ Complete.');
     if (onComplete) onComplete();
   }
 
