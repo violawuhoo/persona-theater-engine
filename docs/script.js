@@ -2185,15 +2185,14 @@ function runEntryRitual(pool, onComplete) {
     try {
       stepText.textContent = steps[i];
       stepText.classList.remove('visible');
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          stepText.classList.add('visible');
-          setTimeout(() => {
-            stepText.classList.remove('visible');
-            setTimeout(() => { i++; showStep(); }, 600);
-          }, 2300);
-        });
-      });
+      // setTimeout instead of rAF: rAF is throttled in background/inactive tabs
+      setTimeout(() => {
+        stepText.classList.add('visible');
+        setTimeout(() => {
+          stepText.classList.remove('visible');
+          setTimeout(() => { i++; showStep(); }, 600);
+        }, 2300);
+      }, 32);
     } catch (e) {
       console.warn('[Ritual] Step error:', e);
       clearTimeout(safetyTimer);
