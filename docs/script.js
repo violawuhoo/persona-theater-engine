@@ -1034,29 +1034,37 @@ async function startTheater() {
   const localContent = extractTheaterContent(AppState.currentPersonaData, scene, target, mode);
   applyTheaterContent(localContent, AppState.currentSceneContext, AppState.currentPersonaData);
 
-  // ── Phase 2: Race AI call against timeout ────────────────
-  const aiTimeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('AI_TIMEOUT')), CONFIG.AI_TIMEOUT_MS)
-  );
+  // ── Phase 2: Fire AI call non-blocking (does not block ritual) ─
+  // Snapshot context so the .then() closure doesn't read stale AppState
+  // if the user navigates away mid-call.
+  const snapPersona = AppState.currentPersonaData;
+  const snapCtx     = AppState.currentSceneContext;
+  window.__theaterOpenTime = 0;
 
-  try {
-    const aiContent = await Promise.race([
-      callAIWithPersonaProtocol(AppState.currentPersonaData, scene, target, mode, intention),
-      aiTimeout
-    ]);
-    applyTheaterContent({
-      mind: aiContent.mind || AppState.contentData[0].text,
-      body: aiContent.body || AppState.contentData[1].text,
-      speech: aiContent.speech || AppState.contentData[2].text,
-      reaction: aiContent.reaction || AppState.contentData[3].text
-    }, AppState.currentSceneContext, AppState.currentPersonaData);
-    console.log('[Theater] ✓ AI enhancement applied.');
-  } catch (e) {
+  Promise.race([
+    callAIWithPersonaProtocol(snapPersona, scene, target, mode, intention),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('AI_TIMEOUT')), CONFIG.AI_TIMEOUT_MS))
+  ])
+  .then(aiContent => {
+    // Only apply after theater is open; guard against stale calls from a previous session.
+    setTimeout(() => {
+      if (aiContent && window.__theaterOpenTime && (Date.now() - window.__theaterOpenTime) < 8000) {
+        applyTheaterContent({
+          mind:     aiContent.mind     || AppState.contentData[0].text,
+          body:     aiContent.body     || AppState.contentData[1].text,
+          speech:   aiContent.speech   || AppState.contentData[2].text,
+          reaction: aiContent.reaction || AppState.contentData[3].text
+        }, snapCtx, snapPersona);
+        console.log('[Theater] ✓ AI content applied silently.');
+      }
+    }, 100);
+  })
+  .catch(e => {
     const reason = e.message === 'AI_TIMEOUT' ? 'timed out' : e.message;
     console.warn(`[Theater] AI ${reason} — running on local theater_support data.`);
-  }
+  });
 
-  // ── Phase 3: Entry ritual → theater ─────────────────────
+  // ── Phase 3: Entry ritual → theater (starts immediately) ─────
   // Update wheel slot labels for current mode
   if (mode === 'immersive') {
     AppState.contentData[0].title = '此刻注意到';
@@ -1076,6 +1084,7 @@ async function startTheater() {
   startGachaSystem();
   const ritualPool = (AppState.currentPersonaData.consumer_fields.entry_ritual_pool) || [];
   runEntryRitual(ritualPool, () => {
+    window.__theaterOpenTime = Date.now();
     document.getElementById('theater-screen').classList.remove('hidden');
     console.log(`[Theater] ✓ ${personaDisplayName} — 面具激活完成。`);
   });
@@ -2137,7 +2146,7 @@ function onConfirmHelp() {
 function runEntryRitual(pool, onComplete) {
   const overlay  = document.getElementById('ritual-overlay');
   const stepText = document.getElementById('ritual-step-text');
-  if (!overlay || !stepText || !pool.length) {
+  if (!overlay || !stepText || !pool || !pool.length) {
     if (onComplete) onComplete();
     return;
   }
@@ -2145,29 +2154,51 @@ function runEntryRitual(pool, onComplete) {
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const steps    = shuffled.slice(0, 3);
   console.log('[Ritual] Steps:', steps);
-  overlay.style.display = '';
+
+  overlay.style.display = 'flex';
   overlay.classList.remove('hidden');
 
   let i = 0;
+  let completed = false;
+
+  function complete() {
+    if (completed) return;
+    completed = true;
+    overlay.classList.add('hidden');
+    overlay.style.display = 'none';
+    stepText.classList.remove('visible');
+    stepText.textContent = '';
+    if (onComplete) onComplete();
+  }
+
+  // Safety net: force complete if timing chain stalls
+  const safetyTimer = setTimeout(complete, (steps.length * 3500) + 2000);
+
   function showStep() {
     if (i >= steps.length) {
-      overlay.classList.add('hidden');
-      overlay.style.display = 'none';
-      if (onComplete) onComplete();
+      clearTimeout(safetyTimer);
+      complete();
       return;
     }
-    stepText.textContent = steps[i];
-    stepText.classList.remove('visible');
-    requestAnimationFrame(() => {
+    try {
+      stepText.textContent = steps[i];
+      stepText.classList.remove('visible');
       requestAnimationFrame(() => {
-        stepText.classList.add('visible');
-        setTimeout(() => {
-          stepText.classList.remove('visible');
-          setTimeout(() => { i++; showStep(); }, 600);
-        }, 2400);
+        requestAnimationFrame(() => {
+          stepText.classList.add('visible');
+          setTimeout(() => {
+            stepText.classList.remove('visible');
+            setTimeout(() => { i++; showStep(); }, 600);
+          }, 2300);
+        });
       });
-    });
+    } catch (e) {
+      console.warn('[Ritual] Step error:', e);
+      clearTimeout(safetyTimer);
+      complete();
+    }
   }
+
   showStep();
 }
 
