@@ -1030,9 +1030,14 @@ async function startTheater() {
   const personaColor = getPersonaColor();
   applyPersonaTheme(personaColor);
 
+  // Stamp the mode on theater-screen so CSS panels switch correctly
+  document.getElementById('theater-screen').dataset.mode = mode;
+  _immersiveSlot = 0;
+
   // ── Phase 1: Extract local content immediately (theater_support) ─
   const localContent = extractTheaterContent(AppState.currentPersonaData, scene, target, mode);
   applyTheaterContent(localContent, AppState.currentSceneContext, AppState.currentPersonaData);
+  _syncTheaterPanels();
 
   // ── Phase 2: Fire AI call non-blocking (does not block ritual) ─
   // Snapshot context so the .then() closure doesn't read stale AppState
@@ -1055,6 +1060,7 @@ async function startTheater() {
           speech:   aiContent.speech   || AppState.contentData[2].text,
           reaction: aiContent.reaction || AppState.contentData[3].text
         }, snapCtx, snapPersona);
+        _syncTheaterPanels();
         console.log('[Theater] ✓ AI content applied silently.');
       }
     }, 100);
@@ -1710,6 +1716,86 @@ function updateGuidance(index) {
   }
 }
 
+// ── IMMERSIVE PANEL RENDERER ──────────────────────────────────
+const IM_LABELS = ['MIND', 'BODY', 'SPEECH', 'REACTION'];
+let _immersiveSlot = 0;
+let _immersiveAdvancing = false;
+
+function updateImmersivePanel(index) {
+  const labelEl = document.getElementById('im-label');
+  const textEl  = document.getElementById('im-text');
+  if (!labelEl || !textEl) return;
+
+  const d = AppState.contentData[index] || AppState.contentData[0];
+  labelEl.textContent = IM_LABELS[index] || 'MIND';
+  textEl.textContent  = sanitizeTheaterDisplayText(safeStr(d.hero, '') || safeStr(d.text, ''));
+
+  document.querySelectorAll('.im-dot').forEach((dot, i) => {
+    dot.classList.toggle('im-dot--active', i === index);
+  });
+}
+
+function advanceImmersive() {
+  if (_immersiveAdvancing) return;
+  const textEl = document.getElementById('im-text');
+  if (!textEl) return;
+  _immersiveAdvancing = true;
+  textEl.style.opacity = '0';
+  setTimeout(() => {
+    _immersiveSlot = (_immersiveSlot + 1) % 4;
+    updateImmersivePanel(_immersiveSlot);
+    textEl.style.opacity = '1';
+    setTimeout(() => { _immersiveAdvancing = false; }, 160);
+  }, 150);
+  if (navigator.vibrate) navigator.vibrate(8);
+}
+
+// ── STRATEGIC PANEL RENDERER ──────────────────────────────────
+function updateStrategicPanel() {
+  AppState.contentData.forEach((d, i) => {
+    const heroEl     = document.getElementById(`st-hero-${i}`);
+    const supportsEl = document.getElementById(`st-supports-${i}`);
+    const footerWrap = document.getElementById(`st-footer-wrap-${i}`);
+    const footerEl   = document.getElementById(`st-footer-${i}`);
+    if (!heroEl) return;
+
+    const hero     = sanitizeTheaterDisplayText(safeStr(d.hero, ''));
+    const supports = Array.isArray(d.supports) ? d.supports.filter(Boolean) : [];
+    const footer   = sanitizeTheaterDisplayText(safeStr(d.footer, ''));
+    const fallback = sanitizeTheaterDisplayText(safeStr(d.text, ''));
+
+    heroEl.textContent = hero || fallback;
+
+    if (supportsEl) {
+      supportsEl.innerHTML = supports.map(s =>
+        `<li class="st-support-item">${escapeDetailHtml(sanitizeTheaterDisplayText(s))}</li>`
+      ).join('');
+      supportsEl.style.display = supports.length ? '' : 'none';
+    }
+
+    if (footerWrap && footerEl) {
+      if (footer) {
+        footerEl.textContent = footer;
+        footerWrap.hidden = false;
+        footerWrap.open = false;
+      } else {
+        footerWrap.hidden = true;
+      }
+    }
+
+    // Hide the card entirely if this slot has no content (e.g. REACTION in immersive)
+    const card = document.querySelector(`.st-card[data-slot="${i}"]`);
+    if (card) card.style.display = (hero || fallback) ? '' : 'none';
+  });
+}
+
+// ── SYNC HELPER — call after any contentData mutation ─────────
+function _syncTheaterPanels() {
+  const mode = document.getElementById('theater-screen')?.dataset.mode;
+  if (mode === 'immersive')  updateImmersivePanel(_immersiveSlot);
+  else if (mode === 'strategic') updateStrategicPanel();
+}
+
 function rotateWheel(delta) {
   AppState.currentRotation += delta;
   document.getElementById('main-wheel').style.transform = `rotate(${AppState.currentRotation}deg)`;
@@ -1929,6 +2015,9 @@ async function exitTheater() {
   AppState.usedGachaTips.clear();
   AppState.currentSceneContext = { personaId: '', personaName: '', scene: '', target: '', mode: '', intention: '', intentionBucket: '' };
 
+  _immersiveSlot = 0;
+  _immersiveAdvancing = false;
+  delete document.getElementById('theater-screen').dataset.mode;
   document.getElementById('theater-screen').classList.add('hidden');
   document.getElementById('carousel').classList.remove('hidden');
   document.getElementById('dots').classList.remove('hidden');

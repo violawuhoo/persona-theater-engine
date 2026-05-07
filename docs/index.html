@@ -568,6 +568,59 @@
       </div>
 
       <div class="theater-header">剧场模式：运行中</div>
+
+      <!-- ═══ IMMERSIVE MODE PANEL ═══════════════════════════════════ -->
+      <div id="immersive-panel">
+        <div id="im-label" class="im-label">MIND</div>
+        <div id="im-tap" class="im-tap" onclick="advanceImmersive()">
+          <p id="im-text" class="im-text"></p>
+        </div>
+        <div class="im-dots">
+          <span class="im-dot im-dot--active" data-idx="0"></span>
+          <span class="im-dot" data-idx="1"></span>
+          <span class="im-dot" data-idx="2"></span>
+          <span class="im-dot" data-idx="3"></span>
+        </div>
+        <div class="im-actions">
+          <button class="im-action-btn" onclick="handleHelpClick()">求助</button>
+          <button class="im-action-btn" onclick="exitTheater()">卸载面具</button>
+        </div>
+      </div>
+
+      <!-- ═══ STRATEGIC MODE PANEL ════════════════════════════════════ -->
+      <div id="strategic-panel">
+        <div class="st-scroll">
+          <div class="st-card" data-slot="0">
+            <div class="st-label">MIND</div>
+            <p class="st-hero" id="st-hero-0"></p>
+            <ul class="st-supports" id="st-supports-0"></ul>
+            <details class="st-footer-wrap" id="st-footer-wrap-0"><summary class="st-footer-summary">展开场域细节</summary><p class="st-footer" id="st-footer-0"></p></details>
+          </div>
+          <div class="st-card" data-slot="1">
+            <div class="st-label">BODY</div>
+            <p class="st-hero" id="st-hero-1"></p>
+            <ul class="st-supports" id="st-supports-1"></ul>
+            <details class="st-footer-wrap" id="st-footer-wrap-1"><summary class="st-footer-summary">展开场域细节</summary><p class="st-footer" id="st-footer-1"></p></details>
+          </div>
+          <div class="st-card" data-slot="2">
+            <div class="st-label">SPEECH</div>
+            <p class="st-hero" id="st-hero-2"></p>
+            <ul class="st-supports" id="st-supports-2"></ul>
+            <details class="st-footer-wrap" id="st-footer-wrap-2"><summary class="st-footer-summary">展开场域细节</summary><p class="st-footer" id="st-footer-2"></p></details>
+          </div>
+          <div class="st-card" data-slot="3">
+            <div class="st-label">REACTION</div>
+            <p class="st-hero" id="st-hero-3"></p>
+            <ul class="st-supports" id="st-supports-3"></ul>
+            <details class="st-footer-wrap" id="st-footer-wrap-3"><summary class="st-footer-summary">展开场域细节</summary><p class="st-footer" id="st-footer-3"></p></details>
+          </div>
+        </div>
+        <div class="st-actions">
+          <button class="st-action-btn" onclick="handleHelpClick()">求助</button>
+          <button class="st-action-btn st-exit-btn" onclick="exitTheater()">卸载面具</button>
+        </div>
+      </div>
+
     </div><!-- /#theater-screen -->
 
 
